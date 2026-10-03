@@ -49,5 +49,31 @@ async def _call_vision(image_bytes: bytes, mime_type: str) -> str:
 
 
 async def analyse_image(image_bytes: bytes) -> str:
-    """Gemini 2.0 Flash vision call via Vertex AI. Returns business idea text from image."""
-    raise NotImplementedError("Phase 4")
+    """Gemini 2.0 Flash vision call via Vertex AI.
+
+    Returns text description of the business idea present in the image. Raises InvalidFileError for
+    wrong format/size, IntakeError on Gemini failure.
+    """
+    if len(image_bytes) == 0:
+        raise InvalidFileError("Image file is empty")
+
+    if len(image_bytes) > _MAX_SIZE:
+        raise InvalidFileError("Image exceeds 10 MB limit")
+
+    if image_bytes.startswith(_JPEG_MAGIC):
+        mime_type = "image/jpeg"
+    elif image_bytes.startswith(_PNG_MAGIC):
+        mime_type = "image/png"
+    else:
+        raise InvalidFileError("Only JPEG and PNG images are accepted")
+
+    logger.info("vision_analysis_start", mime_type=mime_type, size_bytes=len(image_bytes))
+
+    try:
+        result = await _call_vision(image_bytes, mime_type)
+    except Exception as e:
+        logger.error("vision_analysis_failed", error_type=type(e).__name__)
+        raise IntakeError("Image analysis failed", detail=str(e))
+
+    logger.info("vision_analysis_complete", response_chars=len(result))
+    return result
