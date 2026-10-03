@@ -2,12 +2,12 @@
 
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+import structlog
 
 from backend.config import settings, init_vertex_ai
-from backend.errors import PrismException
+from backend.exception_handlers import register_exception_handlers
 from backend.middleware.log_sanitizer import LogSanitizerMiddleware, LogSanitizingFilter
 
 # Configure logging with sanitization
@@ -21,6 +21,11 @@ logger = logging.getLogger("prism")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_vertex_ai()  # Vertex AI ADC — once at startup, never at module level
+    structlog.configure(
+        wrapper_class=structlog.make_filtering_bound_logger(
+            logging.getLevelName(settings.LOG_LEVEL.upper())
+        ),
+    )
     yield
 
 
@@ -41,15 +46,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-@app.exception_handler(PrismException)
-async def prism_exception_handler(request: Request, exc: PrismException):
-    """Global exception handler for all typed PRISM errors."""
-    logger.error(f"PrismException caught on {request.url.path}: {exc.message}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={"error": exc.message, "status_code": exc.status_code},
-    )
+# Exception Handlers
+register_exception_handlers(app)
 
 
 def _not_implemented():
