@@ -271,8 +271,25 @@ async def generate_stream(session_id: str) -> StreamingResponse:
 
 # BRD
 @app.get("/brd/{session_id}")
-async def get_brd(session_id: str):
-    _not_implemented()
+async def get_brd(session_id: str) -> dict:
+    session = store_get_session(session_id)
+    if session is None:
+        raise SessionNotFoundError(session_id)
+
+    if session["status"] != "complete":
+        return {
+            "session_id": session_id,
+            "status": session["status"],
+            "brd": None,
+            "message": "BRD not ready yet",
+        }
+
+    return {
+        "session_id": session_id,
+        "status": "complete",
+        "brd": session.get("brd"),
+        "investor_readiness_score": session.get("score"),
+    }
 
 
 @app.get("/brd/{session_id}/pdf")
