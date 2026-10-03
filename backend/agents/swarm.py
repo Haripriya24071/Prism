@@ -40,6 +40,19 @@ _AGENT_TIMEOUT_SECONDS = 25
 _MIN_SUCCESSFUL_AGENTS = 4
 
 
+def _clean_json_response(raw_text: str) -> dict:
+    """Strips markdown code fences and parses JSON from raw LLM output text."""
+    clean = raw_text.strip()
+    if clean.startswith("```"):
+        parts = clean.split("```")
+        if len(parts) >= 2:
+            clean = parts[1].strip()
+            if clean.startswith("json"):
+                clean = clean[4:].strip()
+    res = json.loads(clean)
+    return res if isinstance(res, dict) else {}
+
+
 async def _run_single_agent(
     persona: AgentPersona,
     intake: IntakePackage,
@@ -79,15 +92,10 @@ async def _run_single_agent(
         raw_text = response.text
         duration_ms = int((time.time() - start) * 1000)
 
-        # Parse JSON BRD from response
+        # Parse JSON BRD from response using fence stripper
         try:
-            clean = raw_text.strip()
-            if clean.startswith("```"):
-                clean = clean.split("```")[1]
-                if clean.startswith("json"):
-                    clean = clean[4:]
-            brd_json = json.loads(clean)
-        except json.JSONDecodeError:
+            brd_json = _clean_json_response(raw_text)
+        except Exception:
             logger.warning(
                 "agent_json_parse_failed",
                 persona=persona.value,
