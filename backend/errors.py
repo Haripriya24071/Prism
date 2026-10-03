@@ -1,4 +1,10 @@
-"""backend/errors.py — Custom exception hierarchy for PRISM backend."""
+import sys
+
+# Ensure backend.errors and errors refer to the exact same module object in sys.modules
+if "backend.errors" in sys.modules and "errors" not in sys.modules:
+    sys.modules["errors"] = sys.modules["backend.errors"]
+elif "errors" in sys.modules and "backend.errors" not in sys.modules:
+    sys.modules["backend.errors"] = sys.modules["errors"]
 
 
 class PRISMError(Exception):
