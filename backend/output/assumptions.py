@@ -60,3 +60,28 @@ def _extract_brd_text(merged_brd: MergedBRD) -> str:
     for section in merged_brd.sections:
         parts.append(f"[{section.title}]\n{section.content}")
     return "\n\n".join(parts)[:6000]  # cap at 6000 chars — leave room for context
+
+
+@retry(
+    retry=retry_if_exception_type(Exception),
+    stop=stop_after_attempt(2),
+    wait=wait_exponential(multiplier=1, min=3, max=8),
+    reraise=True,
+)
+async def _call_assumptions(prompt: str) -> str:
+    from vertexai.generative_models import GenerationConfig
+
+    model = get_flash_model()
+    response = await asyncio.wait_for(
+        asyncio.to_thread(
+            model.generate_content,
+            prompt,
+            generation_config=GenerationConfig(
+                temperature=0.3,
+                max_output_tokens=1024,
+                response_mime_type="application/json",
+            ),
+        ),
+        timeout=20,
+    )
+    return response.text
