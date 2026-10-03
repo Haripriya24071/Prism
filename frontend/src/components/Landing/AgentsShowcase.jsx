@@ -11,6 +11,7 @@ const AGENTS = [
   {
     id: 'vc',
     name: 'Silicon Valley Seed VC',
+    title: 'Silicon Valley Seed VC',
     archetype: 'The Scaler',
     avatar: vcImg,
     badgeColor: 'border-agent-vc text-agent-vc',
@@ -23,6 +24,7 @@ const AGENTS = [
   {
     id: 'lean_founder',
     name: 'Bootstrapped Founder',
+    title: 'Bootstrapped Founder',
     archetype: 'The Pragmatist',
     avatar: leanImg,
     badgeColor: 'border-agent-lean text-agent-lean',
@@ -35,6 +37,7 @@ const AGENTS = [
   {
     id: 'enterprise_cto',
     name: 'Enterprise CTO',
+    title: 'Enterprise CTO',
     archetype: 'The Architect',
     avatar: ctoImg,
     badgeColor: 'border-agent-cto text-agent-cto',
@@ -47,6 +50,7 @@ const AGENTS = [
   {
     id: 'ux_researcher',
     name: 'UX Researcher',
+    title: 'UX Researcher',
     archetype: 'The Humanist',
     avatar: uxImg,
     badgeColor: 'border-agent-ux text-agent-ux',
@@ -59,6 +63,7 @@ const AGENTS = [
   {
     id: 'regulator',
     name: 'Government Policy Expert',
+    title: 'Government Policy Expert',
     archetype: 'The Guardian',
     avatar: regImg,
     badgeColor: 'border-agent-regulator text-agent-regulator',
@@ -71,6 +76,7 @@ const AGENTS = [
   {
     id: 'adversarial',
     name: 'Well-Funded Rival',
+    title: 'Well-Funded Rival',
     archetype: 'The Assassin',
     avatar: advImg,
     badgeColor: 'border-agent-adversarial text-agent-adversarial',
@@ -132,7 +138,7 @@ export default function AgentsShowcase({ onSelectAgent }) {
                   <div className="w-16 h-16 rounded-xl border-2 border-border overflow-hidden bg-surface-raised flex-shrink-0 shadow-[2px_2px_0px_var(--color-border)]">
                     <img
                       src={agent.avatar}
-                      alt={agent.name}
+                      alt={agent.title || agent.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
                     />
@@ -189,7 +195,7 @@ export default function AgentsShowcase({ onSelectAgent }) {
             <div className="w-20 h-20 rounded-xl border-2 border-border overflow-hidden bg-surface-raised flex-shrink-0 shadow-[3px_3px_0px_var(--color-border)]">
               <img
                 src={selectedAgent.avatar}
-                alt={selectedAgent.name}
+                alt={selectedAgent.title || selectedAgent.name}
                 className="w-full h-full object-cover"
               />
             </div>
