@@ -2,12 +2,18 @@
 
 import asyncio
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, TYPE_CHECKING
 import uuid
 
 import structlog
 
-from backend.config import settings
+if TYPE_CHECKING:
+    from backend.config import settings
+else:
+    try:
+        from backend.config import settings
+    except ImportError:
+        from config import settings
 
 logger = structlog.get_logger()
 
