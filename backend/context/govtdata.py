@@ -61,6 +61,14 @@ _DEFAULT_REGULATORY: dict[str, Any] = {
     "data_source": "static_regulatory_map",
 }
 
+# Industry-level overlays — appended on top of regional flags
+_INDUSTRY_OVERLAYS: dict[str, list[str]] = {
+    "fintech": ["PCI-DSS compliance required for card data", "AML/KYC obligations apply"],
+    "healthtech": ["Patient data requires explicit consent", "Medical device software may need FDA/CE marking"],
+    "edtech": ["COPPA compliance required for users under 13", "FERPA applies to US student data"],
+    "legaltech": ["Unauthorised practice of law risk — add disclaimers", "Bar association approval may be needed"],
+}
+
 
 async def fetch_govtdata(region: str, industry: str) -> dict[str, Any]:
     """Returns regulatory flags and compliance notes for a region + industry."""
