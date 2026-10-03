@@ -127,7 +127,7 @@ export default function AgentsShowcase({ onSelectAgent }) {
               <div>
                 {/* Header row: Archetype Tag + Indicator */}
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`inline-flex items-center justify-center px-3.5 py-1 rounded-full border text-micro font-tertiary font-bold uppercase tracking-wider leading-none ${agent.badgeColor} ${agent.bgTint}`}>
+                  <span className={`agent-badge-pill ${agent.badgeColor} ${agent.bgTint}`}>
                     {agent.archetype}
                   </span>
                   <span className="font-tertiary text-micro text-content-muted">0{AGENTS.indexOf(agent) + 1}</span>
@@ -204,7 +204,7 @@ export default function AgentsShowcase({ onSelectAgent }) {
                 <span className="font-display font-bold text-h3 text-content-primary">
                   {selectedAgent.name}
                 </span>
-                <span className={`inline-flex items-center justify-center text-micro px-3 py-1 rounded-full border font-tertiary font-semibold uppercase tracking-wider leading-none ${selectedAgent.badgeColor} ${selectedAgent.bgTint}`}>
+                <span className={`agent-badge-pill ${selectedAgent.badgeColor} ${selectedAgent.bgTint}`}>
                   {selectedAgent.archetype}
                 </span>
               </div>
