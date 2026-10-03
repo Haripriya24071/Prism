@@ -3,14 +3,44 @@
 import asyncio
 import logging
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.config import settings, init_vertex_ai
-from backend.logging_config import configure_logging
-from backend.exception_handlers import register_exception_handlers
-from backend.middleware.log_sanitizer import LogSanitizerMiddleware, LogSanitizingFilter
-from backend.session_store import cleanup_expired_sessions
+if TYPE_CHECKING:
+    from backend.config import settings, init_vertex_ai
+    from backend.logging_config import configure_logging
+    from backend.exception_handlers import register_exception_handlers
+    from backend.middleware.log_sanitizer import LogSanitizerMiddleware, LogSanitizingFilter
+    from backend.session_store import (
+        cleanup_expired_sessions,
+        create_session as store_create_session,
+        get_session as store_get_session,
+    )
+    from backend.errors import SessionNotFoundError
+else:
+    try:
+        from backend.config import settings, init_vertex_ai
+        from backend.logging_config import configure_logging
+        from backend.exception_handlers import register_exception_handlers
+        from backend.middleware.log_sanitizer import LogSanitizerMiddleware, LogSanitizingFilter
+        from backend.session_store import (
+            cleanup_expired_sessions,
+            create_session as store_create_session,
+            get_session as store_get_session,
+        )
+        from backend.errors import SessionNotFoundError
+    except ImportError:
+        from config import settings, init_vertex_ai
+        from logging_config import configure_logging
+        from exception_handlers import register_exception_handlers
+        from middleware.log_sanitizer import LogSanitizerMiddleware, LogSanitizingFilter
+        from session_store import (
+            cleanup_expired_sessions,
+            create_session as store_create_session,
+            get_session as store_get_session,
+        )
+        from errors import SessionNotFoundError
 
 # Configure logging with sanitization
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
@@ -61,12 +91,17 @@ async def health():
 # Intake
 @app.post("/intake/session", status_code=201)
 async def create_session():
-    _not_implemented()
+    sid = store_create_session()
+    sess = store_get_session(sid)
+    return sess
 
 
 @app.get("/intake/session/{session_id}")
 async def get_session(session_id: str):
-    _not_implemented()
+    sess = store_get_session(session_id)
+    if sess is None:
+        raise SessionNotFoundError(session_id)
+    return sess
 
 
 @app.post("/intake/chat")
