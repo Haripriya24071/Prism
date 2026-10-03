@@ -73,7 +73,7 @@ Fires in parallel the moment region is detected — while conversation continues
 All 5 sources called via `asyncio.gather()`. A slow API never blocks the others.
 
 ### 4.3 Six-Agent Swarm
-Six independent Gemini 1.5 Flash calls — same input, different system prompt injected.
+Six independent Gemini 2.0 Flash calls — same input, different system prompt injected.
 
 | Agent | Persona | Mandate |
 |-------|---------|---------|
@@ -138,13 +138,22 @@ Same BRD, three different PDFs generated from one Gemini call:
 - **Technical View:** Lead with architecture, functional requirements, API dependencies.
 - **Regulatory View:** Lead with legal framework, data handling, compliance, risk mitigation.
 
+### 4.11 Pivot Suggester
+- Fires automatically if Investor Readiness Score < 60
+- Generates 3 concrete pivot directions, each with:
+  - Pivot description (one paragraph)
+  - Rationale based on the highest-scoring agent's gaps
+  - Projected investor readiness score if pivot is executed
+- Uses one Gemini 2.0 Flash call (part of post-merge analysis batch)
+- Displayed inline below the Investor Readiness Score card
+- Does not fire if score ≥ 60 (returns null silently)
+
 ---
 
 ## 5. Roadmap Features (PPT / Future)
 
 These are architected for but not built in the hackathon demo:
 
-- **Pivot Suggester** — if score < 60, generates 3 concrete pivots with projected scores
 - **Confidence Decay Monitor** — BRD freshness tracking; alerts when context has gone stale (new news, new competitor, regulatory change)
 - **BRD Versioning** — user returns with same idea 3 months later; diff view shows what changed
 - **Team Role Recommender** — recommends first hires and roles to skip based on what the BRD requires
@@ -166,6 +175,8 @@ These are architected for but not built in the hackathon demo:
 | `/brd/{id}` | GET | Retrieve final merged BRD |
 | `/brd/{id}/pdf` | GET | Download PDF (view param: investor / technical / regulatory) |
 
+POST `/generate` fires the full pipeline as a FastAPI BackgroundTask. SSE stream at `/generate/stream/{id}` delivers live progress. Total call budget: 16 Gemini calls (14 Flash + 2 Pro) via Vertex AI.
+
 Full API contract with request/response schemas: see `SCHEMA.md`.
 
 ---
@@ -185,7 +196,8 @@ Full API contract with request/response schemas: see `SCHEMA.md`.
 
 ## 8. Non-Functional Requirements
 
-- **Cost:** 100% free tier. 20 Gemini API keys rotated. World Bank, Gemini Grounding, GCS, BigQuery all within free limits.
+- **AI Infrastructure:** All Gemini calls routed through Vertex AI (google-cloud-aiplatform SDK). Single GCP service account with ADC. No personal API key rotation.
+- **Gemini call budget per run:** 14× Flash + 2× Pro = 16 total calls.
 - **Availability:** Demo-grade — single region, no DR required.
 - **Security:** No PII stored. Session-scoped access only. API keys never logged. File uploads validated by MIME type via magic bytes.
 - **Accessibility:** WCAG 2.1 AA for all interactive elements. All agent states communicated via colour + text label (never colour alone).
