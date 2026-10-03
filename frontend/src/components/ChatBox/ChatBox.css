@@ -1,3 +1,4 @@
+/* cspell:words chatbox */
 .chatbox {
   display: flex;
   flex-direction: column;
@@ -25,20 +26,23 @@
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+  border: 1.5px solid var(--color-border);
 }
 
 .chatbox__bubble--user {
   align-self: flex-end;
-  background-color: var(--color-accent-signal);
-  color: var(--color-void);
+  background-color: var(--color-accent-tint, #D8F3DC);
+  color: var(--color-text-primary);
   border-bottom-right-radius: var(--radius-sm);
+  box-shadow: 2px 2px 0px var(--color-border);
 }
 
 .chatbox__bubble--assistant {
   align-self: flex-start;
-  background-color: var(--color-surface-raised);
+  background-color: var(--color-surface);
   color: var(--color-text-primary);
   border-bottom-left-radius: var(--radius-sm);
+  box-shadow: 2px 2px 0px var(--color-border-subtle);
 }
 
 .chatbox__input-row {
@@ -47,8 +51,10 @@
   gap: var(--space-2);
   padding: var(--space-3);
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1.5px solid var(--color-border);
+  box-shadow: 3px 3px 0px var(--color-border);
   border-radius: var(--radius-lg);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
 }
 
 .chatbox__textarea {
@@ -74,7 +80,8 @@
 }
 
 .chatbox__input-row:focus-within {
-  border-color: var(--color-accent-signal);
+  box-shadow: 4px 4px 0px var(--color-border);
+  transform: translate(-1px, -1px);
 }
 
 .chatbox__icon-btn,
@@ -86,10 +93,11 @@
   width: var(--space-10);
   height: var(--space-10);
   flex-shrink: 0;
-  border: none;
+  border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background-color 150ms ease, color 150ms ease;
+  box-shadow: 2px 2px 0px var(--color-border);
+  transition: all 0.15s ease;
 }
 
 .chatbox__icon-btn {
@@ -99,21 +107,27 @@
 
 .chatbox__icon-btn:hover:not(:disabled) {
   color: var(--color-text-primary);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--color-border);
 }
 
 .chatbox__send {
-  background-color: var(--color-accent-signal);
-  color: var(--color-void);
+  background-color: var(--color-border);
+  color: var(--color-surface);
 }
 
 .chatbox__send:hover:not(:disabled) {
-  background-color: var(--color-accent-glow);
-  color: var(--color-text-primary);
+  background-color: var(--color-accent-signal);
+  color: var(--color-surface);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--color-border);
 }
 
 .chatbox__icon-btn:disabled,
 .chatbox__send:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
+  box-shadow: none;
   background-color: var(--color-surface-raised);
   color: var(--color-text-muted);
 }
@@ -124,6 +138,7 @@
 
 .chatbox__voice--recording {
   color: var(--color-error);
+  border-color: var(--color-error);
 }
 
 .chatbox__voice--recording::after {

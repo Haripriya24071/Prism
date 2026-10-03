@@ -29,6 +29,7 @@ export default {
       accent: {
         signal: token('color-accent-signal'),
         glow: token('color-accent-glow'),
+        tint: token('color-accent-tint'),
       },
       success: token('color-success'),
       warning: token('color-warning'),
@@ -69,6 +70,14 @@ export default {
       10: token('space-10'),
       12: token('space-12'),
       16: token('space-16'),
+      20: '80px',
+      24: '96px',
+      28: '112px',
+      32: '128px',
+      64: '256px',
+      72: '288px',
+      80: '320px',
+      96: '384px',
     },
     borderRadius: {
       none: '0px',
