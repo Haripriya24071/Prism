@@ -1,58 +1,32 @@
-"""backend/models/intake.py — Pydantic models for intake processing and requests."""
-
-from typing import List, Literal, Optional
-from pydantic import BaseModel, Field
-
-
-UUID4_PATTERN = r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$"
-ISO_REGION_PATTERN = r"^[A-Z]{2}$"
-
-
-class SessionIdHeader(BaseModel):
-    """Reusable model for validating UUID v4 session IDs."""
-
-    session_id: str = Field(..., pattern=UUID4_PATTERN, description="UUID v4 session identifier")
-
-
-class ConversationTurn(BaseModel):
-    """Single turn in the conversational intake."""
-
-    role: Literal["user", "assistant"]
-    content: str = Field(..., min_length=1, max_length=10000)
+from datetime import datetime
+from typing import Annotated, Literal
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatRequest(BaseModel):
-    """Request schema for submitting a conversational turn."""
-
-    session_id: str = Field(..., pattern=UUID4_PATTERN)
-    content: str = Field(..., min_length=1, max_length=5000)
-    role: Literal["user"] = "user"
+    session_id: Annotated[str, Field(min_length=8, pattern=r"^[a-zA-Z0-9_-]+$", description="Session UUID")]
+    message: Annotated[str, Field(max_length=2000, description="User message — max 2000 chars")]
+    turn_number: int = Field(ge=0, description="Zero-indexed conversation turn")
 
 
-class ExtractedIntake(BaseModel):
-    """Structured fields extracted from the intake conversation."""
-
-    business_idea: str
-    region: str = Field(..., pattern=ISO_REGION_PATTERN, description="ISO 3166-1 alpha-2 country code")
-    industry: str = Field(..., max_length=100)
-    stage: Optional[Literal["idea", "prototype", "mvp", "growth"]] = None
-    budget_range: Optional[str] = None
-    constraints: List[str] = Field(default_factory=list)
+class UploadRequest(BaseModel):
+    session_id: Annotated[str, Field(min_length=8, description="Session UUID")]
+    file_type: Literal["image", "pdf", "doc"] = Field(description="Detected MIME category")
 
 
-class FileContext(BaseModel):
-    """Extracted text and analysis from uploaded images and documents."""
-
-    image_analyses: List[str] = Field(default_factory=list)
-    document_summaries: List[str] = Field(default_factory=list)
+class IntakeExtraction(BaseModel):
+    raw_idea: str = Field(description="Full unstructured idea text from conversation")
+    region: str | None = Field(default=None, description="ISO 3166-1 alpha-2 country code")
+    industry: str | None = Field(default=None, description="Industry vertical")
+    stage: Literal["idea", "prototype", "mvp", "growth"] | None = Field(default=None)
+    budget_range: str | None = Field(default=None)
+    success_definition: str | None = Field(default=None)
 
 
 class IntakePackage(BaseModel):
-    """Unified intake package containing conversation, extracted fields, and context."""
-
-    session_id: str = Field(..., pattern=UUID4_PATTERN)
-    created_at: str
-    conversation_turns: List[ConversationTurn] = Field(default_factory=list)
-    extracted: ExtractedIntake
-    file_contexts: FileContext = Field(default_factory=FileContext)
-    context_package: Optional[dict] = None
+    model_config = ConfigDict(frozen=True)
+    session_id: Annotated[str, Field(min_length=8)]
+    extraction: IntakeExtraction
+    file_context: str | None = Field(default=None, description="Text from uploaded file")
+    conversation_history: list[dict] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
