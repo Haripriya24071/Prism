@@ -1,6 +1,7 @@
 """backend/sse_manager.py — Per-session SSE event queue manager."""
 
 import asyncio
+import json
 from collections import defaultdict
 from typing import Any, Dict, AsyncGenerator
 import structlog
@@ -55,5 +56,27 @@ async def publish_done(session_id: str) -> None:
 
 
 async def event_generator(session_id: str) -> AsyncGenerator[str, None]:
-    raise NotImplementedError("Stub for Commit 2")
-    yield ""
+    """
+    Async generator consumed by the SSE route.
+    Yields formatted SSE strings until _STREAM_DONE is received or timeout.
+    """
+    _TIMEOUT_SECONDS = 120   # max 2 minutes per stream
+    try:
+        while True:
+            try:
+                item = await asyncio.wait_for(
+                    _queues[session_id].get(),
+                    timeout=_TIMEOUT_SECONDS,
+                )
+            except asyncio.TimeoutError:
+                logger.warning("sse_stream_timeout", session_id=session_id)
+                yield f"data: {json.dumps({'event': 'timeout', 'session_id': session_id})}\n\n"
+                break
+
+            if item is _STREAM_DONE:
+                yield f"data: {json.dumps({'event': 'done', 'session_id': session_id})}\n\n"
+                break
+
+            yield f"data: {json.dumps(item)}\n\n"
+    finally:
+        cleanup_queue(session_id)
