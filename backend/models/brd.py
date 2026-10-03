@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from backend.models.agents import AgentPersona
+from .agents import AgentPersona
 
 
 class LineageTag(BaseModel):

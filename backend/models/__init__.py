@@ -1,8 +1,8 @@
-from backend.models.intake import ChatRequest, UploadRequest, IntakeExtraction, IntakePackage
-from backend.models.context import NewsItem, MarketData, ContextPackage
-from backend.models.agents import AgentPersona, AgentOutput, ScoreMatrix
-from backend.models.brd import MergedBRD, BRDSection, LineageTag, AssumptionFlag, FailureMode
-from backend.models.output import HeatmapData, InvestorScore, PivotSuggestion, FinalOutput
+from .intake import ChatRequest, UploadRequest, IntakeExtraction, IntakePackage
+from .context import NewsItem, MarketData, ContextPackage
+from .agents import AgentPersona, AgentOutput, ScoreMatrix
+from .brd import MergedBRD, BRDSection, LineageTag, AssumptionFlag, FailureMode
+from .output import HeatmapData, InvestorScore, PivotSuggestion, FinalOutput
 
 __all__ = [
     "ChatRequest", "UploadRequest", "IntakeExtraction", "IntakePackage",
