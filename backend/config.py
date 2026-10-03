@@ -3,6 +3,7 @@
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import vertexai
+from vertexai.generative_models import GenerativeModel
 
 
 class Settings(BaseSettings):
@@ -52,6 +53,16 @@ class Settings(BaseSettings):
     def cors_origins_list(self) -> List[str]:
         """Alias for cors_origins."""
         return self.cors_origins
+
+    @property
+    def gemini_flash_model(self) -> str:
+        """Alias for GEMINI_FLASH_MODEL."""
+        return self.GEMINI_FLASH_MODEL
+
+    @property
+    def gemini_pro_model(self) -> str:
+        """Alias for GEMINI_PRO_MODEL."""
+        return self.GEMINI_PRO_MODEL
 
 
 settings = Settings()
