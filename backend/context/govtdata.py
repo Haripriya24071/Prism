@@ -71,5 +71,28 @@ _INDUSTRY_OVERLAYS: dict[str, list[str]] = {
 
 
 async def fetch_govtdata(region: str, industry: str) -> dict[str, Any]:
-    """Returns regulatory flags and compliance notes for a region + industry."""
-    raise NotImplementedError("Phase 5")
+    """Returns regulatory flags and compliance notes for a region + industry.
+
+    Static data — clearly labelled. Never raises.
+    """
+    regional = _REGULATORY_MAP.get(region.upper() if region else "", _DEFAULT_REGULATORY)
+
+    industry_lower = industry.lower() if industry else ""
+    extra_flags: list[str] = []
+    for key, flags in _INDUSTRY_OVERLAYS.items():
+        if key in industry_lower:
+            extra_flags.extend(flags)
+
+    result = {
+        "regulatory_flags": regional["regulatory_flags"] + extra_flags,
+        "compliance_notes": regional["compliance_notes"],
+        "data_source": "static_regulatory_map",
+    }
+
+    logger.info(
+        "govtdata_fetched",
+        region=region,
+        industry=industry,
+        flag_count=len(result["regulatory_flags"]),
+    )
+    return result
