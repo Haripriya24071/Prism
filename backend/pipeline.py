@@ -131,6 +131,26 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
             progress_pct=68,
         )
 
+        # ── Step 3: Evaluate ──────────────────────────────────────────
+        set_session_status(session_id, "evaluating")
+        await publish(session_id, "evaluation_start", {"status": "running"}, progress_pct=70)
+        score_matrix = await evaluate_all_agents(agent_outputs, context)
+        await publish(
+            session_id,
+            "evaluation_complete",
+            {
+                "status": "complete",
+                "winning_agent": score_matrix.winning_agent.value if score_matrix.winning_agent else None,
+            },
+            progress_pct=80,
+        )
+
+        # ── Step 4: Merge ─────────────────────────────────────────────
+        set_session_status(session_id, "merging")
+        await publish(session_id, "merge_start", {"status": "running"}, progress_pct=82)
+        merged_brd = await merge_brds(agent_outputs, score_matrix, context)
+        await publish(session_id, "merge_complete", {"status": "complete"}, progress_pct=88)
+
     except Exception as e:
         logger.error("pipeline_unhandled_error", session_id=session_id, error_type=type(e).__name__)
         set_session_status(session_id, "error")
