@@ -60,7 +60,7 @@ PRISM is a multi-modal AI pipeline with six distinct processing layers. Each lay
 │  Cloud Storage (GCS)                   BigQuery                       │
 │  {session_id}/agent_*.json             prism_data.brd_runs            │
 │  {session_id}/merged_brd.json          prism_data.context_harvest_logs│
-│  {session_id}/output.pdf               prism_data.evaluator_scores    │
+│  {session_id}/output_*.pdf             prism_data.evaluator_scores    │
 └───────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -131,10 +131,10 @@ main.py → agents/ intake/ context/ output/ → gcp/ → models/ → errors.py 
 | 7 | Merge | Gemini Pro selects winning base BRD. Transplants highest-scoring section from each competing agent. | `merged_brd.json` with full lineage |
 | 8 | Heatmap | Pure Python std dev across per-section scores → normalised 0–100 risk scale. | `heatmap.json` |
 | 9 | Investor Score | Weighted sum of rubric scores → 0–100. Gap flags extracted. | `investor_readiness.json` |
-| 10 | Pivot Check | If score < 60 → Pivot Suggester fires 3 pivot directions with projected scores. | Appended to `investor_readiness.json` |
+| 10 | Pivot Check | If score < 60 → Pivot Suggester fires 3 pivot directions with projected scores (built — not roadmap). | Appended to `investor_readiness.json` |
 | 11 | Assumption Flags | BRD scanned for hidden assumptions. Each surfaced with evidence rating and action item. | Appended to `merged_brd.json` |
 | 12 | Failure Sim | Agent 6's adversarial output processed into top 3 failure modes with probability + mitigation. | Appended to `merged_brd.json` |
-| 13 | PDF Export | ReportLab generates 3 PDFs (Investor / Technical / Regulatory views). | `output_{view}.pdf` in GCS |
+| 13 | PDF Export | ReportLab generates 3 PDFs (Investor / Technical / Regulatory views). | `output_investor.pdf, output_technical.pdf, output_regulatory.pdf` in GCS |
 | 14 | Client | SSE stream delivers agent statuses live. Final render: heatmap → BRD viewer → scorecard. | Full UI experience |
 
 ---
@@ -142,32 +142,43 @@ main.py → agents/ intake/ context/ output/ → gcp/ → models/ → errors.py 
 ## Concurrency Model
 
 ```python
-# Context Harvester — 5 APIs in parallel
+# Vertex AI init — once at startup
+vertexai.init(project=settings.GCP_PROJECT_ID, location="us-central1")
+
+# Context Harvester — 5 APIs in parallel (one is Gemini Grounding via Vertex)
 context_results = await asyncio.gather(
     fetch_news(region, industry),
     fetch_worldbank(region),
     fetch_crunchbase(industry),
     fetch_govtdata(region, industry),
-    fetch_gemini_grounding(region, industry),
-    return_exceptions=True  # one slow API never blocks the others
+    fetch_gemini_grounding(region, industry),   # Vertex AI call
+    return_exceptions=True
 )
 
-# Swarm — 6 agents in parallel
+# Swarm — 6 Flash agents in parallel via Vertex AI
+flash = GenerativeModel("gemini-2.0-flash")
 agent_results = await asyncio.gather(
-    run_agent("vc", intake_package),
-    run_agent("lean", intake_package),
-    run_agent("cto", intake_package),
-    run_agent("ux", intake_package),
-    run_agent("regulator", intake_package),
-    run_agent("adversarial", intake_package),
+    run_agent("vc",          intake_package, flash),
+    run_agent("lean",        intake_package, flash),
+    run_agent("cto",         intake_package, flash),
+    run_agent("ux",          intake_package, flash),
+    run_agent("regulator",   intake_package, flash),
+    run_agent("adversarial", intake_package, flash),
 )
 
-# GCS reads for merge — parallel, not serial
+# Post-merge analysis — 3 Flash calls in parallel
+post_merge = await asyncio.gather(
+    flag_assumptions(merged_brd, context, flash),
+    extract_failure_modes(adversarial_output, flash),
+    reframe_stakeholder_views(merged_brd, flash),
+)
+
+# GCS reads for merge — parallel
 outputs = await asyncio.gather(
     *[read_agent_output(session_id, name) for name in AGENT_NAMES]
 )
 
-# BigQuery logging — never blocks main pipeline
+# BigQuery logging — fire and forget
 asyncio.create_task(_log_harvest_to_bq(context, session_id))
 ```
 
@@ -183,8 +194,9 @@ asyncio.create_task(_log_harvest_to_bq(context, session_id))
 | Evaluator (1 Pro call) | < 10 seconds |
 | Merge Engine (1 Pro call) | < 10 seconds |
 | Output calculations (heatmap + score) | < 200ms |
+| Post-merge analysis (assumptions + failure sim + stakeholder) | < 15 seconds (3 Flash parallel) |
 | PDF generation | < 3 seconds |
-| **Total end-to-end** | **< 50 seconds P95** |
+| **Total end-to-end** | **< 65 seconds P95** |
 
 ---
 
@@ -211,19 +223,33 @@ data: {"session_id": "...", "investor_readiness_score": 74, "progress_pct": 100}
 
 ---
 
-## API Key Rotation
+## Authentication & Quota
+
+PRISM calls Gemini through the Vertex AI SDK (`google-cloud-aiplatform`).
+Authentication uses a single GCP service account with Application Default Credentials (ADC).
+Quota is managed at the GCP project level — no per-key rotation required or used.
 
 ```python
-# config.py
-GEMINI_KEY_POOL = [
-    os.getenv(f"GEMINI_KEY_{i}") for i in range(1, 21)
-]
+# config.py — single ADC auth, no key pool
+import vertexai
+from vertexai.generative_models import GenerativeModel
 
-def get_next_key() -> str:
-    """Round-robin across 20 API keys."""
-    idx = _key_counter % len(GEMINI_KEY_POOL)
-    _key_counter += 1
-    return GEMINI_KEY_POOL[idx]
+vertexai.init(project=settings.GCP_PROJECT_ID, location=settings.GCP_REGION)
+
+def get_flash_model() -> GenerativeModel:
+    return GenerativeModel("gemini-2.0-flash")
+
+def get_pro_model() -> GenerativeModel:
+    return GenerativeModel("gemini-1.5-pro")
 ```
 
-Each swarm run consumes: 6 Flash calls + 2 Pro calls = 8 total API calls, distributed across the key pool.
+Total Gemini calls per BRD run:
+- 1× Flash (intake/conversation extractor)
+- 5× Flash (context grounding — 1 of the 5 context sources)
+- 6× Flash (swarm — all agents in parallel)
+- 1× Flash (assumption flagging — post merge)
+- 1× Flash (failure mode extraction — post merge)
+- 1× Flash (stakeholder view reframing — post merge)
+- 1× Pro  (evaluator — scores all 6 BRDs)
+- 1× Pro  (merge engine)
+Total: 16 calls per run. All Flash calls fit within Vertex AI Flash quota. Pro calls: 2 per run.
