@@ -3,7 +3,7 @@
 import asyncio
 import json
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -73,3 +73,23 @@ def _build_brds_block(agent_outputs: list[AgentOutput]) -> str:
                 lines.append(output.raw_text[:3000])
         lines.append("")
     return "\n".join(lines)
+
+
+def _clamp(value: Any, lo: int = 0, hi: int = 100) -> int:
+    """Clamp a score to integer 0-100."""
+    try:
+        return max(lo, min(hi, int(float(value))))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _compute_composite(scores: dict[str, int]) -> float:
+    weights = {k: v["weight"] for k, v in SCORING_CRITERIA.items()}
+    return round(
+        scores.get("feasibility", 0) * weights["feasibility"]
+        + scores.get("market_timing", 0) * weights["market_timing"]
+        + scores.get("regulatory_safety", 0) * weights["regulatory_safety"]
+        + scores.get("user_adoption", 0) * weights["user_adoption"]
+        + scores.get("competitive_moat", 0) * weights["competitive_moat"],
+        2,
+    )
