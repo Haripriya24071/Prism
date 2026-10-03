@@ -56,5 +56,20 @@ async def _call_grounding(region: str, industry: str) -> str:
 
 
 async def fetch_gemini_grounding(region: str, industry: str) -> str:
-    """Vertex AI Flash call for cultural and market context."""
-    raise NotImplementedError("Phase 5")
+    """Vertex AI Flash call for cultural and market context.
+
+    Returns plain text string. Returns empty string on failure — never blocks the pipeline.
+    """
+    if not region or not industry:
+        logger.warning("grounding_skipped", reason="missing_region_or_industry")
+        return ""
+
+    logger.info("grounding_start", region=region, industry=industry)
+
+    try:
+        result = await _call_grounding(region, industry)
+        logger.info("grounding_complete", region=region, industry=industry, response_chars=len(result))
+        return result
+    except Exception as e:
+        logger.warning("grounding_failed", region=region, industry=industry, error_type=type(e).__name__)
+        return ""
