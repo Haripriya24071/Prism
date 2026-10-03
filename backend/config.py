@@ -79,6 +79,11 @@ class Settings(BaseSettings):
         """Alias for NEWSAPI_KEY."""
         return self.NEWSAPI_KEY
 
+    @property
+    def crunchbase_key(self) -> str:
+        """Alias for CRUNCHBASE_KEY."""
+        return self.CRUNCHBASE_KEY
+
 
 settings = Settings()
 
