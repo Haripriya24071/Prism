@@ -1,0 +1,94 @@
+.agent-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .agent-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .agent-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.agent-card {
+  position: relative;
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.agent-card[data-agent="vc"] { border-color: var(--color-agent-vc); }
+.agent-card[data-agent="lean"] { border-color: var(--color-agent-lean); }
+.agent-card[data-agent="cto"] { border-color: var(--color-agent-cto); }
+.agent-card[data-agent="ux"] { border-color: var(--color-agent-ux); }
+.agent-card[data-agent="regulator"] { border-color: var(--color-agent-regulator); }
+.agent-card[data-agent="adversarial"] { border-color: var(--color-agent-adversarial); }
+
+.agent-card__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.agent-card__chip {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  justify-self: start;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid currentColor;
+  border-radius: 9999px;
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  font-weight: 500;
+  --chip-color: var(--color-text-secondary);
+  color: var(--chip-color);
+  background-color: color-mix(in srgb, var(--chip-color) 14%, transparent);
+}
+
+.agent-card__chip-dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: 9999px;
+  background-color: currentColor;
+}
+
+.agent-card__chip[data-status="pending"] { --chip-color: var(--color-text-secondary); }
+.agent-card__chip[data-status="running"] { --chip-color: var(--color-accent-signal); }
+.agent-card__chip[data-status="complete"] { --chip-color: var(--color-success); }
+.agent-card__chip[data-status="failed"] { --chip-color: var(--color-error); }
+
+.agent-card[data-status="running"]::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1px solid var(--color-accent-signal);
+  border-radius: var(--radius-lg);
+  pointer-events: none;
+  animation: agent-card-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes agent-card-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-card[data-status="running"]::after {
+    animation: none;
+    opacity: 0.6;
+  }
+}
