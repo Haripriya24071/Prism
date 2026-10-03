@@ -1,0 +1,6 @@
+MarkdownFile (*).md
+.env
+.env.local
+node_modules/
+venv/
+__pycache__/
