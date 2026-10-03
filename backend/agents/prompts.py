@@ -155,17 +155,17 @@ def _format_intake_extraction(extraction) -> str:
     )
 
 
-def _get_agent_output_schema() -> str:
+def _get_agent_output_schema(persona: AgentPersona | None = None) -> str:
     """Builds the AgentOutput JSON schema definition string from SCHEMA.md."""
     section_template = {
         "content": "string",
         "source_agent": "vc|lean|cto|ux|regulator|adversarial",
-        "confidence_score": "number (0-100)",
-        "data_citations": ["string"],
+        "confidence_score": 85,
+        "data_citations": ["cite specific fact from Real-World Context above"],
         "assumptions": [
             {
                 "text": "string",
-                "confidence": "number (0-100)",
+                "confidence": "high|medium|low",
                 "evidence": "string",
                 "action": "string",
             }
@@ -178,6 +178,15 @@ def _get_agent_output_schema() -> str:
         "risk_register": section_template,
         "timeline_milestones": section_template,
     }
+    if persona == AgentPersona.ADVERSARIAL:
+        schema["kill_shots"] = [
+            {
+                "title": "string",
+                "probability_pct": 50,
+                "description": "string",
+                "mitigation": "string",
+            }
+        ]
     return json.dumps(schema, indent=2)
 
 
@@ -197,9 +206,9 @@ def build_agent_prompt(persona: AgentPersona, intake: IntakePackage, context: Co
     formatted_competitors = _format_competitors(context.crunchbase_data)
     formatted_cultural = _format_cultural_context(context.cultural_context)
     formatted_idea = _format_intake_extraction(intake.extraction)
-    schema_json = _get_agent_output_schema()
+    schema_json = _get_agent_output_schema(persona)
 
-    return f"""You are {title}. Your mandate: {mandate}
+    prompt = f"""You are {title}. Your mandate: {mandate}
 
 ## Your Hard Constraints
 {formatted_constraints}
@@ -224,3 +233,8 @@ Every data_citation must reference a specific fact from the Real-World Context a
 
 Respond ONLY with a valid JSON object matching this exact schema:
 {schema_json}"""
+
+    if persona == AgentPersona.ADVERSARIAL:
+        prompt += "\n\nAdditionally include a top-level key 'kill_shots': array of 3 objects {title, probability_pct, description, mitigation} identifying the 3 highest-probability failure modes."
+
+    return prompt
