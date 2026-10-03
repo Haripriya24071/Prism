@@ -61,3 +61,54 @@ Allowed sources: [SOURCE: newsapi], [SOURCE: worldbank], [SOURCE: crunchbase], [
 Respond with a clear, professional analysis covering the BRD sections assigned.
 Do NOT output generic advice. Focus specifically on {raw_idea} in {region} ({industry}).
 """
+
+
+def _build_context_block(context: ContextPackage) -> str:
+    """Formats ContextPackage into labeled sections for the prompt."""
+    blocks = []
+
+    if context.news_items:
+        news_lines = [f"  - {item.title} ({item.source})" for item in context.news_items[:3]]
+        blocks.append("[SOURCE: newsapi]\n" + "\n".join(news_lines))
+    else:
+        blocks.append("[SOURCE: newsapi]\n  - No news articles harvested")
+
+    if context.market_data:
+        m = context.market_data
+        m_lines = [
+            f"  - GDP per Capita: ${m.gdp_per_capita_usd:,.2f}" if m.gdp_per_capita_usd is not None else "  - GDP per Capita: N/A",
+            f"  - Ease of Business Rank: #{m.ease_of_doing_business_rank}" if m.ease_of_doing_business_rank is not None else "  - Ease of Business Rank: N/A",
+            f"  - Inflation Rate: {m.inflation_rate_pct}%" if m.inflation_rate_pct is not None else "  - Inflation Rate: N/A",
+        ]
+        blocks.append("[SOURCE: worldbank]\n" + "\n".join(m_lines))
+    else:
+        blocks.append("[SOURCE: worldbank]\n  - No World Bank data harvested")
+
+    if context.crunchbase_data:
+        cb = context.crunchbase_data
+        rounds = cb.get("recent_rounds", [])
+        if rounds:
+            cb_lines = [
+                f"  - {r.get('company')}: {r.get('round')} (${r.get('amount_usd'):,} in {r.get('year')})"
+                if r.get("amount_usd") is not None
+                else f"  - {r.get('company')}: {r.get('round')}"
+                for r in rounds[:3]
+            ]
+            blocks.append("[SOURCE: crunchbase]\n" + "\n".join(cb_lines))
+        else:
+            blocks.append("[SOURCE: crunchbase]\n  - No Crunchbase funding data harvested")
+    else:
+        blocks.append("[SOURCE: crunchbase]\n  - No Crunchbase funding data harvested")
+
+    if context.regulatory_flags:
+        reg_lines = [f"  - {flag}" for flag in context.regulatory_flags]
+        blocks.append("[SOURCE: govtdata]\n" + "\n".join(reg_lines))
+    else:
+        blocks.append("[SOURCE: govtdata]\n  - No regional regulatory flags identified")
+
+    if context.cultural_context:
+        blocks.append(f"[SOURCE: grounding]\n  - {context.cultural_context}")
+    else:
+        blocks.append("[SOURCE: grounding]\n  - No cultural context harvested")
+
+    return "\n\n".join(blocks)
