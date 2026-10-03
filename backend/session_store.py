@@ -7,7 +7,7 @@ import uuid
 
 import structlog
 
-from config import settings
+from backend.config import settings
 
 logger = structlog.get_logger()
 
