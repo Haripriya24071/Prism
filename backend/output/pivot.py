@@ -71,3 +71,70 @@ async def _call_pivot(prompt: str) -> str:
         timeout=20,
     )
     return response.text
+
+
+async def suggest_pivots(
+    merged_brd: MergedBRD,
+    score: InvestorScore,
+) -> list[PivotSuggestion] | None:
+    """Fires only when investor score < 60.
+
+    Returns 3 PivotSuggestion objects, or None if score >= 60. Returns [] on Vertex AI failure — never
+    blocks the pipeline.
+    """
+    if score.score >= _PIVOT_THRESHOLD:
+        logger.info(
+            "pivot_skipped",
+            session_id=score.session_id,
+            score=score.score,
+            reason="score_above_threshold",
+        )
+        return None
+
+    logger.info("pivot_start", session_id=score.session_id, score=score.score)
+
+    gap_summary = (
+        "\n".join(f"  - {g.criterion} ({g.score}/100): {g.action_item}" for g in score.gap_flags)
+        or "  No specific gaps identified"
+    )
+
+    brd_summary = "\n".join(f"{s.title}: {s.content[:200]}" for s in merged_brd.sections[:3])
+
+    prompt = _PIVOT_PROMPT_TEMPLATE.format(
+        score=score.score,
+        confidence_band=score.confidence_band,
+        gap_summary=gap_summary,
+        brd_summary=brd_summary[:1500],
+    )
+
+    try:
+        raw_json = await _call_pivot(prompt)
+    except Exception as e:
+        logger.warning("pivot_call_failed", error_type=type(e).__name__)
+        return []
+
+    try:
+        clean = raw_json.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        data = json.loads(clean)
+        if not isinstance(data, list):
+            return []
+    except json.JSONDecodeError:
+        logger.warning("pivot_json_parse_failed", session_id=score.session_id)
+        return []
+
+    pivots: list[PivotSuggestion] = []
+    for item in data[:3]:
+        try:
+            projected = max(0, min(100, int(item.get("projected_score", 65))))
+            pivots.append(
+                PivotSuggestion(
+                    direction=str(item.get("direction", "Strategic pivot"))[:100],
+                    rationale=str(item.get("rationale", "")),
+                    projected_score=projected,
+                )
+            )
+        except Exception:
+            continue
+
+    logger.info("pivot_complete", session_id=score.session_id, pivot_count=len(pivots))
+    return pivots
