@@ -171,7 +171,7 @@ def _get_agent_output_schema(persona: AgentPersona | None = None) -> str:
             }
         ],
     }
-    schema = {
+    schema: dict[str, Any] = {
         "problem_statement": section_template,
         "functional_requirements": section_template,
         "technical_requirements": section_template,
