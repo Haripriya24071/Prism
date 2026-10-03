@@ -100,5 +100,18 @@ async def _fetch_live(industry: str, api_key: str) -> dict[str, Any] | None:
 
 
 async def fetch_crunchbase(industry: str) -> dict[str, Any]:
-    """Fetch recent funding rounds for an industry."""
-    raise NotImplementedError("Phase 5")
+    """Fetch recent funding rounds for an industry.
+
+    Uses live Crunchbase API if key is present, labelled static fallback otherwise. Never raises.
+    """
+    if not settings.crunchbase_key:
+        logger.info("crunchbase_using_static_fallback", industry=industry, reason="no_key")
+        return _get_fallback(industry)
+
+    live_result = await _fetch_live(industry, settings.crunchbase_key)
+    if live_result is not None:
+        logger.info("crunchbase_live_success", industry=industry, rounds=len(live_result["recent_rounds"]))
+        return live_result
+
+    logger.info("crunchbase_fallback_after_live_failure", industry=industry)
+    return _get_fallback(industry)
