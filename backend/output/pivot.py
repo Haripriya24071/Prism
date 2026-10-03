@@ -46,3 +46,28 @@ Format:
     "projected_score": <integer 60-95 — realistic post-pivot investor score>
   }}
 ]"""
+
+
+@retry(
+    retry=retry_if_exception_type(Exception),
+    stop=stop_after_attempt(2),
+    wait=wait_exponential(multiplier=1, min=3, max=8),
+    reraise=True,
+)
+async def _call_pivot(prompt: str) -> str:
+    from vertexai.generative_models import GenerationConfig
+
+    model = get_flash_model()
+    response = await asyncio.wait_for(
+        asyncio.to_thread(
+            model.generate_content,
+            prompt,
+            generation_config=GenerationConfig(
+                temperature=0.5,
+                max_output_tokens=1024,
+                response_mime_type="application/json",
+            ),
+        ),
+        timeout=20,
+    )
+    return response.text
