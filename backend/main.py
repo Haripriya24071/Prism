@@ -126,8 +126,41 @@ async def get_session(session_id: str):
 
 
 @app.post("/intake/chat")
-async def chat(session_id: str):
-    _not_implemented()
+async def chat(request: ChatRequest) -> dict:
+    session = store_get_session(request.session_id)
+    if session is None:
+        raise SessionNotFoundError(request.session_id)
+
+    result = await run_conversation_turn(
+        session_id=request.session_id,
+        message=request.message,
+        history=session["conversation_history"],
+    )
+
+    store_update_session(
+        request.session_id,
+        {"conversation_history": result["updated_history"]},
+    )
+
+    if result["is_complete"]:
+        full_text = " ".join(
+            t["content"] for t in result["updated_history"] if t["role"] == "user"
+        )
+        extraction = await extract_structured_fields(full_text)
+        store_update_session(
+            request.session_id,
+            {
+                "intake_package": extraction.model_dump(),
+                "status": "ready",
+            },
+        )
+        store_set_session_status(request.session_id, "ready")
+
+    return {
+        "reply": result["reply"],
+        "is_complete": result["is_complete"],
+        "turn": len(result["updated_history"]) // 2,
+    }
 
 
 @app.post("/intake/upload")
