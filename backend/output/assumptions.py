@@ -85,3 +85,63 @@ async def _call_assumptions(prompt: str) -> str:
         timeout=20,
     )
     return response.text
+
+
+async def flag_assumptions(
+    merged_brd: MergedBRD,
+    context: ContextPackage,
+) -> list[AssumptionFlag]:
+    """Gemini 2.0 Flash call — finds top 5 hidden assumptions in the merged BRD.
+
+    Returns empty list on failure — never blocks the pipeline.
+    """
+    logger.info("assumptions_start", session_id=merged_brd.session_id)
+
+    brd_text = _extract_brd_text(merged_brd)
+    if not brd_text.strip():
+        logger.warning("assumptions_skipped", reason="empty_brd")
+        return []
+
+    prompt = _ASSUMPTION_PROMPT_TEMPLATE.format(
+        brd_text=brd_text,
+        region=context.region or "Not specified",
+        industry=context.industry or "Not specified",
+        regulatory_flags=", ".join(context.regulatory_flags[:3]) if context.regulatory_flags else "None",
+    )
+
+    try:
+        raw_json = await _call_assumptions(prompt)
+    except Exception as e:
+        logger.warning("assumptions_call_failed", error_type=type(e).__name__)
+        return []
+
+    try:
+        clean = raw_json.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        data = json.loads(clean)
+        if not isinstance(data, list):
+            data = []
+    except json.JSONDecodeError:
+        logger.warning("assumptions_json_parse_failed", session_id=merged_brd.session_id)
+        return []
+
+    flags: list[AssumptionFlag] = []
+    for item in data[:5]:
+        try:
+            flags.append(
+                AssumptionFlag(
+                    assumption=str(item.get("assumption", "")),
+                    confidence=str(item.get("confidence", "medium")).lower(),
+                    evidence=item.get("evidence"),
+                    recommended_action=str(item.get("recommended_action", "Validate with user research")),
+                )
+            )
+        except Exception:
+            continue
+
+    logger.info(
+        "assumptions_complete",
+        session_id=merged_brd.session_id,
+        flag_count=len(flags),
+        # never log assumption text — business PII
+    )
+    return flags
