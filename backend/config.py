@@ -64,6 +64,16 @@ class Settings(BaseSettings):
         """Alias for GEMINI_PRO_MODEL."""
         return self.GEMINI_PRO_MODEL
 
+    @property
+    def log_level(self) -> str:
+        """Alias for LOG_LEVEL."""
+        return self.LOG_LEVEL
+
+    @property
+    def env(self) -> str:
+        """Alias for ENV."""
+        return self.ENV
+
 
 settings = Settings()
 
