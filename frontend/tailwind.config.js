@@ -1,0 +1,84 @@
+const token = (name) => `var(--${name})`
+
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,jsx}'],
+  theme: {
+    fontFamily: {
+      display: ['Montserrat', 'sans-serif'],
+      body: ['DM Sans', 'sans-serif'],
+      tertiary: ['Sora', 'sans-serif'],
+    },
+    colors: {
+      transparent: 'transparent',
+      current: 'currentColor',
+      void: token('color-void'),
+      surface: {
+        DEFAULT: token('color-surface'),
+        raised: token('color-surface-raised'),
+      },
+      border: {
+        DEFAULT: token('color-border'),
+        subtle: token('color-border-subtle'),
+      },
+      content: {
+        primary: token('color-text-primary'),
+        secondary: token('color-text-secondary'),
+        muted: token('color-text-muted'),
+      },
+      accent: {
+        signal: token('color-accent-signal'),
+        glow: token('color-accent-glow'),
+      },
+      success: token('color-success'),
+      warning: token('color-warning'),
+      error: token('color-error'),
+      agent: {
+        vc: token('color-agent-vc'),
+        lean: token('color-agent-lean'),
+        cto: token('color-agent-cto'),
+        ux: token('color-agent-ux'),
+        regulator: token('color-agent-regulator'),
+        adversarial: token('color-agent-adversarial'),
+      },
+      risk: {
+        high: token('color-risk-high'),
+        medium: token('color-risk-medium'),
+        low: token('color-risk-low'),
+      },
+    },
+    fontSize: {
+      display: token('text-display'),
+      h1: token('text-h1'),
+      h2: token('text-h2'),
+      h3: token('text-h3'),
+      body: token('text-body'),
+      small: token('text-small'),
+      micro: token('text-micro'),
+    },
+    spacing: {
+      0: '0px',
+      px: '1px',
+      1: token('space-1'),
+      2: token('space-2'),
+      3: token('space-3'),
+      4: token('space-4'),
+      5: token('space-5'),
+      6: token('space-6'),
+      8: token('space-8'),
+      10: token('space-10'),
+      12: token('space-12'),
+      16: token('space-16'),
+    },
+    borderRadius: {
+      none: '0px',
+      sm: token('radius-sm'),
+      md: token('radius-md'),
+      lg: token('radius-lg'),
+      xl: token('radius-xl'),
+      full: '9999px',
+    },
+    extend: {},
+  },
+  plugins: [],
+}
