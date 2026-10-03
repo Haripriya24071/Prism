@@ -55,6 +55,16 @@ class Settings(BaseSettings):
         return self.cors_origins
 
     @property
+    def gcp_project_id(self) -> str:
+        """Alias for GCP_PROJECT_ID."""
+        return self.GCP_PROJECT_ID
+
+    @property
+    def bigquery_dataset(self) -> str:
+        """Alias for BIGQUERY_DATASET."""
+        return self.BIGQUERY_DATASET
+
+    @property
     def gcs_bucket_name(self) -> str:
         """Alias for GCS_BUCKET_NAME."""
         return self.GCS_BUCKET_NAME
