@@ -74,6 +74,11 @@ class Settings(BaseSettings):
         """Alias for ENV."""
         return self.ENV
 
+    @property
+    def newsapi_key(self) -> str:
+        """Alias for NEWSAPI_KEY."""
+        return self.NEWSAPI_KEY
+
 
 settings = Settings()
 
