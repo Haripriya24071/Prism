@@ -1,3 +1,10 @@
+import sys
+
+if "backend.models.agents" in sys.modules and "models.agents" not in sys.modules:
+    sys.modules["models.agents"] = sys.modules["backend.models.agents"]
+elif "models.agents" in sys.modules and "backend.models.agents" not in sys.modules:
+    sys.modules["backend.models.agents"] = sys.modules["models.agents"]
+
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel, Field
