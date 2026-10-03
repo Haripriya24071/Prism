@@ -4,7 +4,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 if TYPE_CHECKING:
@@ -16,8 +16,15 @@ if TYPE_CHECKING:
         cleanup_expired_sessions,
         create_session as store_create_session,
         get_session as store_get_session,
+        update_session as store_update_session,
+        set_session_status as store_set_session_status,
     )
-    from backend.errors import SessionNotFoundError
+    from backend.errors import SessionNotFoundError, IntakeError
+    from backend.models.intake import ChatRequest
+    from backend.intake.conversation import run_conversation_turn
+    from backend.intake.extractor import extract_structured_fields
+    from backend.intake.vision import analyse_image
+    from backend.intake.document import extract_document_text
 else:
     try:
         from backend.config import settings, init_vertex_ai
@@ -28,8 +35,15 @@ else:
             cleanup_expired_sessions,
             create_session as store_create_session,
             get_session as store_get_session,
+            update_session as store_update_session,
+            set_session_status as store_set_session_status,
         )
-        from backend.errors import SessionNotFoundError
+        from backend.errors import SessionNotFoundError, IntakeError
+        from backend.models.intake import ChatRequest
+        from backend.intake.conversation import run_conversation_turn
+        from backend.intake.extractor import extract_structured_fields
+        from backend.intake.vision import analyse_image
+        from backend.intake.document import extract_document_text
     except ImportError:
         from config import settings, init_vertex_ai
         from logging_config import configure_logging
@@ -39,8 +53,15 @@ else:
             cleanup_expired_sessions,
             create_session as store_create_session,
             get_session as store_get_session,
+            update_session as store_update_session,
+            set_session_status as store_set_session_status,
         )
-        from errors import SessionNotFoundError
+        from errors import SessionNotFoundError, IntakeError
+        from models.intake import ChatRequest
+        from intake.conversation import run_conversation_turn
+        from intake.extractor import extract_structured_fields
+        from intake.vision import analyse_image
+        from intake.document import extract_document_text
 
 # Configure logging with sanitization
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
