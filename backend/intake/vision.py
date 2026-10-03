@@ -32,6 +32,22 @@ Analyse this image and extract every detail relevant to a business idea:
 Return a clear, structured paragraph. Be specific. Do not hallucinate details not present."""
 
 
+@retry(
+    retry=retry_if_exception_type(Exception),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    reraise=True,
+)
+async def _call_vision(image_bytes: bytes, mime_type: str) -> str:
+    """Inner function — retried by tenacity. Separated so retry decorator is clean."""
+    from vertexai.generative_models import Part  # source-driven-development: correct import path
+
+    model = get_flash_model()
+    image_part = Part.from_data(data=image_bytes, mime_type=mime_type)
+    response = model.generate_content([_VISION_SYSTEM_PROMPT, image_part])
+    return response.text  # type: ignore[no-any-return]
+
+
 async def analyse_image(image_bytes: bytes) -> str:
     """Gemini 2.0 Flash vision call via Vertex AI. Returns business idea text from image."""
     raise NotImplementedError("Phase 4")
