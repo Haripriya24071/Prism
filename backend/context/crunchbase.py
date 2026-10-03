@@ -64,6 +64,41 @@ def _get_fallback(industry: str) -> dict[str, Any]:
     return _DEFAULT_FALLBACK
 
 
+async def _fetch_live(industry: str, api_key: str) -> dict[str, Any] | None:
+    """Attempt live Crunchbase API call. Returns None on any failure."""
+    headers = {"X-cb-user-key": api_key, "Content-Type": "application/json"}
+    payload = {
+        "field_ids": ["identifier", "short_description", "funding_total"],
+        "query": [
+            {"type": "predicate", "field_id": "category_groups", "operator_id": "includes", "values": [industry]},
+            {"type": "predicate", "field_id": "funding_stage", "operator_id": "includes", "values": ["seed", "series_a"]},
+        ],
+        "limit": 5,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+            response = await client.post(_CRUNCHBASE_URL, json=payload, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            entities = data.get("entities", [])
+            rounds = [
+                {
+                    "company": e.get("properties", {}).get("identifier", {}).get("value", "Unknown"),
+                    "amount_usd": e.get("properties", {}).get("funding_total", {}).get("value_usd"),
+                    "data_source": "crunchbase_live",
+                }
+                for e in entities
+            ]
+            return {
+                "recent_rounds": rounds,
+                "total_funding_usd": sum(r["amount_usd"] for r in rounds if r.get("amount_usd")),
+                "data_source": "crunchbase_live",
+            }
+    except Exception as e:
+        logger.warning("crunchbase_live_failed", error_type=type(e).__name__)
+        return None
+
+
 async def fetch_crunchbase(industry: str) -> dict[str, Any]:
     """Fetch recent funding rounds for an industry."""
     raise NotImplementedError("Phase 5")
