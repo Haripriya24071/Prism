@@ -72,7 +72,36 @@ async def write_json(session_id: str, filename: str, data: dict) -> str:
 
 
 async def read_json(session_id: str, filename: str) -> dict | None:
-    raise NotImplementedError()
+    """Reads JSON from GCS. Returns None if not found or on any error.
+
+    Falls back to local /tmp in dev.
+    """
+    blob_path = f"{session_id}/{filename}"
+
+    if not settings.gcs_bucket_name or settings.env == "development":
+        try:
+            local_path = _local_fallback_path(session_id, filename)
+            if local_path.exists():
+                res = json.loads(local_path.read_bytes())
+                return res if isinstance(res, dict) else None
+            return None
+        except Exception:
+            return None
+
+    try:
+        def _download() -> dict | None:
+            client = _get_client()
+            bucket = client.bucket(settings.gcs_bucket_name)
+            blob = bucket.blob(blob_path)
+            if not blob.exists():
+                return None
+            res = json.loads(blob.download_as_bytes())
+            return res if isinstance(res, dict) else None
+
+        return await asyncio.to_thread(_download)
+    except Exception as e:
+        logger.warning("gcs_read_failed", blob_path=blob_path, error_type=type(e).__name__)
+        return None
 
 
 async def write_pdf(session_id: str, filename: str, pdf_bytes: bytes, view: str) -> str:
