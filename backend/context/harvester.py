@@ -57,5 +57,37 @@ async def _safe_fetch(coro: Any, source_name: str) -> tuple[str, Any]:
 
 
 async def harvest_context(intake: IntakePackage) -> ContextPackage:
-    """Aggregates all 5 context sources in parallel."""
-    raise NotImplementedError("Phase 5")
+    """Runs all 5 context sources in parallel via asyncio.gather.
+
+    Partial failure is allowed — failed sources are recorded in ContextPackage.failed_sources. Never
+    raises. Target: < 8 seconds total.
+    """
+    region = intake.extraction.region or ""
+    industry = intake.extraction.industry or ""
+
+    harvest_start = time.time()
+    logger.info("harvest_start", session_id=intake.session_id, region=region, industry=industry)
+
+    results = await asyncio.gather(
+        _safe_fetch(fetch_news(region, industry), "newsapi"),
+        _safe_fetch(fetch_worldbank(region), "worldbank"),
+        _safe_fetch(fetch_crunchbase(industry), "crunchbase"),
+        _safe_fetch(fetch_govtdata(region, industry), "govtdata"),
+        _safe_fetch(fetch_gemini_grounding(region, industry), "grounding"),
+        return_exceptions=True,
+    )
+
+    # Unpack results — each is (source_name, value) or an Exception
+    source_map: dict[str, Any] = {}
+    failed: list[str] = []
+    for result in results:
+        if isinstance(result, tuple):
+            source_name, value = result
+            if value is None:
+                failed.append(source_name)
+            else:
+                source_map[source_name] = value
+        elif isinstance(result, BaseException):
+            logger.error("harvest_gather_exception", error_type=type(result).__name__)
+
+    raise NotImplementedError("Assembly in Commit 3")
