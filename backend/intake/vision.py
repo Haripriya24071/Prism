@@ -1,5 +1,36 @@
 """backend/intake/vision.py — Gemini Vision image analysis."""
 
+from typing import TYPE_CHECKING
+import structlog
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+if TYPE_CHECKING:
+    from backend.errors import IntakeError, InvalidFileError
+    from backend.config import get_flash_model
+else:
+    try:
+        from backend.errors import IntakeError, InvalidFileError
+        from backend.config import get_flash_model
+    except ImportError:
+        from errors import IntakeError, InvalidFileError
+        from config import get_flash_model
+
+logger = structlog.get_logger()
+
+# Magic bytes
+_JPEG_MAGIC = b"\xff\xd8\xff"
+_PNG_MAGIC = b"\x89PNG"
+_MAX_SIZE = 10 * 1024 * 1024  # 10 MB
+
+_VISION_SYSTEM_PROMPT = """You are PRISM's intake analyst.
+Analyse this image and extract every detail relevant to a business idea:
+- What product or service is depicted or implied
+- Target audience visible or implied
+- Market or industry context
+- Any text, logos, or data visible in the image
+- What problem this appears to solve
+Return a clear, structured paragraph. Be specific. Do not hallucinate details not present."""
+
 
 async def analyse_image(image_bytes: bytes) -> str:
     """Gemini 2.0 Flash vision call via Vertex AI. Returns business idea text from image."""
