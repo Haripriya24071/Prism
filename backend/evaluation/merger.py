@@ -134,3 +134,99 @@ async def _call_merger(prompt: str) -> str:
         timeout=_MERGE_TIMEOUT,
     )
     return response.text
+
+
+async def _safe_write_gcs(session_id: str, filename: str, data: dict) -> None:
+    """Fire-and-forget GCS writer wrapper that catches exceptions silently."""
+    try:
+        try:
+            import backend.gcp.storage as storage_mod
+        except ImportError:
+            import gcp.storage as storage_mod  # type: ignore[no-redef]
+
+        await storage_mod.write_json(session_id=session_id, filename=filename, data=data)
+    except Exception as e:
+        logger.warning(
+            "gcs_write_failed",
+            session_id=session_id,
+            filename=filename,
+            error_type=type(e).__name__,
+        )
+
+
+async def merge_brds(
+    agent_outputs: list[AgentOutput],
+    score_matrix: ScoreMatrix,
+    context: ContextPackage,
+) -> MergedBRD:
+    """Second Gemini 1.5 Pro call — merges best sections into one MergedBRD.
+
+    Every BRDSection gets a LineageTag with source_agent and confidence. Raises MergeError if Pro call
+    fails after 2 retries or response is unparseable.
+    """
+    start = time.time()
+    session_id = context.session_id
+    logger.info("merge_start", session_id=session_id)
+
+    best_per_section = _find_best_agent_per_section(agent_outputs, score_matrix)
+
+    if not best_per_section:
+        raise MergeError("No agent produced parseable BRD sections to merge", detail=f"session_id={session_id}")
+
+    sections_block = _build_sections_block(best_per_section)
+    prompt = _MERGE_PROMPT_TEMPLATE.format(sections_block=sections_block)
+
+    try:
+        raw_json = await _call_merger(prompt)
+    except Exception as e:
+        logger.error("merge_call_failed", session_id=session_id, error_type=type(e).__name__)
+        raise MergeError("Merge engine call failed", detail=str(e))
+
+    try:
+        clean = raw_json.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        data = json.loads(clean)
+    except json.JSONDecodeError as e:
+        logger.error("merge_json_parse_failed", session_id=session_id)
+        raise MergeError("Could not parse merge response", detail=str(e))
+
+    sections: list[BRDSection] = []
+    for section_title in _BRD_SECTIONS:
+        raw_section = data.get(section_title, {})
+        content = raw_section.get("content", "")
+        source_agent_str = raw_section.get("source_agent", "")
+
+        try:
+            confidence = float(raw_section.get("confidence", 0.5))
+        except (TypeError, ValueError):
+            confidence = 0.5
+
+        try:
+            source_persona = AgentPersona(source_agent_str)
+        except ValueError:
+            source_persona = score_matrix.winning_agent or AgentPersona.VC
+
+        lineage = LineageTag(
+            source_agent=source_persona,
+            confidence=max(0.0, min(1.0, confidence)),
+            data_citation=f"Merged from best-scoring {source_persona.value} section",
+        )
+        sections.append(BRDSection(title=section_title, content=content, lineage=lineage))
+
+    elapsed_ms = int((time.time() - start) * 1000)
+    logger.info(
+        "merge_complete",
+        session_id=session_id,
+        elapsed_ms=elapsed_ms,
+        sections_merged=len(sections),
+    )
+
+    # Write merged BRD to GCS — fire and forget
+    asyncio.create_task(
+        _safe_write_gcs(
+            session_id=session_id,
+            filename="merged_brd.json",
+            data=MergedBRD(session_id=session_id, sections=sections).model_dump(mode="json"),
+        )
+    )
+
+    return MergedBRD(session_id=session_id, sections=sections)
