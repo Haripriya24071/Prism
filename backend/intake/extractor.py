@@ -63,6 +63,29 @@ def _validate_stage(stage: str | None) -> str | None:
     return stage.lower()
 
 
+@retry(
+    retry=retry_if_exception_type(Exception),
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=8),
+    reraise=True,
+)
+async def _call_extraction(conversation_text: str) -> str:
+    """Inner retried call for Gemini 2.0 Flash JSON-mode extraction."""
+    from vertexai.generative_models import GenerationConfig
+
+    model = get_flash_model()
+    prompt = _EXTRACTION_PROMPT_TEMPLATE.format(conversation_text=conversation_text)
+    response = model.generate_content(
+        prompt,
+        generation_config=GenerationConfig(
+            temperature=0.1,  # low temp — structured extraction
+            max_output_tokens=512,
+            response_mime_type="application/json",
+        ),
+    )
+    return response.text  # type: ignore[no-any-return]
+
+
 async def extract_structured_fields(conversation_text: str) -> IntakeExtraction:
     """Gemini 2.0 Flash JSON-mode call. Returns structured IntakeExtraction model."""
     raise NotImplementedError("Phase 4")
