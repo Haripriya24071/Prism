@@ -14,6 +14,7 @@ export function useSSE(sessionId) {
     const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
     const url = `${apiBase}/generate/stream/${sessionId}`
     const source = new EventSource(url)
+    let finished = false
 
     source.addEventListener('agent_status', (event) => {
       try {
@@ -56,13 +57,16 @@ export function useSSE(sessionId) {
       } catch {
         // parse error ignored
       }
+      finished = true
       setProgressPct(100)
       setStatus(SESSION_STATUS.COMPLETE)
     })
 
-    source.onerror = (err) => {
-      failSession(err?.message || 'SSE connection failed')
+    source.onerror = () => {
       source.close()
+      if (!finished) {
+        failSession('Lost connection to the generation stream. Please retry.')
+      }
     }
 
     return () => {

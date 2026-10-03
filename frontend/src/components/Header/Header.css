@@ -1,1 +1,76 @@
-.header-glass { backdrop-filter: blur(12px); }
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-6);
+  padding: var(--space-4) var(--space-6);
+  background-color: var(--color-void);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header__brand {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.app-header__logo {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 800;
+  color: var(--color-accent-signal);
+}
+
+.app-header__version,
+.app-header__session {
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  color: var(--color-text-secondary);
+}
+
+.app-header__version {
+  padding: var(--space-1) var(--space-2);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.app-header__stages {
+  display: grid;
+  grid-auto-flow: column;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.app-header__stage {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+.app-header__stage[data-active="true"] {
+  border-color: var(--color-accent-signal);
+  color: var(--color-text-primary);
+  background-color: color-mix(in srgb, var(--color-accent-signal) 14%, transparent);
+}
+
+.app-header__session {
+  display: grid;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.app-header__dot {
+  width: var(--space-2);
+  height: var(--space-2);
+  border-radius: 9999px;
+  background-color: var(--color-success);
+}

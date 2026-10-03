@@ -1,40 +1,50 @@
-import React from 'react';
+import { useEffect, useRef } from 'react'
+import './ExportModal.css'
+
+const FORMATS = [
+  { id: 'markdown', label: 'Markdown (.md)', note: 'Recommended' },
+  { id: 'json', label: 'JSON (.json)', note: 'Raw data' },
+]
 
 export function ExportModal({ isOpen, onClose, onExport }) {
-  if (!isOpen) return null;
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (!dialog) {
+      return undefined
+    }
+    if (isOpen && !dialog.open) {
+      dialog.showModal()
+    }
+    if (!isOpen && dialog.open) {
+      dialog.close()
+    }
+    return undefined
+  }, [isOpen])
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
-        <h3 className="text-lg font-bold text-slate-100 mb-2">Export BRD Document</h3>
-        <p className="text-xs text-slate-400 mb-6">Choose your preferred format to export the generated artifact.</p>
+    <dialog ref={dialogRef} className="export-modal" onClose={onClose} aria-labelledby="export-modal-title">
+      <h3 id="export-modal-title" className="export-modal__title">Export BRD</h3>
+      <p className="export-modal__text">Choose a format for the generated document.</p>
 
-        <div className="space-y-3 mb-6">
+      <div className="export-modal__options">
+        {FORMATS.map((format) => (
           <button
-            onClick={() => onExport('markdown')}
-            className="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800 text-slate-200 font-medium text-sm flex justify-between items-center transition-colors"
+            key={format.id}
+            type="button"
+            className="export-modal__option"
+            onClick={() => onExport(format.id)}
           >
-            <span>Markdown (.md)</span>
-            <span className="text-xs text-slate-500">Recommended</span>
+            <span>{format.label}</span>
+            <span className="export-modal__note">{format.note}</span>
           </button>
-          <button
-            onClick={() => onExport('json')}
-            className="w-full text-left p-3 rounded-xl border border-slate-800 bg-slate-800/40 hover:bg-slate-800 text-slate-200 font-medium text-sm flex justify-between items-center transition-colors"
-          >
-            <span>JSON Schema (.json)</span>
-            <span className="text-xs text-slate-500">Raw Data</span>
-          </button>
-        </div>
-
-        <div className="flex justify-end gap-3">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-slate-400 hover:text-slate-200 text-sm transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
+        ))}
       </div>
-    </div>
-  );
+
+      <button type="button" className="export-modal__cancel" onClick={onClose}>
+        Cancel
+      </button>
+    </dialog>
+  )
 }

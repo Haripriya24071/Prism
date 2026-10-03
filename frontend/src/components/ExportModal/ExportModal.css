@@ -1,0 +1,71 @@
+.export-modal {
+  width: min(28rem, calc(100% - var(--space-8)));
+  padding: var(--space-6);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  color: var(--color-text-primary);
+  font-family: var(--font-body);
+}
+
+.export-modal::backdrop {
+  background-color: var(--color-void);
+  opacity: 0.8;
+}
+
+.export-modal__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.export-modal__text {
+  margin: 0 0 var(--space-6);
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+.export-modal__options {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.export-modal__option {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.export-modal__option:hover {
+  border-color: var(--color-accent-signal);
+}
+
+.export-modal__note {
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  color: var(--color-text-secondary);
+}
+
+.export-modal__cancel {
+  justify-self: end;
+  padding: var(--space-2) var(--space-4);
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.export-modal__cancel:hover {
+  color: var(--color-text-primary);
+}
