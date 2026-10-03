@@ -52,7 +52,7 @@ Format:
   "vc":          {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
   "lean":        {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
   "cto":         {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
-  "ux":          {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "competitive_moat": 0-100, "data_citation": "specific fact"}},
+  "ux":          {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
   "regulator":   {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
   "adversarial": {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}}
 }}
@@ -118,3 +118,78 @@ async def _call_evaluator(prompt: str) -> str:
         timeout=_EVALUATOR_TIMEOUT,
     )
     return response.text
+
+
+async def evaluate_all_agents(
+    agent_outputs: list[AgentOutput],
+    context: ContextPackage,
+) -> ScoreMatrix:
+    """Single Gemini 1.5 Pro call scoring all 6 BRDs.
+
+    Returns ScoreMatrix with per-agent, per-criterion scores. Raises EvaluationError if Pro call fails
+    after 2 retries.
+    """
+    start = time.time()
+    logger.info("evaluation_start", session_id=context.session_id, agent_count=len(agent_outputs))
+
+    rubric = build_rubric_prompt()
+    brds_block = _build_brds_block(agent_outputs)
+    prompt = _EVALUATOR_PROMPT_TEMPLATE.format(
+        agent_count=len(agent_outputs),
+        rubric=rubric,
+        brds_block=brds_block,
+    )
+
+    try:
+        raw_json = await _call_evaluator(prompt)
+    except Exception as e:
+        logger.error("evaluation_call_failed", error_type=type(e).__name__)
+        raise EvaluationError("Evaluator failed to score BRDs", detail=str(e))
+
+    try:
+        clean = raw_json.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        data = json.loads(clean)
+    except json.JSONDecodeError as e:
+        logger.error("evaluation_json_parse_failed", error_type=type(e).__name__)
+        raise EvaluationError("Could not parse evaluator response", detail=str(e))
+
+    scores: dict[str, SectionScore] = {}
+    best_persona: AgentPersona | None = None
+    best_composite = -1.0
+
+    for persona in AgentPersona:
+        raw = data.get(persona.value, {})
+        clamped = {
+            k: _clamp(raw.get(k, 0))
+            for k in [
+                "feasibility",
+                "market_timing",
+                "regulatory_safety",
+                "user_adoption",
+                "competitive_moat",
+            ]
+        }
+        composite = _compute_composite(clamped)
+        scores[persona.value] = SectionScore(
+            **clamped,
+            composite=composite,
+            data_citation=str(raw.get("data_citation", "no citation provided")),
+        )
+        if composite > best_composite:
+            best_composite = composite
+            best_persona = persona
+
+    elapsed_ms = int((time.time() - start) * 1000)
+    logger.info(
+        "evaluation_complete",
+        session_id=context.session_id,
+        elapsed_ms=elapsed_ms,
+        winning_agent=best_persona.value if best_persona else None,
+        best_composite=best_composite,
+    )
+
+    return ScoreMatrix(
+        session_id=context.session_id,
+        scores=scores,
+        winning_agent=best_persona,
+    )
