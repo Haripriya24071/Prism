@@ -106,3 +106,13 @@ async def fetch_news(region: str, industry: str) -> list[NewsItem]:
     _set_cache(region, industry, items)
     logger.info("newsapi_fetched", region=region, industry=industry, count=len(items))
     return items
+
+
+async def prewarm_cache(scenarios: list[tuple[str, str]]) -> None:
+    """Pre-warm the cache for demo scenarios.
+
+    Call once before the demo. Scenarios: [(region, industry), ...]
+    """
+    for region, industry in scenarios:
+        await fetch_news(region, industry)
+        logger.info("newsapi_prewarmed", region=region, industry=industry)
