@@ -1,7 +1,7 @@
 """backend/agents/prompts.py — Constructs system prompts for each agent persona."""
 
 import json
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 import structlog
 
 if TYPE_CHECKING:
@@ -22,6 +22,8 @@ else:
         from models.intake import IntakePackage
 
 logger = structlog.get_logger()
+
+__all__ = ["build_agent_prompt", "_BRD_SECTIONS", "_BASE_TEMPLATE", "_build_context_block"]
 
 _BRD_SECTIONS = [
     "Executive Summary",
@@ -112,3 +114,80 @@ def _build_context_block(context: ContextPackage) -> str:
         blocks.append("[SOURCE: grounding]\n  - No cultural context harvested")
 
     return "\n\n".join(blocks)
+
+
+def build_agent_prompt(
+    persona: AgentPersona,
+    intake: IntakePackage,
+    context: ContextPackage,
+) -> str:
+    """Builds a complete, source-tagged system prompt for a single agent persona.
+
+    Never raises an exception — returns fallback prompt if formatting fails.
+    """
+    try:
+        persona_info = PERSONAS.get(persona)
+        if persona_info:
+            title = persona_info["title"]
+            mandate = persona_info["mandate"]
+            axes = persona_info["constraint_axes"]
+        else:
+            title = str(persona.value)
+            mandate = "Enrich the BRD with your domain expertise."
+            axes = []
+
+        axes_str = "\n".join(f"- {axis}" for axis in axes) if axes else "- None specified"
+
+        ext = intake.extraction
+        file_ctx = intake.file_context or "None"
+        if len(file_ctx) > 500:
+            file_ctx = file_ctx[:500] + "... [truncated]"
+
+        context_block = _build_context_block(context)
+
+        prompt = _BASE_TEMPLATE.format(
+            persona_title=title,
+            persona_mandate=mandate,
+            constraint_axes=axes_str,
+            brd_sections="\n".join(f"- {s}" for s in _BRD_SECTIONS),
+            raw_idea=ext.raw_idea,
+            region=ext.region or "Global",
+            industry=ext.industry or "General",
+            stage=ext.stage or "idea",
+            budget=ext.budget_range or "Unspecified",
+            success_def=ext.success_definition or "Unspecified",
+            file_context=file_ctx,
+            context_block=context_block,
+        )
+
+        sources_count = len(
+            [
+                s
+                for s in [
+                    context.news_items,
+                    context.market_data,
+                    context.crunchbase_data,
+                    context.regulatory_flags,
+                    context.cultural_context,
+                ]
+                if s
+            ]
+        )
+
+        logger.info(
+            "built_agent_prompt",
+            persona=persona.value,
+            prompt_chars=len(prompt),
+            sources_available=sources_count,
+        )
+        return prompt
+
+    except Exception as e:
+        logger.error(
+            "build_agent_prompt_failed",
+            persona=persona.value if hasattr(persona, "value") else str(persona),
+            error=str(e),
+        )
+        raw_idea = getattr(getattr(intake, "extraction", None), "raw_idea", "Unspecified idea")
+        persona_val = persona.value if hasattr(persona, "value") else str(persona)
+        return f"You are acting as {persona_val}. Analyze the product idea: {raw_idea}"
