@@ -2,7 +2,7 @@
 
 import json
 import re
-from typing import TYPE_CHECKING
+from typing import cast, Literal, TYPE_CHECKING
 import structlog
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
@@ -43,6 +43,8 @@ Return ONLY a valid JSON object. No explanation. No markdown. No code fences.
 Conversation:
 {conversation_text}"""
 
+StageLiteral = Literal["idea", "prototype", "mvp", "growth"]
+
 
 def _validate_region(region: str | None) -> str | None:
     """Return region only if it looks like a valid ISO 3166-1 alpha-2 code."""
@@ -55,12 +57,12 @@ def _validate_region(region: str | None) -> str | None:
     return None
 
 
-def _validate_stage(stage: str | None) -> str | None:
+def _validate_stage(stage: str | None) -> StageLiteral | None:
     """Return stage only if it is one of idea, prototype, mvp, or growth."""
-    valid = {"idea", "prototype", "mvp", "growth"}
+    valid: set[str] = {"idea", "prototype", "mvp", "growth"}
     if stage is None or stage.lower() not in valid:
         return None
-    return stage.lower()
+    return cast(StageLiteral, stage.lower())
 
 
 @retry(
@@ -87,5 +89,43 @@ async def _call_extraction(conversation_text: str) -> str:
 
 
 async def extract_structured_fields(conversation_text: str) -> IntakeExtraction:
-    """Gemini 2.0 Flash JSON-mode call. Returns structured IntakeExtraction model."""
-    raise NotImplementedError("Phase 4")
+    """Single Gemini 2.0 Flash JSON-mode call.
+
+    Returns validated IntakeExtraction. Never raises on missing optional fields. Raises IntakeError
+    if JSON cannot be parsed after 3 retries.
+    """
+    if not conversation_text.strip():
+        raise IntakeError("Cannot extract fields from empty conversation")
+
+    logger.info("extraction_start", text_chars=len(conversation_text))
+
+    try:
+        raw_json = await _call_extraction(conversation_text)
+    except Exception as e:
+        logger.error("extraction_call_failed", error_type=type(e).__name__)
+        raise IntakeError("Field extraction failed", detail=str(e))
+
+    try:
+        data = json.loads(raw_json)
+    except json.JSONDecodeError as e:
+        logger.error("extraction_json_parse_failed", error_type=type(e).__name__)
+        raise IntakeError("Could not parse extraction response", detail=str(e))
+
+    extraction = IntakeExtraction(
+        raw_idea=data.get("raw_idea") or conversation_text[:500],
+        region=_validate_region(data.get("region")),
+        industry=data.get("industry"),
+        stage=_validate_stage(data.get("stage")),
+        budget_range=data.get("budget_range"),
+        success_definition=data.get("success_definition"),
+    )
+
+    logger.info(
+        "extraction_complete",
+        region=extraction.region,
+        industry=extraction.industry,
+        stage=extraction.stage,
+        # never log raw_idea or success_definition — user business data
+    )
+
+    return extraction
