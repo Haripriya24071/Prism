@@ -105,4 +105,38 @@ async def read_json(session_id: str, filename: str) -> dict | None:
 
 
 async def write_pdf(session_id: str, filename: str, pdf_bytes: bytes, view: str) -> str:
-    raise NotImplementedError()
+    """Writes PDF bytes to GCS and returns a signed URL valid for 1 hour.
+
+    Falls back to local write + local:// URI in dev. Never raises.
+    """
+    blob_path = f"{session_id}/{filename}"
+
+    if not settings.gcs_bucket_name or settings.env == "development":
+        try:
+            local_path = _local_fallback_path(session_id, filename)
+            local_path.write_bytes(pdf_bytes)
+            logger.info("gcs_pdf_local_fallback", blob_path=blob_path, size=len(pdf_bytes))
+            return f"local://{local_path}"
+        except Exception as e:
+            logger.warning("gcs_pdf_local_fallback_failed", error_type=type(e).__name__)
+            return ""
+
+    try:
+        def _upload_pdf() -> str:
+            client = _get_client()
+            bucket = client.bucket(settings.gcs_bucket_name)
+            blob = bucket.blob(blob_path)
+            blob.upload_from_string(pdf_bytes, content_type="application/pdf")
+            signed_url: str = blob.generate_signed_url(
+                expiration=_SIGNED_URL_EXPIRY,
+                method="GET",
+                version="v4",
+            )
+            return signed_url
+
+        url = await asyncio.to_thread(_upload_pdf)
+        logger.info("gcs_pdf_uploaded", blob_path=blob_path, size=len(pdf_bytes), view=view)
+        return url
+    except Exception as e:
+        logger.error("gcs_pdf_upload_failed", blob_path=blob_path, error_type=type(e).__name__)
+        return ""
