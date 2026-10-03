@@ -43,6 +43,18 @@ def _sanitise_message(message: str) -> str:
     return message.strip()[:_MAX_MSG_LEN]
 
 
+def _build_history(raw_history: list[dict[str, Any]]) -> list[Any]:
+    """Convert plain dicts to Vertex AI Content objects."""
+    from vertexai.generative_models import Content, Part
+
+    contents = []
+    for turn in raw_history:
+        role = turn.get("role", "user")
+        text = turn.get("content", "")
+        contents.append(Content(role=role, parts=[Part.from_text(text)]))
+    return contents
+
+
 async def run_conversation_turn(
     session_id: str,
     message: str,
