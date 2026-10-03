@@ -60,15 +60,21 @@ def get_session(session_id: str) -> dict[str, Any] | None:
     return session
 
 
-def update_session(session_id: str, updates: dict[str, Any]) -> dict[str, Any] | None:
+def update_session(session_id: str, updates: dict[str, Any] | None = None, **kwargs: Any) -> dict[str, Any] | None:
     """Update fields of an existing active session."""
     session = get_session(session_id)
     if session is None:
         return None
 
-    session.update(updates)
+    merged_updates: dict[str, Any] = {}
+    if updates:
+        merged_updates.update(updates)
+    if kwargs:
+        merged_updates.update(kwargs)
+
+    session.update(merged_updates)
     session["last_accessed"] = datetime.utcnow()
-    logger.info("session_updated", session_id=session_id, updated_keys=list(updates.keys()))
+    logger.info("session_updated", session_id=session_id, updated_keys=list(merged_updates.keys()))
     return session
 
 
