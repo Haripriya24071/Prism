@@ -21,7 +21,7 @@ export default function HowItWorks() {
   ]
 
   return (
-    <section className="my-16" aria-labelledby="how-it-works-heading">
+    <section id="how-it-works" className="my-16 scroll-mt-24" aria-labelledby="how-it-works-heading">
       <div className="text-center max-w-2xl mx-auto mb-10">
         <div className="inline-block px-3 py-1 rounded-full border border-border bg-surface-raised font-tertiary text-micro font-semibold uppercase tracking-widest text-content-secondary mb-3 shadow-[2px_2px_0px_var(--color-border)]">
           The 3-Step Engine

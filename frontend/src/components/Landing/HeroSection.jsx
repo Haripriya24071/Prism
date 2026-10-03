@@ -15,7 +15,7 @@ export default function HeroSection({ onStartClick }) {
       {/* Main Hero Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
         {/* Left Column: Editorial Headline & Subtitle */}
-        <div className="lg:col-span-6 flex flex-col justify-center">
+        <div className="lg:col-span-6 flex flex-col justify-center lg:pl-10 xl:pl-4 2xl:pl-0">
           {/* Swarm Badge */}
           <div className="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full border border-border bg-surface font-tertiary text-micro font-semibold uppercase tracking-wider text-content-primary mb-4 shadow-[2px_2px_0px_var(--color-border)]">
             <span className="w-2 h-2 rounded-full bg-accent-signal animate-pulse"></span>
