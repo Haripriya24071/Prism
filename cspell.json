@@ -1,0 +1,24 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "chatbox",
+    "framer",
+    "gsap",
+    "subagent",
+    "pydantic",
+    "uvicorn",
+    "openfda",
+    "fastapi",
+    "unmount",
+    "recharts",
+    "crunchbase",
+    "scorecard",
+    "heatmap",
+    "lucide",
+    "vite",
+    "tailwindcss"
+  ],
+  "ignoreWords": [],
+  "import": []
+}

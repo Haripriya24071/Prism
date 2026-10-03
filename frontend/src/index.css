@@ -15,43 +15,63 @@
     font-family: var(--font-body);
     font-size: var(--text-body);
     -webkit-font-smoothing: antialiased;
+    /* Subtle paper texture grain feel */
+    background-image: radial-gradient(#E4DCD3 0.75px, transparent 0.75px);
+    background-size: 24px 24px;
   }
 
   h1, h2, h3 {
     font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
 
   ::selection {
-    background-color: var(--color-accent-glow);
-    color: var(--color-text-primary);
+    background-color: #D8F3DC;
+    color: #18181B;
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent-signal);
+    outline: 2px solid var(--color-border);
     outline-offset: 2px;
   }
 }
 
+/* Hand-crafted subtle scrollbar */
 ::-webkit-scrollbar {
   width: var(--space-2);
   height: var(--space-2);
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
+  background: var(--color-border-subtle);
   border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-muted);
+  background: var(--color-text-secondary);
+}
+
+/* Hand-drawn editorial card styles */
+.sketch-card {
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  box-shadow: 3px 3px 0px var(--color-border);
+  border-radius: var(--radius-md);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sketch-card:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px var(--color-border);
 }
 
 .skeleton {
   background-color: var(--color-surface-raised);
+  border: 1px dashed var(--color-border-subtle);
   border-radius: var(--radius-md);
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
@@ -71,8 +91,8 @@
 }
 
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.9; }
 }
 
 @media (prefers-reduced-motion: reduce) {
