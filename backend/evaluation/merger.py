@@ -109,3 +109,28 @@ def _build_sections_block(best_per_section: dict[str, tuple[AgentPersona, str]])
         lines.append(content[:2000])  # cap per section
         lines.append("")
     return "\n".join(lines)
+
+
+@retry(
+    retry=retry_if_exception_type(Exception),
+    stop=stop_after_attempt(2),
+    wait=wait_exponential(multiplier=2, min=5, max=20),
+    reraise=True,
+)
+async def _call_merger(prompt: str) -> str:
+    from vertexai.generative_models import GenerationConfig
+
+    model = get_pro_model()
+    response = await asyncio.wait_for(
+        asyncio.to_thread(
+            model.generate_content,
+            prompt,
+            generation_config=GenerationConfig(
+                temperature=0.3,
+                max_output_tokens=4096,
+                response_mime_type="application/json",
+            ),
+        ),
+        timeout=_MERGE_TIMEOUT,
+    )
+    return response.text
