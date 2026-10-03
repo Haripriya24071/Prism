@@ -21,3 +21,32 @@ class InvalidFileError(IntakeError):
     """File fails MIME type or size validation."""
 
     pass
+
+
+# Context harvester
+class ContextHarvestError(PRISMError):
+    def __init__(self, message: str, detail: str | None = None):
+        super().__init__(message, status_code=503, detail=detail)
+
+
+# Swarm
+class SwarmError(PRISMError):
+    def __init__(self, message: str, detail: str | None = None):
+        super().__init__(message, status_code=500, detail=detail)
+
+
+class AgentTimeoutError(SwarmError):
+    """Single agent exceeded its allowed time."""
+
+    pass
+
+
+# Evaluation + merge
+class EvaluationError(PRISMError):
+    def __init__(self, message: str, detail: str | None = None):
+        super().__init__(message, status_code=500, detail=detail)
+
+
+class MergeError(PRISMError):
+    def __init__(self, message: str, detail: str | None = None):
+        super().__init__(message, status_code=500, detail=detail)
