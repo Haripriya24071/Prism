@@ -293,5 +293,20 @@ async def get_brd(session_id: str) -> dict:
 
 
 @app.get("/brd/{session_id}/pdf")
-async def get_pdf(session_id: str, view: str = "investor"):
-    _not_implemented()
+async def get_pdf(session_id: str, view: str = "investor") -> dict:
+    session = store_get_session(session_id)
+    if session is None:
+        raise SessionNotFoundError(session_id)
+
+    if view not in ("investor", "technical", "regulatory"):
+        raise HTTPException(status_code=400, detail="view must be one of: investor, technical, regulatory")
+
+    pdf_urls = session.get("pdf_urls", {})
+    url = pdf_urls.get(view)
+
+    return {
+        "session_id": session_id,
+        "view": view,
+        "url": url,
+        "available": url is not None,
+    }
