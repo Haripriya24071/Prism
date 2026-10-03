@@ -69,3 +69,40 @@ def _parse_from_brd_json(brd_json: dict) -> list[FailureMode] | None:
         except (json.JSONDecodeError, TypeError, ValueError):
             pass
     return None
+
+
+async def _parse_via_flash(raw_text: str) -> list[FailureMode]:
+    """Flash fallback — parse unstructured adversarial text into FailureMode objects."""
+    from vertexai.generative_models import GenerationConfig
+
+    prompt = _FALLBACK_PROMPT_TEMPLATE.format(raw_text=raw_text[:3000])
+    try:
+        model = get_flash_model()
+        raw_json = await asyncio.wait_for(
+            asyncio.to_thread(
+                model.generate_content,
+                prompt,
+                generation_config=GenerationConfig(
+                    temperature=0.2,
+                    max_output_tokens=512,
+                    response_mime_type="application/json",
+                ),
+            ),
+            timeout=15,
+        )
+        clean = raw_json.text.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
+        items = json.loads(clean)
+        modes = []
+        for item in items[:3]:
+            modes.append(
+                FailureMode(
+                    title=str(item.get("title", "Failure Mode"))[:50],
+                    probability_pct=max(0, min(100, int(item.get("probability_pct", 50)))),
+                    description=str(item.get("description", "")),
+                    mitigation=str(item.get("mitigation", "Monitor and adapt")),
+                )
+            )
+        return modes
+    except Exception as e:
+        logger.warning("failure_sim_flash_fallback_failed", error_type=type(e).__name__)
+        return []
