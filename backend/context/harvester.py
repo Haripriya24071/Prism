@@ -90,4 +90,45 @@ async def harvest_context(intake: IntakePackage) -> ContextPackage:
         elif isinstance(result, BaseException):
             logger.error("harvest_gather_exception", error_type=type(result).__name__)
 
-    raise NotImplementedError("Assembly in Commit 3")
+    raw_news = source_map.get("newsapi")
+    news_items: list[NewsItem] = raw_news if isinstance(raw_news, list) else []
+
+    raw_market = source_map.get("worldbank")
+    market_data: MarketData | None = raw_market if hasattr(raw_market, "gdp_per_capita_usd") or raw_market is None else None
+
+    crunchbase_raw = source_map.get("crunchbase") or {}
+    govtdata_raw = source_map.get("govtdata") or {}
+    cultural_ctx = source_map.get("grounding") or None
+
+    elapsed_ms = int((time.time() - harvest_start) * 1000)
+    logger.info(
+        "harvest_complete",
+        session_id=intake.session_id,
+        elapsed_ms=elapsed_ms,
+        sources_ok=len(source_map),
+        sources_failed=len(failed),
+    )
+
+    # Fire BigQuery logging as background task — never blocks
+    from gcp.bigquery import log_context_harvest
+
+    asyncio.create_task(
+        log_context_harvest(
+            session_id=intake.session_id,
+            sources=list(source_map.keys()),
+            duration_ms=elapsed_ms,
+        )
+    )
+
+    return ContextPackage(
+        session_id=intake.session_id,
+        region=region or None,
+        industry=industry or None,
+        news_items=news_items,
+        market_data=market_data,
+        crunchbase_data=crunchbase_raw,
+        regulatory_flags=govtdata_raw.get("regulatory_flags", []),
+        cultural_context=cultural_ctx,
+        source_urls=[item.url for item in news_items if item.url],
+        failed_sources=failed,
+    )
