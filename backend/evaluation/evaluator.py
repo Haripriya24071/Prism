@@ -52,7 +52,7 @@ Format:
   "vc":          {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
   "lean":        {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
   "cto":         {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
-  "ux":          {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
+  "ux":          {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "competitive_moat": 0-100, "data_citation": "specific fact"}},
   "regulator":   {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}},
   "adversarial": {{"feasibility": 0-100, "market_timing": 0-100, "regulatory_safety": 0-100, "user_adoption": 0-100, "competitive_moat": 0-100, "composite": 0-100, "data_citation": "specific fact"}}
 }}
@@ -93,3 +93,28 @@ def _compute_composite(scores: dict[str, int]) -> float:
         + scores.get("competitive_moat", 0) * weights["competitive_moat"],
         2,
     )
+
+
+@retry(
+    retry=retry_if_exception_type(Exception),
+    stop=stop_after_attempt(2),
+    wait=wait_exponential(multiplier=2, min=5, max=20),
+    reraise=True,
+)
+async def _call_evaluator(prompt: str) -> str:
+    from vertexai.generative_models import GenerationConfig
+
+    model = get_pro_model()
+    response = await asyncio.wait_for(
+        asyncio.to_thread(
+            model.generate_content,
+            prompt,
+            generation_config=GenerationConfig(
+                temperature=0.1,
+                max_output_tokens=2048,
+                response_mime_type="application/json",
+            ),
+        ),
+        timeout=_EVALUATOR_TIMEOUT,
+    )
+    return response.text
