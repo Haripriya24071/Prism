@@ -52,18 +52,15 @@
 
 | Model | Usage | Tier |
 |-------|-------|------|
-| Gemini 1.5 Flash | All 6 swarm agents (parallel) | Free — 15 RPM |
-| Gemini 1.5 Pro | Evaluator + Merge Engine (2 calls sequential) | Free — 2 RPM |
-| Gemini Vision | Image context extraction during intake | Free (via Flash) |
-| Gemini Audio | Voice input fallback (when Web Speech API unavailable) | Free |
+| Gemini 2.0 Flash | Swarm (6 calls) + Intake (1 call) + Post-merge (3 calls) via Vertex AI | Vertex AI Quota |
+| Gemini 1.5 Pro | Evaluator + Merge Engine (2 calls) via Vertex AI | Vertex AI Quota |
+| Gemini Vision | Image context extraction during intake | Vertex AI (via Flash) |
+| Gemini Audio | Voice input fallback (when Web Speech API unavailable) | Vertex AI |
 | Gemini Search Grounding | Cultural + regulatory context harvesting | Free (within Gemini API) |
 
-### API Key Strategy
-- Pool of 20 Gemini free API keys
-- Key rotation logic in `backend/config.py`
-- Keys assigned round-robin per swarm run
-- 6 Flash calls per run comfortably within 15 RPM per key
-- Rate limit errors caught and retried with next key in pool
+### Authentication & Quota
+- Vertex AI (google-cloud-aiplatform SDK) — project-level quota, no per-key rotation
+- Single GCP service account with Application Default Credentials (ADC)
 
 ---
 
@@ -104,7 +101,9 @@ prism-outputs/{session_id}/
 ├── merged_brd.json
 ├── heatmap.json
 ├── investor_readiness.json
-└── output.pdf
+├── output_investor.pdf
+├── output_technical.pdf
+└── output_regulatory.pdf
 ```
 
 ---
@@ -130,7 +129,7 @@ Antigravity 2.0 gives us:
 - Agent Manager surface — higher-level task orchestration across the whole codebase
 - Native Google Cloud project integration — GCS, BigQuery, Vertex AI all connect directly
 - Built-in browser access for live testing
-- Supports Gemini 3.5 Flash natively (our primary model) + Claude Sonnet 4.6 as fallback
+- Supports Gemini 2.0 Flash natively (our primary model) + Claude Sonnet 4.6 as fallback
 - Antigravity CLI for terminal-first workflows (`antigravity` command)
 - Fractal Memory system — persistent context across sessions
 
@@ -138,7 +137,7 @@ Antigravity 2.0 gives us:
 - Native GCP integration means no manual credential wiring for GCS, BigQuery, Vertex AI
 - Agent Manager lets us delegate whole modules (e.g. "build the context harvester") not just autocomplete lines
 - Free during preview — no subscription cost on top of our already-free stack
-- Gemini 3.5 Flash is the same model we're calling in our swarm — consistent behaviour
+- Gemini 2.0 Flash is the same model we're calling in our swarm — consistent behaviour
 
 ### Workspace Setup
 ```bash
