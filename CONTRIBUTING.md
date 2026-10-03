@@ -6,7 +6,7 @@
 
 | Name | GitHub Handle | Area |
 |------|--------------|------|
-| Swapnil Ghosh | @swapnil | Frontend Lead |
+| Swapnil Ghosh | @Swapnil-Ghosh06 | Frontend Lead |
 | Zahid | @zahid | Backend Lead |
 | Haripriya | @haripriya | Integrations |
 | Ritika | @ritika | QA + Docs + Demo |
