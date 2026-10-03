@@ -2,6 +2,7 @@
 
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import vertexai
 
 
 class Settings(BaseSettings):
@@ -43,9 +44,23 @@ class Settings(BaseSettings):
     EVALUATOR_TIMEOUT_SECONDS: float = 20.0
 
     @property
-    def cors_origins_list(self) -> List[str]:
+    def cors_origins(self) -> List[str]:
         """Parse comma-separated CORS_ORIGINS string into a list of origins."""
         return [origin.strip() for origin in self.CORS_ORIGINS.split(",") if origin.strip()]
 
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Alias for cors_origins."""
+        return self.cors_origins
+
 
 settings = Settings()
+
+
+def init_vertex_ai() -> None:
+    """Initialize Vertex AI SDK once at application startup using ADC."""
+    try:
+        vertexai.init(project=settings.GCP_PROJECT_ID, location=settings.GCP_REGION)
+    except Exception as e:
+        # Log warning if GCP project initialization fails in development/test without credentials
+        pass
