@@ -1,8 +1,71 @@
 """backend/output/failure_sim.py — Extracts failure modes from Adversarial agent output."""
 
-from backend.models.agents import AgentOutput
-from backend.models.brd import FailureMode
+import asyncio
+import json
+import re
+from typing import TYPE_CHECKING
+import structlog
+
+if TYPE_CHECKING:
+    from backend.models.agents import AgentOutput, AgentPersona
+    from backend.models.brd import FailureMode
+    from backend.config import get_flash_model
+else:
+    try:
+        from backend.models.agents import AgentOutput, AgentPersona
+        from backend.models.brd import FailureMode
+        from backend.config import get_flash_model
+    except ImportError:
+        from models.agents import AgentOutput, AgentPersona
+        from models.brd import FailureMode
+        from config import get_flash_model
+
+logger = structlog.get_logger()
+
+_FALLBACK_PROMPT_TEMPLATE = """You are extracting structured failure modes from an adversarial business analysis.
+
+RAW ANALYSIS TEXT:
+{raw_text}
+
+Extract exactly 3 failure modes from the text above.
+Return ONLY a valid JSON array. No markdown. No explanation.
+Format:
+[
+  {{
+    "title": "<failure mode name — 5 words max>",
+    "probability_pct": <integer 0-100>,
+    "description": "<what happens and why — 2 sentences>",
+    "mitigation": "<one specific countermeasure>"
+  }}
+]"""
 
 
-async def extract_failure_modes(adversarial_output: AgentOutput) -> list[FailureMode]:
-    raise NotImplementedError("Phase 9")
+def _parse_from_brd_json(brd_json: dict) -> list[FailureMode] | None:
+    """Try to extract failure modes directly from the structured BRD JSON.
+
+    Returns None if the Risk Register section does not contain parseable failure modes.
+    """
+    risk_text = brd_json.get("Risk Register", "")
+    if not risk_text or len(risk_text) < 50:
+        return None
+
+    # Look for JSON array embedded in the risk register text
+    array_match = re.search(r"\[.*?\]", risk_text, re.DOTALL)
+    if array_match:
+        try:
+            items = json.loads(array_match.group())
+            if isinstance(items, list) and len(items) > 0:
+                modes = []
+                for item in items[:3]:
+                    modes.append(
+                        FailureMode(
+                            title=str(item.get("title", "Unspecified Risk"))[:50],
+                            probability_pct=max(0, min(100, int(item.get("probability_pct", 50)))),
+                            description=str(item.get("description", risk_text[:200])),
+                            mitigation=str(item.get("mitigation", "Monitor and adapt")),
+                        )
+                    )
+                return modes if modes else None
+        except (json.JSONDecodeError, TypeError, ValueError):
+            pass
+    return None
