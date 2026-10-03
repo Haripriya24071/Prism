@@ -60,7 +60,16 @@ async def extract_document_text(file_bytes: bytes, file_type: str) -> str:
             raise IntakeError("Could not extract text from PDF", detail=str(e))
 
     elif file_type == "doc":
-        raise NotImplementedError("DOCX extraction coming in next commit")
+        if not file_bytes.startswith(_DOCX_MAGIC):
+            raise InvalidFileError("File does not appear to be a valid DOCX")
+        try:
+            from docx import Document  # source-driven-development: python-docx import is 'docx'
+
+            doc = Document(BytesIO(file_bytes))
+            raw = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+        except Exception as e:
+            logger.warning("docx_parse_failed", error_type=type(e).__name__)
+            raise IntakeError("Could not extract text from DOCX", detail=str(e))
 
     else:
         raise InvalidFileError(f"Unsupported file_type: {file_type}")
