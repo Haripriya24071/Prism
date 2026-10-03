@@ -37,7 +37,38 @@ def _local_fallback_path(session_id: str, filename: str) -> Path:
 
 
 async def write_json(session_id: str, filename: str, data: dict) -> str:
-    raise NotImplementedError()
+    """Writes JSON data to GCS at bucket/{session_id}/{filename}.
+
+    Falls back to /tmp/prism-sessions/{session_id}/{filename} in dev. Never raises — logs error and returns
+    empty string on failure.
+    """
+    blob_path = f"{session_id}/{filename}"
+    json_bytes = json.dumps(data, default=str).encode("utf-8")
+
+    if not settings.gcs_bucket_name or settings.env == "development":
+        try:
+            local_path = _local_fallback_path(session_id, filename)
+            local_path.write_bytes(json_bytes)
+            logger.info("gcs_local_fallback_write", blob_path=blob_path, size=len(json_bytes))
+            return f"local://{local_path}"
+        except Exception as e:
+            logger.warning("gcs_local_fallback_failed", error_type=type(e).__name__)
+            return ""
+
+    try:
+        def _upload() -> str:
+            client = _get_client()
+            bucket = client.bucket(settings.gcs_bucket_name)
+            blob = bucket.blob(blob_path)
+            blob.upload_from_string(json_bytes, content_type="application/json")
+            return f"gs://{settings.gcs_bucket_name}/{blob_path}"
+
+        gcs_uri = await asyncio.to_thread(_upload)
+        logger.info("gcs_write_ok", blob_path=blob_path, size=len(json_bytes))
+        return gcs_uri
+    except Exception as e:
+        logger.error("gcs_write_failed", blob_path=blob_path, error_type=type(e).__name__)
+        return ""
 
 
 async def read_json(session_id: str, filename: str) -> dict | None:

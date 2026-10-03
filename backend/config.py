@@ -55,6 +55,11 @@ class Settings(BaseSettings):
         return self.cors_origins
 
     @property
+    def gcs_bucket_name(self) -> str:
+        """Alias for GCS_BUCKET_NAME."""
+        return self.GCS_BUCKET_NAME
+
+    @property
     def gemini_flash_model(self) -> str:
         """Alias for GEMINI_FLASH_MODEL."""
         return self.GEMINI_FLASH_MODEL
