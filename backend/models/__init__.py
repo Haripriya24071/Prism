@@ -1,0 +1,81 @@
+"""backend/models/__init__.py — Package exports for all PRISM data models."""
+
+from backend.models.intake import (
+    SessionIdHeader,
+    ConversationTurn,
+    ChatRequest,
+    ExtractedIntake,
+    FileContext,
+    IntakePackage,
+)
+from backend.models.context import (
+    NewsItem,
+    MarketData,
+    CompetitorItem,
+    ContextPackage,
+)
+from backend.models.agents import (
+    AgentName,
+    SectionName,
+    CriterionName,
+    AgentRawSection,
+    AgentOutput,
+    SingleScore,
+    ScoreMatrix,
+)
+from backend.models.brd import (
+    LineageTag,
+    AssumptionFlag,
+    DissentNote,
+    FailureMode,
+    BRDSection,
+    HeatmapSummary,
+    MergedBRD,
+)
+from backend.models.output import (
+    RiskLevel,
+    HeatmapItem,
+    HeatmapData,
+    PivotSuggestion,
+    InvestorReadiness,
+    AgentStatusEvent,
+    ContextReadyEvent,
+    EvaluationCompleteEvent,
+    BrdReadyEvent,
+)
+
+__all__ = [
+    "SessionIdHeader",
+    "ConversationTurn",
+    "ChatRequest",
+    "ExtractedIntake",
+    "FileContext",
+    "IntakePackage",
+    "NewsItem",
+    "MarketData",
+    "CompetitorItem",
+    "ContextPackage",
+    "AgentName",
+    "SectionName",
+    "CriterionName",
+    "AgentRawSection",
+    "AgentOutput",
+    "SingleScore",
+    "ScoreMatrix",
+    "LineageTag",
+    "AssumptionFlag",
+    "DissentNote",
+    "FailureMode",
+    "BRDSection",
+    "HeatmapSummary",
+    "MergedBRD",
+    "RiskLevel",
+    "HeatmapItem",
+    "HeatmapData",
+    "PivotSuggestion",
+    "InvestorReadiness",
+    "AgentStatusEvent",
+    "ContextReadyEvent",
+    "EvaluationCompleteEvent",
+    "BrdReadyEvent",
+]
