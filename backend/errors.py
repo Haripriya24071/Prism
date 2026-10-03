@@ -50,3 +50,24 @@ class EvaluationError(PRISMError):
 class MergeError(PRISMError):
     def __init__(self, message: str, detail: str | None = None):
         super().__init__(message, status_code=500, detail=detail)
+
+
+# Session
+class SessionNotFoundError(PRISMError):
+    def __init__(self, session_id: str):
+        super().__init__("Session not found", status_code=404, detail=f"id={session_id}")
+
+
+class SessionExpiredError(PRISMError):
+    def __init__(self, session_id: str):
+        super().__init__("Session expired", status_code=410, detail=f"id={session_id}")
+
+
+# GCP Storage
+class StorageError(PRISMError):
+    def __init__(self, message: str, detail: str | None = None):
+        super().__init__(message, status_code=503, detail=detail)
+
+
+# Alias for backward compatibility
+PrismException = PRISMError
