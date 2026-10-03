@@ -1,11 +1,12 @@
-"""backend/main.py — FastAPI application entry point and thin orchestrator."""
+"""backend/main.py — Runnable FastAPI application with lifespan Vertex AI init and 8 route stubs."""
 
 import logging
-from fastapi import FastAPI, Request
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from backend.config import settings
+from backend.config import settings, init_vertex_ai
 from backend.errors import PrismException
 from backend.middleware.log_sanitizer import LogSanitizerMiddleware, LogSanitizingFilter
 
@@ -16,17 +17,25 @@ for handler in logging.getLogger().handlers:
 
 logger = logging.getLogger("prism")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_vertex_ai()  # Vertex AI ADC — once at startup, never at module level
+    yield
+
+
 app = FastAPI(
     title="PRISM API",
-    description="Multi-Modal AI Swarm BRD Generator Backend",
-    version="1.0.0",
+    version="0.1.0",
+    description="Multi-modal AI swarm BRD generator — Manipal Hackathon 2026",
+    lifespan=lifespan,
 )
 
 # Middleware
 app.add_middleware(LogSanitizerMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,18 +52,53 @@ async def prism_exception_handler(request: Request, exc: PrismException):
     )
 
 
-@app.get("/health", tags=["Health"])
-async def health_check():
-    """Health check endpoint returning service status and model configuration."""
-    return {
-        "status": "healthy",
-        "service": "PRISM Backend",
-        "models": {
-            "flash": settings.GEMINI_FLASH_MODEL,
-            "pro": settings.GEMINI_PRO_MODEL,
-        },
-        "gcp": {
-            "project_id": settings.GCP_PROJECT_ID,
-            "region": settings.GCP_REGION,
-        },
-    }
+def _not_implemented():
+    raise HTTPException(status_code=501, detail="not implemented yet")
+
+
+@app.get("/health")
+async def health():
+    return {"status": "ok", "version": "0.1.0"}
+
+
+# Intake
+@app.post("/intake/session", status_code=201)
+async def create_session():
+    _not_implemented()
+
+
+@app.get("/intake/session/{session_id}")
+async def get_session(session_id: str):
+    _not_implemented()
+
+
+@app.post("/intake/chat")
+async def chat(session_id: str):
+    _not_implemented()
+
+
+@app.post("/intake/upload")
+async def upload(session_id: str):
+    _not_implemented()
+
+
+# Generation
+@app.post("/generate")
+async def generate(session_id: str):
+    _not_implemented()
+
+
+@app.get("/generate/stream/{session_id}")
+async def generate_stream(session_id: str):
+    _not_implemented()
+
+
+# BRD
+@app.get("/brd/{session_id}")
+async def get_brd(session_id: str):
+    _not_implemented()
+
+
+@app.get("/brd/{session_id}/pdf")
+async def get_pdf(session_id: str, view: str = "investor"):
+    _not_implemented()
