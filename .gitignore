@@ -1,6 +1,12 @@
-MarkdownFile (*).md
 .env
 .env.local
-node_modules/
+.venv
 venv/
+backend/venv/
 __pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+node_modules/
+dist/
+build/
