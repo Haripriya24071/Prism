@@ -106,3 +106,33 @@ async def _parse_via_flash(raw_text: str) -> list[FailureMode]:
     except Exception as e:
         logger.warning("failure_sim_flash_fallback_failed", error_type=type(e).__name__)
         return []
+
+
+async def extract_failure_modes(adversarial_output: AgentOutput) -> list[FailureMode]:
+    """Extracts top 3 failure modes from the ADVERSARIAL agent output.
+
+    Strategy 1: Parse structured JSON from brd_json Risk Register. Strategy 2: Flash call on raw_text if
+    structured parse fails. Returns [] on total failure — never blocks the pipeline.
+    """
+    if adversarial_output.failed:
+        logger.warning("failure_sim_skipped", reason="adversarial_agent_failed")
+        return []
+
+    logger.info("failure_sim_start", session_id="")
+
+    # Strategy 1 — structured parse
+    if adversarial_output.brd_json:
+        modes = _parse_from_brd_json(adversarial_output.brd_json)
+        if modes:
+            logger.info("failure_sim_complete", strategy="json_parse", count=len(modes))
+            return modes
+
+    # Strategy 2 — Flash fallback on raw text
+    if adversarial_output.raw_text and adversarial_output.raw_text not in ("AGENT_FAILED", "AGENT_TIMEOUT"):
+        modes = await _parse_via_flash(adversarial_output.raw_text)
+        if modes:
+            logger.info("failure_sim_complete", strategy="flash_fallback", count=len(modes))
+            return modes
+
+    logger.warning("failure_sim_no_modes_extracted")
+    return []
