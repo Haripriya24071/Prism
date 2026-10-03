@@ -1,6 +1,7 @@
 """backend/agents/prompts.py — Constructs system prompts for each agent persona."""
 
 import json
+from typing import Any
 from backend.agents.personas import PERSONAS
 from backend.models.agents import AgentPersona
 from backend.models.context import ContextPackage
