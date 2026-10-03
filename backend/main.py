@@ -1,5 +1,6 @@
 """backend/main.py — Runnable FastAPI application with lifespan Vertex AI init and 8 route stubs."""
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
@@ -9,6 +10,7 @@ from backend.config import settings, init_vertex_ai
 from backend.logging_config import configure_logging
 from backend.exception_handlers import register_exception_handlers
 from backend.middleware.log_sanitizer import LogSanitizerMiddleware, LogSanitizingFilter
+from backend.session_store import cleanup_expired_sessions
 
 # Configure logging with sanitization
 logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
@@ -22,6 +24,7 @@ logger = logging.getLogger("prism")
 async def lifespan(app: FastAPI):
     init_vertex_ai()  # Vertex AI ADC — once at startup, never at module level
     configure_logging()
+    asyncio.create_task(cleanup_expired_sessions())
     yield
 
 
