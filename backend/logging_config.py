@@ -1,9 +1,16 @@
 """backend/logging_config.py — Structlog setup callable once at startup."""
 
 import logging
-from typing import Any, List
+from typing import Any, List, TYPE_CHECKING
 import structlog
-from backend.config import settings
+
+if TYPE_CHECKING:
+    from backend.config import settings
+else:
+    try:
+        from backend.config import settings
+    except ImportError:
+        from config import settings
 
 
 def configure_logging() -> None:
@@ -28,7 +35,7 @@ def configure_logging() -> None:
         processors=shared_processors + [renderer],
         wrapper_class=structlog.make_filtering_bound_logger(log_level),
         context_class=dict,
-        logger_factory=structlog.PrintLoggerFactory(),
+        logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
 
