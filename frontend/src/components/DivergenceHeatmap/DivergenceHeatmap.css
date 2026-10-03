@@ -1,0 +1,94 @@
+.heatmap {
+  display: grid;
+  gap: var(--space-3);
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+}
+
+.heatmap__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 3fr auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+}
+
+.heatmap__row:hover,
+.heatmap__row:focus-visible {
+  background-color: var(--color-surface-raised);
+}
+
+.heatmap__label {
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+.heatmap__track {
+  width: 100%;
+  height: var(--space-3);
+  overflow: hidden;
+  background-color: var(--color-border-subtle);
+  border-radius: 9999px;
+}
+
+.bar-fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 9999px;
+  background-color: var(--color-risk-low);
+  transform: scaleX(var(--bar-scale, 0));
+  transform-origin: left center;
+}
+
+[data-risk="high"] .bar-fill { background-color: var(--color-risk-high); }
+[data-risk="medium"] .bar-fill { background-color: var(--color-risk-medium); }
+[data-risk="low"] .bar-fill { background-color: var(--color-risk-low); }
+
+.heatmap__value {
+  min-width: var(--space-8);
+  text-align: right;
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  color: var(--color-text-secondary);
+}
+
+.heatmap__tooltip {
+  position: absolute;
+  left: var(--space-3);
+  bottom: 100%;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-1);
+  max-width: 280px;
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-small);
+  color: var(--color-text-primary);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 150ms ease;
+}
+
+.heatmap__tooltip-stat {
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  color: var(--color-text-secondary);
+}
+
+.heatmap__row:hover .heatmap__tooltip,
+.heatmap__row:focus-visible .heatmap__tooltip {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar-fill,
+  .heatmap__tooltip {
+    transition: none;
+  }
+}
