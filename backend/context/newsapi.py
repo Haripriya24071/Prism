@@ -53,5 +53,56 @@ def _set_cache(region: str, industry: str, items: list[NewsItem]) -> None:
 
 
 async def fetch_news(region: str, industry: str) -> list[NewsItem]:
-    """Fetch up to 5 recent news articles for region + industry."""
-    raise NotImplementedError("Phase 5")
+    """Fetch up to 5 recent news articles for region + industry.
+
+    Returns [] on any error — never blocks the pipeline. Results cached for 6 hours to preserve
+    100/day quota.
+    """
+    if not settings.newsapi_key:
+        logger.warning("newsapi_key_not_set", region=region, industry=industry)
+        return []
+
+    cached = _get_cached(region, industry)
+    if cached is not None:
+        return cached
+
+    query = f"{industry} {region} business startup"
+    params: dict[str, str | int] = {
+        "q": query,
+        "language": "en",
+        "sortBy": "publishedAt",
+        "pageSize": _MAX_RESULTS,
+        "apiKey": settings.newsapi_key,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=_TIMEOUT_SECONDS) as client:
+            response = await client.get(_NEWSAPI_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
+    except httpx.TimeoutException:
+        logger.warning("newsapi_timeout", region=region, industry=industry)
+        return []
+    except httpx.HTTPStatusError as e:
+        logger.warning("newsapi_http_error", status_code=e.response.status_code)
+        return []
+    except Exception as e:
+        logger.warning("newsapi_unexpected_error", error_type=type(e).__name__)
+        return []
+
+    articles = data.get("articles", [])
+    items = [
+        NewsItem(
+            title=a.get("title", ""),
+            source=a.get("source", {}).get("name", ""),
+            url=a.get("url"),
+            published_at=a.get("publishedAt"),
+            summary=a.get("description"),
+        )
+        for a in articles
+        if a.get("title")
+    ]
+
+    _set_cache(region, industry, items)
+    logger.info("newsapi_fetched", region=region, industry=industry, count=len(items))
+    return items
