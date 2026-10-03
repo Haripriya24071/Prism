@@ -54,9 +54,9 @@ Every requirement in the final output carries four pieces of metadata:
 | Frontend | React + Vite, Framer Motion, GSAP, Tailwind CSS |
 | Voice Input | Web Speech API + Gemini Audio fallback |
 | Backend | FastAPI (Python 3.11) |
-| AI Core | Gemini 1.5 Flash (swarm) + Gemini 1.5 Pro (evaluator + merge) |
+| AI Core | Gemini 2.0 Flash (swarm + post-merge) + Gemini 1.5 Pro (evaluator + merge) via Vertex AI |
 | Context APIs | NewsAPI, World Bank Open Data, Crunchbase Basic, Gemini Search Grounding |
-| Orchestration | Vertex AI |
+| Auth & Quota | Vertex AI (google-cloud-aiplatform) — project-level quota, ADC auth |
 | Storage | Google Cloud Storage |
 | Analytics | BigQuery |
 | PDF Export | ReportLab + Google Docs API |
