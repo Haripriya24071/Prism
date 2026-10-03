@@ -253,8 +253,20 @@ async def generate(session_id: str, background_tasks: BackgroundTasks) -> dict:
 
 
 @app.get("/generate/stream/{session_id}")
-async def generate_stream(session_id: str):
-    _not_implemented()
+async def generate_stream(session_id: str) -> StreamingResponse:
+    session = store_get_session(session_id)
+    if session is None:
+        raise SessionNotFoundError(session_id)
+
+    return StreamingResponse(
+        event_generator(session_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
 
 
 # BRD
