@@ -164,8 +164,42 @@ async def chat(request: ChatRequest) -> dict:
 
 
 @app.post("/intake/upload")
-async def upload(session_id: str):
-    _not_implemented()
+async def upload(
+    session_id: str,
+    file: UploadFile = File(...),
+) -> dict:
+    session = store_get_session(session_id)
+    if session is None:
+        raise SessionNotFoundError(session_id)
+
+    file_bytes = await file.read()
+
+    max_bytes = getattr(settings, "max_upload_bytes", settings.MAX_UPLOAD_BYTES)
+    if len(file_bytes) > max_bytes:
+        raise IntakeError("File exceeds 10 MB limit")
+
+    filename = (file.filename or "").lower()
+    if filename.endswith(".pdf"):
+        file_type = "pdf"
+    elif filename.endswith((".docx", ".doc")):
+        file_type = "doc"
+    elif filename.endswith((".jpg", ".jpeg", ".png")):
+        file_type = "image"
+    else:
+        raise IntakeError("Unsupported file type. Upload PDF, DOCX, JPEG, or PNG.")
+
+    if file_type == "image":
+        extracted = await analyse_image(file_bytes)
+    else:
+        extracted = await extract_document_text(file_bytes, file_type)
+
+    store_update_session(session_id, {"file_context": extracted})
+
+    return {
+        "session_id": session_id,
+        "file_type": file_type,
+        "extracted_chars": len(extracted),
+    }
 
 
 # Generation
