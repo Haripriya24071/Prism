@@ -1,8 +1,16 @@
 """backend/exception_handlers.py — Registers global exception handlers for PRISMError and unhandled exceptions."""
 
+from typing import TYPE_CHECKING
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from backend.errors import PRISMError
+
+if TYPE_CHECKING:
+    from backend.errors import PRISMError
+else:
+    try:
+        from backend.errors import PRISMError
+    except ImportError:
+        from errors import PRISMError
 import structlog
 
 logger = structlog.get_logger()
