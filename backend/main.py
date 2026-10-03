@@ -211,8 +211,45 @@ async def upload(
 
 # Generation
 @app.post("/generate")
-async def generate(session_id: str):
-    _not_implemented()
+async def generate(session_id: str, background_tasks: BackgroundTasks) -> dict:
+    session = store_get_session(session_id)
+    if session is None:
+        raise SessionNotFoundError(session_id)
+
+    if session["status"] not in ("intake", "ready"):
+        return {
+            "session_id": session_id,
+            "status": session["status"],
+            "message": "Pipeline already running or complete",
+        }
+
+    # Rebuild IntakePackage from session store
+    intake_data = session.get("intake_package")
+    if not intake_data:
+        raise IntakeError("No intake data found — complete intake conversation first")
+
+    from datetime import datetime
+    created_at_val = session["created_at"]
+    if isinstance(created_at_val, str):
+        created_at_dt = datetime.fromisoformat(created_at_val)
+    else:
+        created_at_dt = created_at_val
+
+    intake = IntakePackage(
+        session_id=session_id,
+        extraction=IntakeExtraction(**intake_data) if isinstance(intake_data, dict) else IntakeExtraction(raw_idea=str(intake_data)),
+        conversation_history=session.get("conversation_history", []),
+        created_at=created_at_dt,
+    )
+
+    store_set_session_status(session_id, "generating")
+    background_tasks.add_task(run_pipeline, session_id, intake)
+
+    return {
+        "session_id": session_id,
+        "status": "generating",
+        "stream_url": f"/generate/stream/{session_id}",
+    }
 
 
 @app.get("/generate/stream/{session_id}")
