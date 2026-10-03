@@ -1,6 +1,7 @@
 """backend/logging_config.py — Structlog setup callable once at startup."""
 
 import logging
+from typing import Any, List
 import structlog
 from backend.config import settings
 
@@ -10,13 +11,14 @@ def configure_logging() -> None:
 
     log_level = logging.getLevelName(settings.log_level.upper())
 
-    shared_processors = [
+    shared_processors: List[Any] = [
         structlog.contextvars.merge_contextvars,
         structlog.processors.add_log_level,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.stdlib.add_logger_name,
     ]
 
+    renderer: Any
     if settings.env == "production":
         renderer = structlog.processors.JSONRenderer()
     else:

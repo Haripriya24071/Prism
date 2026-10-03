@@ -4,9 +4,9 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import structlog
 
 from backend.config import settings, init_vertex_ai
+from backend.logging_config import configure_logging
 from backend.exception_handlers import register_exception_handlers
 from backend.middleware.log_sanitizer import LogSanitizerMiddleware, LogSanitizingFilter
 
@@ -21,11 +21,7 @@ logger = logging.getLogger("prism")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_vertex_ai()  # Vertex AI ADC — once at startup, never at module level
-    structlog.configure(
-        wrapper_class=structlog.make_filtering_bound_logger(
-            logging.getLevelName(settings.LOG_LEVEL.upper())
-        ),
-    )
+    configure_logging()
     yield
 
 
