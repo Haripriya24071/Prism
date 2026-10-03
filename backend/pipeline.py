@@ -85,5 +85,55 @@ async def _make_progress_callback(session_id: str) -> Callable[[str, str], Await
 
 
 async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
-    """Stub for Commit 1."""
-    raise NotImplementedError("Stub for Commit 1")
+    """
+    Full PRISM BRD generation pipeline — runs as a FastAPI BackgroundTask.
+    Publishes SSE progress events at each step.
+    Updates session store with final output on completion.
+    Sets session status to 'error' on unrecoverable failure.
+    """
+    pipeline_start = time.time()
+    logger.info("pipeline_start", session_id=session_id)
+
+    try:
+        # ── Step 1: Context harvest ───────────────────────────────────
+        set_session_status(session_id, "harvesting")
+        await publish(session_id, "context_start", {"status": "running"}, progress_pct=10)
+        context = await harvest_context(intake)
+        await publish(
+            session_id,
+            "context_ready",
+            {
+                "status": "complete",
+                "sources_ok": len(context.news_items) + (1 if context.market_data else 0),
+            },
+            progress_pct=20,
+        )
+
+        # ── Step 2: 6-agent swarm ─────────────────────────────────────
+        set_session_status(session_id, "generating")
+        await publish(session_id, "swarm_start", {"status": "running"}, progress_pct=25)
+        progress_callback = await _make_progress_callback(session_id)
+
+        try:
+            agent_outputs = await run_swarm(intake, context, session_id, progress_callback)
+        except SwarmError as e:
+            logger.error("pipeline_swarm_failed", session_id=session_id, error=e.message)
+            set_session_status(session_id, "error")
+            update_session(session_id, error=e.message)
+            await publish(session_id, "error", {"status": "error", "message": e.message}, progress_pct=0)
+            await publish_done(session_id)
+            return
+
+        await publish(
+            session_id,
+            "swarm_complete",
+            {"status": "complete", "agents": len(agent_outputs)},
+            progress_pct=68,
+        )
+
+    except Exception as e:
+        logger.error("pipeline_unhandled_error", session_id=session_id, error_type=type(e).__name__)
+        set_session_status(session_id, "error")
+        update_session(session_id, error="Pipeline failed unexpectedly")
+        await publish(session_id, "error", {"status": "error", "message": "Pipeline failed"}, progress_pct=0)
+        await publish_done(session_id)
