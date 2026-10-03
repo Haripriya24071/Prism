@@ -164,3 +164,82 @@ async def _run_single_agent(
             duration_ms=duration_ms,
             failed=True,
         )
+
+
+async def _safe_write_gcs(session_id: str, filename: str, data: dict) -> None:
+    """Fire-and-forget GCS writer wrapper that catches exceptions silently."""
+    try:
+        try:
+            import backend.gcp.storage as storage_mod
+        except ImportError:
+            import gcp.storage as storage_mod  # type: ignore[no-redef]
+
+        await storage_mod.write_json(session_id=session_id, filename=filename, data=data)
+    except Exception as e:
+        logger.warning(
+            "gcs_write_failed",
+            session_id=session_id,
+            filename=filename,
+            error_type=type(e).__name__,
+        )
+
+
+async def run_swarm(
+    intake: IntakePackage,
+    context: ContextPackage,
+    session_id: str,
+    progress_callback: Callable[[str, str], Awaitable[None]] | None = None,
+) -> list[AgentOutput]:
+    """Runs all 6 agents in parallel via asyncio.gather.
+
+    Raises SwarmError if fewer than 4 agents succeed. Writes each successful output to GCS as a background
+    task.
+    """
+    swarm_start = time.time()
+    logger.info("swarm_start", session_id=session_id, agent_count=len(AgentPersona))
+
+    results = await asyncio.gather(
+        *[
+            _run_single_agent(persona, intake, context, progress_callback)
+            for persona in AgentPersona
+        ],
+        return_exceptions=True,
+    )
+
+    outputs: list[AgentOutput] = []
+    for result in results:
+        if isinstance(result, (Exception, BaseException)):
+            logger.error("swarm_gather_exception", error_type=type(result).__name__)
+            continue
+        outputs.append(result)
+
+    successful = [o for o in outputs if not o.failed]
+    failed_count = len(outputs) - len(successful)
+
+    swarm_elapsed_ms = int((time.time() - swarm_start) * 1000)
+    logger.info(
+        "swarm_complete",
+        session_id=session_id,
+        total=len(outputs),
+        successful=len(successful),
+        failed=failed_count,
+        elapsed_ms=swarm_elapsed_ms,
+    )
+
+    if len(successful) < _MIN_SUCCESSFUL_AGENTS:
+        raise SwarmError(
+            f"Swarm produced only {len(successful)} successful agents — minimum is {_MIN_SUCCESSFUL_AGENTS}",
+            detail=f"session_id={session_id}",
+        )
+
+    # Write each successful output to GCS — fire and forget
+    for output in successful:
+        asyncio.create_task(
+            _safe_write_gcs(
+                session_id=session_id,
+                filename=f"agent_{output.agent.value}.json",
+                data=output.model_dump(mode="json"),
+            )
+        )
+
+    return outputs
