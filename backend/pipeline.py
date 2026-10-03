@@ -151,6 +151,97 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
         merged_brd = await merge_brds(agent_outputs, score_matrix, context)
         await publish(session_id, "merge_complete", {"status": "complete"}, progress_pct=88)
 
+        # ── Steps 5-8: Post-merge analysis (parallel) ─────────────────
+        await publish(session_id, "analysis_start", {"status": "running"}, progress_pct=89)
+
+        adversarial_output = next(
+            (o for o in agent_outputs if o.agent == AgentPersona.ADVERSARIAL),
+            None,
+        )
+
+        async def _get_failure_modes() -> list:
+            if not adversarial_output:
+                return []
+            return await extract_failure_modes(adversarial_output)
+
+        post_merge_results = await asyncio.gather(
+            flag_assumptions(merged_brd, context),
+            _get_failure_modes(),
+            return_exceptions=True,
+        )
+
+        raw_assumptions = post_merge_results[0]
+        raw_failures = post_merge_results[1]
+        assumptions = raw_assumptions if isinstance(raw_assumptions, list) else []
+        failure_modes = raw_failures if isinstance(raw_failures, list) else []
+
+        # ── Step 9: Scores ────────────────────────────────────────────
+        heatmap = calculate_heatmap(score_matrix)
+        investor_score = calculate_investor_score(score_matrix)
+
+        # Update merged BRD with investor score and analysis
+        merged_brd = MergedBRD(
+            session_id=merged_brd.session_id,
+            sections=merged_brd.sections,
+            assumptions=assumptions,
+            failure_modes=failure_modes,
+            investor_readiness_score=investor_score.score,
+        )
+
+        # ── Step 10: Pivot (conditional) ──────────────────────────────
+        pivots = await suggest_pivots(merged_brd, investor_score)
+
+        # ── Step 11: PDF export (background — non-blocking) ───────────
+        asyncio.create_task(export_all_stakeholder_pdfs(merged_brd, session_id))
+
+        # ── Step 12: Assemble final output ────────────────────────────
+        final_output = FinalOutput(
+            session_id=session_id,
+            heatmap=heatmap,
+            investor_score=investor_score,
+            pivots=pivots or [],
+        )
+
+        # ── Step 13: Update session store ─────────────────────────────
+        update_session(
+            session_id,
+            brd=merged_brd.model_dump(mode="json"),
+            score=investor_score.score,
+            status="complete",
+        )
+        set_session_status(session_id, "complete")
+
+        # ── Step 14: BigQuery logging (fire and forget) ────────────────
+        pipeline_elapsed = int((time.time() - pipeline_start) * 1000)
+        asyncio.create_task(
+            log_run_to_bigquery(
+                session_id=session_id,
+                score=investor_score.score,
+                duration_ms=pipeline_elapsed,
+                agent_count=len([o for o in agent_outputs if not o.failed]),
+            )
+        )
+
+        await publish(
+            session_id,
+            "brd_ready",
+            {
+                "status": "complete",
+                "investor_score": investor_score.score,
+                "confidence_band": investor_score.confidence_band,
+                "sections": len(merged_brd.sections),
+            },
+            progress_pct=100,
+        )
+        await publish_done(session_id)
+
+        logger.info(
+            "pipeline_complete",
+            session_id=session_id,
+            elapsed_ms=pipeline_elapsed,
+            score=investor_score.score,
+        )
+
     except Exception as e:
         logger.error("pipeline_unhandled_error", session_id=session_id, error_type=type(e).__name__)
         set_session_status(session_id, "error")
