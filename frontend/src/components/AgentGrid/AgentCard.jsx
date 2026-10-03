@@ -9,7 +9,7 @@ const STATUS_LABELS = Object.freeze({
   failed: 'Failed',
 })
 
-export function AgentCard({ name, title, status }) {
+export function AgentCard({ name, title, status, onRetry }) {
   const safeStatus = Object.hasOwn(STATUS_LABELS, status) ? status : 'pending'
 
   return (
@@ -26,6 +26,16 @@ export function AgentCard({ name, title, status }) {
         <span className="agent-card__chip-dot" aria-hidden="true" />
         {STATUS_LABELS[safeStatus]}
       </span>
+      {safeStatus === 'failed' && onRetry && (
+        <button
+          type="button"
+          onClick={() => onRetry(name)}
+          className="agent-card__retry-btn"
+          aria-label={`Retry ${title}`}
+        >
+          Retry
+        </button>
+      )}
     </motion.article>
   )
 }

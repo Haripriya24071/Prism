@@ -8,6 +8,7 @@
   --font-display:   'Montserrat', system-ui, sans-serif;
   --font-body:      'DM Sans', system-ui, sans-serif;
   --font-tertiary:  'Sora', system-ui, sans-serif;
+  --font-mono:      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Backgrounds: Warm paper, parchment, sketchcard canvas */
   --color-void: #FAF7F2;

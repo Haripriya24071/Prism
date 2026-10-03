@@ -78,6 +78,37 @@
 .agent-card__chip[data-status="complete"] { --chip-color: var(--color-success); }
 .agent-card__chip[data-status="failed"] { --chip-color: var(--color-error); }
 
+.agent-card[data-status="failed"] {
+  border-color: var(--color-error);
+  box-shadow: 3px 3px 0px var(--color-error);
+}
+
+.agent-card__retry-btn {
+  justify-self: start;
+  margin-top: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-error);
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-error);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.agent-card__retry-btn:hover {
+  background-color: var(--color-error);
+  color: var(--color-surface);
+  transform: translate(-1px, -1px);
+}
+
+.agent-card__retry-btn:focus-visible {
+  outline: 2px solid var(--color-accent-signal);
+  outline-offset: 2px;
+}
+
 .agent-card[data-status="running"]::after {
   content: '';
   position: absolute;

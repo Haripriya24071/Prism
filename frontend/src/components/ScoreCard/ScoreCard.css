@@ -114,37 +114,70 @@
 
 .score-card__pivots {
   justify-self: stretch;
-  padding: var(--space-4);
-  background-color: var(--color-surface-raised);
-  border: 1.5px solid var(--color-border);
-  box-shadow: 2px 2px 0px var(--color-border);
-  border-radius: var(--radius-lg);
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
 }
 
-.score-card__pivots[data-visible="false"] {
-  display: none;
-}
-
-.score-card__pivots-title {
-  margin: 0 0 var(--space-3);
+.score-card__pivots-heading {
+  margin: 0;
   font-family: var(--font-display);
   font-size: var(--text-h3);
   font-weight: 700;
+  color: var(--color-warning);
 }
 
 .score-card__pivot-list {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.score-card__pivot {
+.score-card__pivot-card {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: var(--space-3);
+  gap: var(--space-2);
+  padding: var(--space-4);
+  background-color: var(--color-surface-raised);
+  border: 1.5px solid var(--color-border);
+  box-shadow: 2px 2px 0px var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+
+.score-card__pivot-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-body);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.score-card__pivot-description {
+  margin: 0;
+  font-family: var(--font-body);
   font-size: var(--text-small);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+.score-card__pivot-projected {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.score-card__pivot-changes {
+  margin: 0;
+  padding-left: var(--space-5);
+  list-style-type: disc;
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+  display: grid;
+  gap: var(--space-1);
 }
 
 @media (prefers-reduced-motion: reduce) {

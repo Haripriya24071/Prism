@@ -8,6 +8,7 @@ export default {
       display: ['Montserrat', 'sans-serif'],
       body: ['DM Sans', 'sans-serif'],
       tertiary: ['Sora', 'sans-serif'],
+      mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
     },
     colors: {
       transparent: 'transparent',

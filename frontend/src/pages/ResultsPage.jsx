@@ -112,6 +112,20 @@ export default function ResultsPage() {
     riskLevel: toRiskLevel(bar.risk_score),
   }))
   const score = investorScore?.score ?? brdData?.investor_readiness_score ?? null
+  const pivotSuggestions =
+    investorScore?.pivot_suggestions ??
+    investorScore?.pivotSuggestions ??
+    investorScore?.pivots ??
+    brdData?.pivot_suggestions ??
+    brdData?.pivotSuggestions ??
+    brdData?.pivots ??
+    []
+  const pivotTriggered = Boolean(
+    investorScore?.pivot_triggered ??
+    investorScore?.pivotTriggered ??
+    brdData?.pivot_triggered ??
+    pivotSuggestions.length > 0
+  )
 
   return (
     <motion.main
@@ -201,8 +215,9 @@ export default function ResultsPage() {
                 score: flag.score,
                 actionItem: flag.action_item,
               }))}
-              pivotTriggered={false}
-              pivots={[]}
+              pivotTriggered={pivotTriggered}
+              pivots={pivotSuggestions}
+              pivotSuggestions={pivotSuggestions}
             />
           )}
         </div>

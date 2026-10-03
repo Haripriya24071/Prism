@@ -1,7 +1,7 @@
 import { AgentCard } from './AgentCard.jsx'
 import './AgentGrid.css'
 
-export default function AgentGrid({ agents }) {
+export default function AgentGrid({ agents, onRetry }) {
   return (
     <section className="agent-grid" aria-live="polite" aria-label="Agent progress">
       {agents.map((agent) => (
@@ -10,6 +10,7 @@ export default function AgentGrid({ agents }) {
           name={agent.name}
           title={agent.title}
           status={agent.status}
+          onRetry={agent.onRetry || onRetry}
         />
       ))}
     </section>
