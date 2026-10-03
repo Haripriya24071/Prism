@@ -75,3 +75,13 @@ def init_vertex_ai() -> None:
     except Exception as e:
         # Log warning if GCP project initialization fails in development/test without credentials
         pass
+
+
+def get_flash_model() -> GenerativeModel:
+    """Returns Gemini 2.0 Flash model via Vertex AI. Call after init_vertex_ai()."""
+    return GenerativeModel(settings.gemini_flash_model)
+
+
+def get_pro_model() -> GenerativeModel:
+    """Returns Gemini 1.5 Pro model via Vertex AI. Call after init_vertex_ai()."""
+    return GenerativeModel(settings.gemini_pro_model)
