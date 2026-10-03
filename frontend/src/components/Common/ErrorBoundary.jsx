@@ -1,34 +1,34 @@
-import React from 'react';
+import { Component } from 'react'
+import './ErrorBoundary.css'
 
-export class ErrorBoundary extends React.Component {
+export class ErrorBoundary extends Component {
   constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
+    super(props)
+    this.state = { hasError: false, error: null }
   }
 
   static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error('Uncaught error in UI component:', error, errorInfo);
+    return { hasError: true, error }
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-6 bg-red-950/40 border border-red-800/60 rounded-xl text-red-200 text-center my-4">
-          <h2 className="text-xl font-bold mb-2">Something went wrong</h2>
-          <p className="text-sm opacity-80 mb-4">{this.state.error?.message || 'An unexpected rendering error occurred.'}</p>
+        <div className="error-boundary" role="alert">
+          <h2 className="error-boundary__title">Something went wrong</h2>
+          <p className="error-boundary__text">
+            {this.state.error?.message || 'An unexpected rendering error occurred.'}
+          </p>
           <button
+            type="button"
+            className="error-boundary__retry"
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-4 py-2 bg-red-800 hover:bg-red-700 rounded-lg text-white font-medium text-sm transition-colors"
           >
-            Try Again
+            Try again
           </button>
         </div>
-      );
+      )
     }
-    return this.props.children;
+    return this.props.children
   }
 }

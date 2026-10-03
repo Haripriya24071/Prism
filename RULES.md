@@ -141,7 +141,7 @@ No hardcoded hex, RGB, or named colours in component styles.
 **UI-002: All font sizes use CSS custom property scale tokens.**
 
 **UI-003: Typography uses only the three defined font stacks.**
-`--font-display`, `--font-body`, `--font-mono`. No other fonts.
+`--font-display` (Montserrat), `--font-body` (DM Sans), `--font-tertiary` (Sora). The combo is locked. No other fonts; never Inter, Arial, Calibri, Space Grotesk or any monospace font.
 
 **UI-004: All interactive elements keyboard-reachable with visible focus states.**
 `:focus-visible` outline: 2px solid `--color-accent-signal`, offset 2px.

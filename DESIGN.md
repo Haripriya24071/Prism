@@ -74,9 +74,9 @@ All colours are CSS custom properties. No hardcoded hex anywhere in component fi
 
 ```css
 :root {
-  --font-display: 'Space Grotesk', system-ui, sans-serif;  /* Headlines, brand name */
-  --font-body: 'Inter', system-ui, sans-serif;              /* Body, UI labels */
-  --font-mono: 'JetBrains Mono', 'Courier New', monospace;  /* Code, scores, IDs */
+  --font-display:  'Montserrat', system-ui, sans-serif;  /* Logo, titles, section headers, agent names */
+  --font-body:     'DM Sans', system-ui, sans-serif;      /* Body text, chat, BRD content, UI labels, buttons */
+  --font-tertiary: 'Sora', system-ui, sans-serif;         /* Scores, timestamps, tags, lineage chips, status labels */
 
   /* Scale */
   --text-display: 3rem;     /* Hero headline — PRISM logo mark */
@@ -135,7 +135,7 @@ PRISM has three distinct UI phases. Each is a full page transition, not a modal 
 ### Phase 1: Intake
 ```
 ┌─────────────────────────────────────┐
-│         PRISM                       │  ← Space Grotesk, --text-display
+│         PRISM                       │  ← Montserrat, --text-display
 │  One idea. Six perspectives.        │  ← Tagline, --color-text-secondary
 │  One ground truth.                  │
 │                                     │

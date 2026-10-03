@@ -1,0 +1,12 @@
+.connection-status {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: var(--space-2) var(--space-4);
+  background-color: var(--color-error);
+  color: var(--color-void);
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  font-weight: 500;
+}

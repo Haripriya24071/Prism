@@ -3,25 +3,81 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    background-color: var(--color-void);
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 antialiased min-h-screen font-sans selection:bg-indigo-500/30 selection:text-indigo-200;
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-void);
+    color: var(--color-text-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-display);
+  }
+
+  ::selection {
+    background-color: var(--color-accent-glow);
+    color: var(--color-text-primary);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-signal);
+    outline-offset: 2px;
   }
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: var(--space-2);
+  height: var(--space-2);
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--color-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(51, 65, 85, 0.8);
-  border-radius: 4px;
+  background: var(--color-border);
+  border-radius: var(--radius-sm);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(71, 85, 105, 1);
+  background: var(--color-text-muted);
+}
+
+.skeleton {
+  background-color: var(--color-surface-raised);
+  border-radius: var(--radius-md);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton--ring {
+  width: 160px;
+  height: 160px;
+  border-radius: 9999px;
+}
+
+.skeleton--row {
+  height: var(--space-10);
+}
+
+.skeleton--accordion {
+  height: var(--space-16);
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+    opacity: 0.7;
+  }
 }
