@@ -7,7 +7,7 @@ import itertools
 import threading
 import time
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
 try:
@@ -202,7 +202,7 @@ class KeyCircuitBreaker:
         self.key_pool = key_pool if key_pool else [""]
         self._lock = threading.Lock()
         self._index = 0
-        self._states = {
+        self._states: Dict[str, Dict[str, Any]] = {
             k: {
                 "key": k,
                 "is_blacklisted": False,
@@ -407,8 +407,13 @@ class RotatingGeminiModel:
                 "gemini-3.5-flash-lite",
             ]
         # Deduplicate while preserving order
-        seen = set()
-        self.model_cascade = [m for m in self.model_cascade if not (m in seen or seen.add(m))]
+        seen: set[str] = set()
+        deduped: List[str] = []
+        for m in self.model_cascade:
+            if m not in seen:
+                seen.add(m)
+                deduped.append(m)
+        self.model_cascade = deduped
 
     def start_chat(self, history: Optional[list] = None) -> "RotatingGeminiChat":
         """Starts a chat session with full history support and circuit-broken rotation."""
