@@ -66,7 +66,7 @@ async def _send_turn(history_contents: list[Any], message: str) -> str:
     from vertexai.generative_models import GenerationConfig
 
     model = get_flash_model()
-    chat = model.start_chat(history=history_contents)
+    chat = model.start_chat(history=history_contents)  # type: ignore[attr-defined]
     response = chat.send_message(
         message,
         generation_config=GenerationConfig(

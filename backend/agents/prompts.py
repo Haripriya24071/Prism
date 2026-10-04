@@ -25,7 +25,7 @@ except ImportError:
             kw_str = " ".join(f"{k}={v}" for k, v in kwargs.items()) if kwargs else ""
             self._logger.warning("%s %s", event, kw_str)
 
-    logger: Any = _FallbackLogger()
+    logger = _FallbackLogger()
 
 if TYPE_CHECKING:
     from backend.agents.personas import PERSONAS

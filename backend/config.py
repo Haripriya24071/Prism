@@ -210,7 +210,7 @@ class RotatingGeminiModel:
                 if isinstance(item, Part):
                     formatted_contents.append({"mime_type": item.mime_type, "data": item.data})
                 elif isinstance(item, Content):
-                    parts_list = []
+                    parts_list: list[Any] = []
                     for p in item.parts:
                         if isinstance(p, Part):
                             parts_list.append({"mime_type": p.mime_type, "data": p.data})
@@ -253,12 +253,12 @@ class RotatingGeminiModel:
 # Expose compatibility module in sys.modules so `import vertexai` and `from vertexai.generative_models import ...` works seamlessly!
 _vertexai_mod = types.ModuleType("vertexai")
 _vertexai_gen_mod = types.ModuleType("vertexai.generative_models")
-_vertexai_gen_mod.GenerationConfig = GenerationConfig
-_vertexai_gen_mod.Part = Part
-_vertexai_gen_mod.Content = Content
-_vertexai_gen_mod.GenerativeModel = RotatingGeminiModel
-_vertexai_mod.generative_models = _vertexai_gen_mod
-_vertexai_mod.init = lambda *args, **kwargs: None
+_vertexai_gen_mod.GenerationConfig = GenerationConfig  # type: ignore[attr-defined]
+_vertexai_gen_mod.Part = Part  # type: ignore[attr-defined]
+_vertexai_gen_mod.Content = Content  # type: ignore[attr-defined]
+_vertexai_gen_mod.GenerativeModel = RotatingGeminiModel  # type: ignore[attr-defined]
+_vertexai_mod.generative_models = _vertexai_gen_mod  # type: ignore[attr-defined]
+_vertexai_mod.init = lambda *args, **kwargs: None  # type: ignore[attr-defined]
 
 sys.modules["vertexai"] = _vertexai_mod
 sys.modules["vertexai.generative_models"] = _vertexai_gen_mod
