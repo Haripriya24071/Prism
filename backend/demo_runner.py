@@ -77,13 +77,13 @@ async def run_scenario(scenario_name: str) -> None:
     print("\n[1/6] Context harvest...")
     start = time.time()
     from models.intake import IntakePackage
-    from datetime import datetime
+    from datetime import datetime, timezone
     from context.harvester import harvest_context
 
     intake = IntakePackage(
         session_id=session_id,
         extraction=scenario.extraction,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
 
     context = await harvest_context(intake)
