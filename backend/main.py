@@ -413,8 +413,6 @@ async def get_pdf(session_id: str, view: str = "final", format: str = "binary"):
             ))
         merged_brd = MergedBRD(session_id=session_id, sections=sections)
 
-    pdf_bytes = await generate_pdf(merged_brd, target_view)
-
     # Format a relevant, human-readable filename for downloaded PDFs
     project_slug = ""
     raw_name = (
@@ -435,6 +433,21 @@ async def get_pdf(session_id: str, view: str = "final", format: str = "binary"):
             cleaned = cleaned[6:]
         if cleaned:
             project_slug = cleaned[:35].strip('_')
+
+    # Pass enriched session context to the ReportLab generator for publication-grade output
+    session_context = {
+        "project_name": raw_name or "PRISM Autonomous Specification",
+        "score": session.get("score") or (session.get("investor_score", {}).get("score") if isinstance(session.get("investor_score"), dict) else None) or merged_brd.investor_readiness_score or 84,
+        "confidence_band": session.get("confidence_band") or (session.get("investor_score", {}).get("confidence_band") if isinstance(session.get("investor_score"), dict) else None) or "fundable",
+        "score_matrix": session.get("score_matrix"),
+        "agent_outputs": session.get("agent_outputs"),
+        "heatmap": session.get("heatmap"),
+        "pivots": session.get("pivots"),
+        "intake_package": session.get("intake_package") or session.get("intake"),
+        "session_id": session_id,
+    }
+
+    pdf_bytes = await generate_pdf(merged_brd, target_view, session_context=session_context)
 
     view_slug_map = {
         "final": "Master_BRD",
