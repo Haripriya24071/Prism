@@ -354,3 +354,87 @@ ENV=development
 
 ## 📄 License
 MIT License. Built with passion for the **Manipal Hackathon 2026**.
+
+
+---
+
+## Backend Setup (Local Dev)
+
+### Prerequisites
+- Python 3.11+
+- A Google Cloud project with Vertex AI API enabled
+- A GCP service account JSON key with roles: `Vertex AI User`, `Storage Object Admin`, `BigQuery Data Editor`
+
+### 1. Clone and branch
+```bash
+git clone https://github.com/Haripriya24071/Prism.git
+cd Prism
+git checkout main
+git pull
+```
+
+### 2. Create virtual environment
+```bash
+cd backend
+python -m venv venv
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 3. Configure environment
+```bash
+cp .env.example .env
+# Edit .env and set:
+# GCP_PROJECT_ID=your-real-project-id
+# GCP_REGION=us-central1
+# GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+# GCS_BUCKET_NAME=prism-sessions
+# BIGQUERY_DATASET=prism_data
+# NEWSAPI_KEY=your-key      (optional — static fallback used if absent)
+# CRUNCHBASE_KEY=your-key   (optional — static fallback used if absent)
+```
+
+### 4. Start the backend
+```bash
+uvicorn main:app --reload --port 8000
+```
+Visit `http://localhost:8000/health` — should return `{"status":"ok","version":"0.1.0"}`.
+
+### 5. Run tests
+```bash
+python -m pytest tests/ -v
+```
+Expected: 129 passed.
+
+### 6. Demo dry-run (night before hackathon)
+```bash
+# Pre-warm NewsAPI cache
+python demo_runner.py --prewarm
+
+# Run a full scenario dry-run (requires real GCP credentials)
+python demo_runner.py IndiaFintechSMB
+python demo_runner.py SingaporeEdTechB2B
+python demo_runner.py USHealthTechConsumer
+```
+
+### API Endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| POST | `/intake/session` | Create session |
+| GET | `/intake/session/{id}` | Get session status |
+| POST | `/intake/chat` | Conversation turn |
+| POST | `/intake/upload` | Upload file (PDF/DOCX/image) |
+| POST | `/generate` | Start BRD generation |
+| GET | `/generate/stream/{id}` | SSE live progress stream |
+| GET | `/brd/{id}` | Get completed BRD |
+| GET | `/brd/{id}/pdf?view=investor` | Get PDF signed URL |
+
+### Architecture Notes
+- All Gemini calls go through **Vertex AI** (`google-cloud-aiplatform` SDK) — no direct API key rotation.
+- In dev mode (`ENV=development`): GCS writes go to `/tmp/prism-sessions/`, BigQuery logging is skipped.
+- Crunchbase and NewsAPI have static fallbacks — the pipeline runs without these keys.
+- PDF filenames: `output_investor.pdf`, `output_technical.pdf`, `output_regulatory.pdf` (per SCHEMA.md).
