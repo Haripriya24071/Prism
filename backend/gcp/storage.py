@@ -2,141 +2,139 @@
 
 import asyncio
 import json
-import os
-from datetime import timedelta
-from pathlib import Path
-from typing import TYPE_CHECKING
-import structlog
+import uuid
+from typing import Any
+from google.cloud import storage
+from backend.config import settings
+from backend.errors import StorageError
 
-if TYPE_CHECKING:
-    from backend.config import settings
-else:
+__all__ = ["write_json", "read_json", "write_pdf"]
+
+_ALLOWED_JSON_FILENAMES: frozenset[str] = frozenset(
+    {
+        "intake_package",
+        "agent_vc",
+        "agent_lean",
+        "agent_cto",
+        "agent_ux",
+        "agent_regulator",
+        "agent_adversarial",
+        "score_matrix",
+        "merged_brd",
+        "heatmap",
+        "investor_readiness",
+    }
+)
+
+_ALLOWED_PDF_VIEWS: frozenset[str] = frozenset(
+    {
+        "investor",
+        "technical",
+        "regulatory",
+    }
+)
+
+_client: storage.Client | None = None
+_bucket: storage.Bucket | None = None
+
+
+def _get_client() -> storage.Client:
+    global _client
+    if _client is None:
+        _client = storage.Client(project=settings.GCP_PROJECT_ID)
+    return _client
+
+
+def _get_bucket() -> storage.Bucket:
+    global _bucket
+    if _bucket is None:
+        client = _get_client()
+        _bucket = client.bucket(settings.GCS_BUCKET_NAME)
+    return _bucket
+
+
+def _validate_session_id(session_id: str) -> str:
     try:
-        from backend.config import settings
-    except ImportError:
-        from config import settings
-
-logger = structlog.get_logger()
-
-_SIGNED_URL_EXPIRY = timedelta(hours=1)
-_LOCAL_FALLBACK_DIR = Path("/tmp/prism-sessions")
-_FALLBACK_DIR = _LOCAL_FALLBACK_DIR
+        parsed_uuid = uuid.UUID(str(session_id))
+        return str(parsed_uuid).lower()
+    except (ValueError, TypeError, AttributeError):
+        raise StorageError("Storage operation failed", detail="Invalid session ID")
 
 
-def _get_client():
-    """Returns GCS client. Import here to avoid module-level auth errors in dev."""
-    from google.cloud import storage
+def _validate_json_filename(filename: str) -> str:
+    if not isinstance(filename, str):
+        raise StorageError("Storage operation failed", detail="Invalid filename")
+    name = filename[:-5] if filename.endswith(".json") else filename
+    if name not in _ALLOWED_JSON_FILENAMES:
+        raise StorageError("Storage operation failed", detail="Invalid filename")
+    return name
 
-    return storage.Client()
+
+def _validate_pdf_view(view: str) -> str:
+    if not isinstance(view, str) or view not in _ALLOWED_PDF_VIEWS:
+        raise StorageError("Storage operation failed", detail="Invalid view")
+    return view
 
 
-def _local_fallback_path(session_id: str, filename: str) -> Path:
-    path = _FALLBACK_DIR / session_id
-    path.mkdir(parents=True, exist_ok=True)
-    return path / filename
+def _sync_write_json(session_id: str, name: str, data: dict[str, Any]) -> str:
+    try:
+        bucket = _get_bucket()
+        blob_path = f"{session_id}/{name}.json"
+        blob = bucket.blob(blob_path)
+        payload = json.dumps(data)
+        blob.upload_from_string(payload, content_type="application/json")
+        if not blob.exists():
+            raise StorageError("Storage operation failed", detail="Write confirmation failed")
+        return f"gs://{settings.GCS_BUCKET_NAME}/{blob_path}"
+    except StorageError:
+        raise
+    except Exception as exc:
+        raise StorageError("Storage operation failed", detail=type(exc).__name__) from exc
+
+
+def _sync_read_json(session_id: str, name: str) -> dict[str, Any] | None:
+    try:
+        bucket = _get_bucket()
+        blob_path = f"{session_id}/{name}.json"
+        blob = bucket.blob(blob_path)
+        if not blob.exists():
+            return None
+        content = blob.download_as_text()
+        return json.loads(content)
+    except StorageError:
+        raise
+    except Exception as exc:
+        raise StorageError("Storage operation failed", detail=type(exc).__name__) from exc
+
+
+def _sync_write_pdf(session_id: str, view: str, pdf_bytes: bytes) -> str:
+    try:
+        bucket = _get_bucket()
+        blob_path = f"{session_id}/output_{view}.pdf"
+        blob = bucket.blob(blob_path)
+        blob.upload_from_string(pdf_bytes, content_type="application/pdf")
+        if not blob.exists():
+            raise StorageError("Storage operation failed", detail="Write confirmation failed")
+        return f"gs://{settings.GCS_BUCKET_NAME}/{blob_path}"
+    except StorageError:
+        raise
+    except Exception as exc:
+        raise StorageError("Storage operation failed", detail=type(exc).__name__) from exc
 
 
 async def write_json(session_id: str, filename: str, data: dict) -> str:
-    """Writes JSON data to GCS at bucket/{session_id}/{filename}.
-
-    Falls back to /tmp/prism-sessions/{session_id}/{filename} in dev. Never raises — logs error and returns
-    empty string on failure.
-    """
-    blob_path = f"{session_id}/{filename}"
-    json_bytes = json.dumps(data, default=str).encode("utf-8")
-
-    if not settings.gcs_bucket_name or settings.env == "development":
-        try:
-            local_path = _local_fallback_path(session_id, filename)
-            local_path.write_bytes(json_bytes)
-            logger.info("gcs_local_fallback_write", blob_path=blob_path, size=len(json_bytes))
-            return f"local://{local_path}"
-        except Exception as e:
-            logger.warning("gcs_local_fallback_failed", error_type=type(e).__name__)
-            return ""
-
-    try:
-        def _upload() -> str:
-            client = _get_client()
-            bucket = client.bucket(settings.gcs_bucket_name)
-            blob = bucket.blob(blob_path)
-            blob.upload_from_string(json_bytes, content_type="application/json")
-            return f"gs://{settings.gcs_bucket_name}/{blob_path}"
-
-        gcs_uri = await asyncio.to_thread(_upload)
-        logger.info("gcs_write_ok", blob_path=blob_path, size=len(json_bytes))
-        return gcs_uri
-    except Exception as e:
-        logger.error("gcs_write_failed", blob_path=blob_path, error_type=type(e).__name__)
-        return ""
+    valid_session_id = _validate_session_id(session_id)
+    name = _validate_json_filename(filename)
+    return await asyncio.to_thread(_sync_write_json, valid_session_id, name, data)
 
 
 async def read_json(session_id: str, filename: str) -> dict | None:
-    """Reads JSON from GCS. Returns None if not found or on any error.
-
-    Falls back to local /tmp in dev.
-    """
-    blob_path = f"{session_id}/{filename}"
-
-    if not settings.gcs_bucket_name or settings.env == "development":
-        try:
-            local_path = _local_fallback_path(session_id, filename)
-            if local_path.exists():
-                res = json.loads(local_path.read_bytes())
-                return res if isinstance(res, dict) else None
-            return None
-        except Exception:
-            return None
-
-    try:
-        def _download() -> dict | None:
-            client = _get_client()
-            bucket = client.bucket(settings.gcs_bucket_name)
-            blob = bucket.blob(blob_path)
-            if not blob.exists():
-                return None
-            res = json.loads(blob.download_as_bytes())
-            return res if isinstance(res, dict) else None
-
-        return await asyncio.to_thread(_download)
-    except Exception as e:
-        logger.warning("gcs_read_failed", blob_path=blob_path, error_type=type(e).__name__)
-        return None
+    valid_session_id = _validate_session_id(session_id)
+    name = _validate_json_filename(filename)
+    return await asyncio.to_thread(_sync_read_json, valid_session_id, name)
 
 
 async def write_pdf(session_id: str, filename: str, pdf_bytes: bytes, view: str) -> str:
-    """Writes PDF bytes to GCS and returns a signed URL valid for 1 hour.
-
-    Falls back to local write + local:// URI in dev. Never raises.
-    """
-    blob_path = f"{session_id}/{filename}"
-
-    if not settings.gcs_bucket_name or settings.env == "development":
-        try:
-            local_path = _local_fallback_path(session_id, filename)
-            local_path.write_bytes(pdf_bytes)
-            logger.info("gcs_pdf_local_fallback", blob_path=blob_path, size=len(pdf_bytes))
-            return f"local://{local_path}"
-        except Exception as e:
-            logger.warning("gcs_pdf_local_fallback_failed", error_type=type(e).__name__)
-            return ""
-
-    try:
-        def _upload_pdf() -> str:
-            client = _get_client()
-            bucket = client.bucket(settings.gcs_bucket_name)
-            blob = bucket.blob(blob_path)
-            blob.upload_from_string(pdf_bytes, content_type="application/pdf")
-            signed_url: str = blob.generate_signed_url(
-                expiration=_SIGNED_URL_EXPIRY,
-                method="GET",
-                version="v4",
-            )
-            return signed_url
-
-        url = await asyncio.to_thread(_upload_pdf)
-        logger.info("gcs_pdf_uploaded", blob_path=blob_path, size=len(pdf_bytes), view=view)
-        return url
-    except Exception as e:
-        logger.error("gcs_pdf_upload_failed", blob_path=blob_path, error_type=type(e).__name__)
-        return ""
+    valid_session_id = _validate_session_id(session_id)
+    valid_view = _validate_pdf_view(view)
+    return await asyncio.to_thread(_sync_write_pdf, valid_session_id, valid_view, pdf_bytes)

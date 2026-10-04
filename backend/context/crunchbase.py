@@ -1,117 +1,101 @@
-"""backend/context/crunchbase.py — Crunchbase Basic integration client."""
+"""backend/context/crunchbase.py — Crunchbase integration client with fallback data."""
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
 import httpx
-import structlog
+from backend.config import settings
 
-if TYPE_CHECKING:
-    from backend.config import settings
-else:
-    try:
-        from backend.config import settings
-    except ImportError:
-        from config import settings
-
-logger = structlog.get_logger()
-
-_TIMEOUT = 5.0
-_CRUNCHBASE_URL = "https://api.crunchbase.com/api/v4/searches/organizations"
-
-# Static fallback — used when key is absent or API call fails
-# Labelled clearly so demo commentary can reference it honestly
-_STATIC_FALLBACK: dict[str, dict[str, Any]] = {
-    "fintech": {
-        "recent_rounds": [
-            {"company": "Example Fintech Co", "amount_usd": 2_000_000, "round": "Seed", "year": 2024},
-            {"company": "PayFlow India", "amount_usd": 5_000_000, "round": "Series A", "year": 2024},
-        ],
-        "total_funding_usd": 7_000_000,
-        "data_source": "static_fallback",
-        "note": "Live Crunchbase data unavailable — using representative static dataset for demo",
-    },
-    "edtech": {
-        "recent_rounds": [
-            {"company": "LearnPath", "amount_usd": 1_500_000, "round": "Seed", "year": 2024},
-        ],
-        "total_funding_usd": 1_500_000,
-        "data_source": "static_fallback",
-        "note": "Live Crunchbase data unavailable — using representative static dataset for demo",
-    },
-    "healthtech": {
-        "recent_rounds": [
-            {"company": "MedTrack", "amount_usd": 3_000_000, "round": "Seed", "year": 2024},
-        ],
-        "total_funding_usd": 3_000_000,
-        "data_source": "static_fallback",
-        "note": "Live Crunchbase data unavailable — using representative static dataset for demo",
-    },
+_STATIC_COMPETITORS: dict[str, list[dict[str, str]]] = {
+    "fintech": [
+        {"name": "Stripe", "funding": "$8.7B", "stage": "Late Stage", "founded": "2010"},
+        {"name": "Razorpay", "funding": "$816M", "stage": "Series F", "founded": "2014"},
+        {"name": "Plaid", "funding": "$734M", "stage": "Series D", "founded": "2013"},
+    ],
+    "healthtech": [
+        {"name": "Oscar Health", "funding": "$1.6B", "stage": "Public", "founded": "2012"},
+        {"name": "Practo", "funding": "$228M", "stage": "Series D", "founded": "2008"},
+        {"name": "HealthifyMe", "funding": "$130M", "stage": "Series C", "founded": "2012"},
+    ],
+    "edtech": [
+        {"name": "Coursera", "funding": "$443M", "stage": "Public", "founded": "2012"},
+        {"name": "Duolingo", "funding": "$183M", "stage": "Public", "founded": "2011"},
+        {"name": "Unacademy", "funding": "$880M", "stage": "Series H", "founded": "2015"},
+    ],
+    "agritech": [
+        {"name": "Indigo Ag", "funding": "$1.2B", "stage": "Series F", "founded": "2013"},
+        {"name": "DeHaat", "funding": "$221M", "stage": "Series E", "founded": "2012"},
+        {"name": "Ninjacart", "funding": "$377M", "stage": "Series D", "founded": "2015"},
+    ],
 }
 
-_DEFAULT_FALLBACK: dict[str, Any] = {
-    "recent_rounds": [],
-    "total_funding_usd": None,
-    "data_source": "static_fallback",
-    "note": "Live Crunchbase data unavailable — using representative static dataset for demo",
-}
+_DEFAULT_COMPETITORS: list[dict[str, str]] = [
+    {"name": "Market Leader Alpha", "funding": "$50M+", "stage": "Series B", "founded": "2018"},
+    {"name": "Emerging Tech Beta", "funding": "$15M", "stage": "Series A", "founded": "2021"},
+]
 
 
-def _get_fallback(industry: str) -> dict[str, Any]:
-    """Retrieve matched or default static fallback dictionary for industry."""
-    industry_lower = industry.lower()
-    for key in _STATIC_FALLBACK:
-        if key in industry_lower:
-            return _STATIC_FALLBACK[key]
-    return _DEFAULT_FALLBACK
+def _get_fallback_data(industry: str) -> dict[str, Any]:
+    clean_industry = industry.strip().lower()
+    matched_competitors = _STATIC_COMPETITORS.get(clean_industry)
+    if not matched_competitors:
+        for key, comps in _STATIC_COMPETITORS.items():
+            if key in clean_industry or clean_industry in key:
+                matched_competitors = comps
+                break
+    if not matched_competitors:
+        matched_competitors = _DEFAULT_COMPETITORS
 
-
-async def _fetch_live(industry: str, api_key: str) -> dict[str, Any] | None:
-    """Attempt live Crunchbase API call. Returns None on any failure."""
-    headers = {"X-cb-user-key": api_key, "Content-Type": "application/json"}
-    payload = {
-        "field_ids": ["identifier", "short_description", "funding_total"],
-        "query": [
-            {"type": "predicate", "field_id": "category_groups", "operator_id": "includes", "values": [industry]},
-            {"type": "predicate", "field_id": "funding_stage", "operator_id": "includes", "values": ["seed", "series_a"]},
-        ],
-        "limit": 5,
+    return {
+        "source": "crunchbase_static_fallback",
+        "industry": industry,
+        "competitors": matched_competitors,
+        "market_stage_trend": "Growing",
+        "cached": True,
     }
-    try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            response = await client.post(_CRUNCHBASE_URL, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-            entities = data.get("entities", [])
-            rounds = [
-                {
-                    "company": e.get("properties", {}).get("identifier", {}).get("value", "Unknown"),
-                    "amount_usd": e.get("properties", {}).get("funding_total", {}).get("value_usd"),
-                    "data_source": "crunchbase_live",
-                }
-                for e in entities
-            ]
-            return {
-                "recent_rounds": rounds,
-                "total_funding_usd": sum(r["amount_usd"] for r in rounds if r.get("amount_usd")),
-                "data_source": "crunchbase_live",
-            }
-    except Exception as e:
-        logger.warning("crunchbase_live_failed", error_type=type(e).__name__)
-        return None
 
 
 async def fetch_crunchbase(industry: str) -> dict[str, Any]:
-    """Fetch recent funding rounds for an industry.
+    if not isinstance(industry, str) or not industry.strip():
+        return _get_fallback_data("general")
 
-    Uses live Crunchbase API if key is present, labelled static fallback otherwise. Never raises.
-    """
-    if not settings.crunchbase_key:
-        logger.info("crunchbase_using_static_fallback", industry=industry, reason="no_key")
-        return _get_fallback(industry)
+    clean_industry = industry.strip()
+    if not settings.CRUNCHBASE_KEY or not settings.CRUNCHBASE_KEY.strip():
+        return _get_fallback_data(clean_industry)
 
-    live_result = await _fetch_live(industry, settings.crunchbase_key)
-    if live_result is not None:
-        logger.info("crunchbase_live_success", industry=industry, rounds=len(live_result["recent_rounds"]))
-        return live_result
+    url = "https://api.crunchbase.com/api/v4/autocompletes"
+    headers = {"X-cb-user-key": settings.CRUNCHBASE_KEY}
+    params = {"query": clean_industry, "limit": 5}
+    timeout = httpx.Timeout(settings.HARVESTER_TIMEOUT_SECONDS)
 
-    logger.info("crunchbase_fallback_after_live_failure", industry=industry)
-    return _get_fallback(industry)
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url, headers=headers, params=params)
+            if response.status_code in (401, 403) or not response.is_success:
+                return _get_fallback_data(clean_industry)
+
+            data = response.json()
+            entities = data.get("entities", [])
+            competitors: list[dict[str, str]] = []
+            for item in entities:
+                identifier = item.get("identifier", {})
+                name = identifier.get("value")
+                if name:
+                    competitors.append(
+                        {
+                            "name": str(name),
+                            "funding": "Disclosed in API",
+                            "stage": "Active",
+                            "founded": "N/A",
+                        }
+                    )
+
+            if not competitors:
+                return _get_fallback_data(clean_industry)
+
+            return {
+                "source": "crunchbase_api",
+                "industry": clean_industry,
+                "competitors": competitors,
+                "cached": False,
+            }
+    except Exception:
+        return _get_fallback_data(clean_industry)

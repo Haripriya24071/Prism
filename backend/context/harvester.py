@@ -1,132 +1,126 @@
-"""backend/context/harvester.py — Aggregates all 5 context sources in parallel."""
+"""backend/context/harvester.py — Aggregates all 7 context sources in parallel."""
 
 import asyncio
-import time
-from typing import Any, TYPE_CHECKING
-import structlog
+from datetime import datetime
+from typing import Any
 
-if TYPE_CHECKING:
-    from backend.models.intake import IntakePackage
-    from backend.models.context import ContextPackage, NewsItem, MarketData
-    from backend.context.newsapi import fetch_news
-    from backend.context.worldbank import fetch_worldbank
-    from backend.context.crunchbase import fetch_crunchbase
-    from backend.context.govtdata import fetch_govtdata
-    from backend.context.grounding import fetch_gemini_grounding
-    from backend.gcp.bigquery import log_context_harvest
-else:
-    try:
-        from backend.models.intake import IntakePackage
-        from backend.models.context import ContextPackage, NewsItem, MarketData
-        from backend.context.newsapi import fetch_news
-        from backend.context.worldbank import fetch_worldbank
-        from backend.context.crunchbase import fetch_crunchbase
-        from backend.context.govtdata import fetch_govtdata
-        from backend.context.grounding import fetch_gemini_grounding
-        from backend.gcp.bigquery import log_context_harvest
-    except ImportError:
-        from models.intake import IntakePackage
-        from models.context import ContextPackage, NewsItem, MarketData
-        from context.newsapi import fetch_news
-        from context.worldbank import fetch_worldbank
-        from context.crunchbase import fetch_crunchbase
-        from context.govtdata import fetch_govtdata
-        from context.grounding import fetch_gemini_grounding
-        from gcp.bigquery import log_context_harvest
-
-logger = structlog.get_logger()
-
-
-async def _safe_fetch(coro: Any, source_name: str) -> tuple[str, Any]:
-    """Wraps any fetch coroutine — returns (source_name, result) or (source_name, None) on failure."""
-    start = time.time()
-    try:
-        result = await coro
-        elapsed_ms = int((time.time() - start) * 1000)
-        logger.info("context_source_ok", source=source_name, elapsed_ms=elapsed_ms)
-        return source_name, result
-    except Exception as e:
-        elapsed_ms = int((time.time() - start) * 1000)
-        logger.warning(
-            "context_source_failed",
-            source=source_name,
-            elapsed_ms=elapsed_ms,
-            error_type=type(e).__name__,
-        )
-        return source_name, None
+from backend.config import settings
+from backend.context.alphavantage import fetch_market_sentiment
+from backend.context.crunchbase import fetch_crunchbase
+from backend.context.gdelt import fetch_political_context
+from backend.context.govtdata import fetch_govtdata
+from backend.context.grounding import fetch_gemini_grounding
+from backend.context.newsapi import fetch_news
+from backend.context.worldbank import fetch_worldbank
+from backend.models.context import ContextPackage, MarketData, NewsItem
+from backend.models.intake import IntakePackage
 
 
 async def harvest_context(intake: IntakePackage) -> ContextPackage:
-    """Runs all 5 context sources in parallel via asyncio.gather.
-
-    Partial failure is allowed — failed sources are recorded in ContextPackage.failed_sources. Never
-    raises. Target: < 8 seconds total.
-    """
-    region = intake.extraction.region or ""
-    industry = intake.extraction.industry or ""
-
-    harvest_start = time.time()
-    logger.info("harvest_start", session_id=intake.session_id, region=region, industry=industry)
-
-    results = await asyncio.gather(
-        _safe_fetch(fetch_news(region, industry), "newsapi"),
-        _safe_fetch(fetch_worldbank(region), "worldbank"),
-        _safe_fetch(fetch_crunchbase(industry), "crunchbase"),
-        _safe_fetch(fetch_govtdata(region, industry), "govtdata"),
-        _safe_fetch(fetch_gemini_grounding(region, industry), "grounding"),
-        return_exceptions=True,
-    )
-
-    # Unpack results — each is (source_name, value) or an Exception
-    source_map: dict[str, Any] = {}
-    failed: list[str] = []
-    for result in results:
-        if isinstance(result, tuple):
-            source_name, value = result
-            if value is None:
-                failed.append(source_name)
-            else:
-                source_map[source_name] = value
-        elif isinstance(result, BaseException):
-            logger.error("harvest_gather_exception", error_type=type(result).__name__)
-
-    raw_news = source_map.get("newsapi")
-    news_items: list[NewsItem] = raw_news if isinstance(raw_news, list) else []
-
-    raw_market = source_map.get("worldbank")
-    market_data: MarketData | None = raw_market if hasattr(raw_market, "gdp_per_capita_usd") or raw_market is None else None
-
-    crunchbase_raw = source_map.get("crunchbase") or {}
-    govtdata_raw = source_map.get("govtdata") or {}
-    cultural_ctx = source_map.get("grounding") or None
-
-    elapsed_ms = int((time.time() - harvest_start) * 1000)
-    logger.info(
-        "harvest_complete",
-        session_id=intake.session_id,
-        elapsed_ms=elapsed_ms,
-        sources_ok=len(source_map),
-        sources_failed=len(failed),
-    )
-
-    # Fire BigQuery logging as background task — never blocks
-    asyncio.create_task(
-        log_context_harvest(
-            session_id=intake.session_id,
-            sources=list(source_map.keys()),
-            duration_ms=elapsed_ms,
+    if not isinstance(intake, IntakePackage):
+        return ContextPackage(
+            session_id="unknown_session",
+            region=None,
+            industry=None,
+            failed_sources=["intake_invalid"],
         )
-    )
+
+    session_id = intake.session_id
+    region = intake.extraction.region or "IN"
+    industry = intake.extraction.industry or "General"
+
+    tasks = [
+        fetch_news(region, industry),
+        fetch_worldbank(region),
+        fetch_crunchbase(industry),
+        fetch_govtdata(region, industry),
+        fetch_gemini_grounding(region, industry),
+        fetch_political_context(region, industry),
+        fetch_market_sentiment(region, settings.alphavantage_key),
+    ]
+
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    (
+        news_res,
+        worldbank_res,
+        crunchbase_res,
+        govt_res,
+        grounding_res,
+        gdelt_res,
+        alphavantage_res,
+    ) = results
+
+    failed_sources: list[str] = []
+    source_urls: list[str] = []
+
+    # 1. NewsAPI
+    if isinstance(news_res, Exception) or not isinstance(news_res, list):
+        failed_sources.append("newsapi")
+        news_items: list[NewsItem] = []
+    else:
+        news_items = news_res
+        for item in news_items:
+            if item.url:
+                source_urls.append(item.url)
+
+    # 2. World Bank
+    if isinstance(worldbank_res, Exception) or not isinstance(worldbank_res, MarketData):
+        failed_sources.append("worldbank")
+        market_data: MarketData | None = None
+    else:
+        market_data = worldbank_res
+
+    # 3. Crunchbase
+    if isinstance(crunchbase_res, Exception) or not isinstance(crunchbase_res, dict):
+        failed_sources.append("crunchbase")
+        crunchbase_data: dict[str, Any] = {}
+    else:
+        crunchbase_data = crunchbase_res
+
+    # 4. Govt Open Data
+    if isinstance(govt_res, Exception) or not isinstance(govt_res, dict):
+        failed_sources.append("govt_open_data")
+        regulatory_flags: list[str] = []
+    else:
+        regulatory_flags = list(govt_res.get("regulatory_flags", []))
+
+    # 5. Gemini Grounding
+    if isinstance(grounding_res, Exception) or not isinstance(grounding_res, str):
+        failed_sources.append("gemini_grounding")
+        cultural_context: str | None = None
+    else:
+        cultural_context = grounding_res
+
+    # 6. GDELT Political Context
+    if isinstance(gdelt_res, Exception) or not isinstance(gdelt_res, dict):
+        failed_sources.append("gdelt")
+        political_context: dict[str, Any] = {}
+    else:
+        political_context = gdelt_res
+        for event in political_context.get("political_events", []):
+            if isinstance(event, dict) and event.get("url"):
+                source_urls.append(event["url"])
+
+    # 7. Alpha Vantage Market Sentiment
+    if isinstance(alphavantage_res, Exception) or not isinstance(alphavantage_res, dict):
+        failed_sources.append("alphavantage")
+        market_sentiment: dict[str, Any] = {}
+    else:
+        market_sentiment = alphavantage_res
 
     return ContextPackage(
-        session_id=intake.session_id,
-        region=region or None,
-        industry=industry or None,
+        session_id=session_id,
+        region=region,
+        industry=industry,
         news_items=news_items,
         market_data=market_data,
-        crunchbase_data=crunchbase_raw,
-        regulatory_flags=govtdata_raw.get("regulatory_flags", []),
-        cultural_context=cultural_ctx,
-        source_urls=[item.url for item in news_items if item.url],
-        failed_sources=failed,
+        crunchbase_data=crunchbase_data,
+        regulatory_flags=regulatory_flags,
+        cultural_context=cultural_context,
+        political_context=political_context,
+        market_sentiment=market_sentiment,
+        source_urls=source_urls,
+        failed_sources=failed_sources,
+        harvested_at=datetime.utcnow(),
     )

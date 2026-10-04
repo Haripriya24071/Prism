@@ -1,91 +1,90 @@
 """backend/context/worldbank.py — World Bank Open Data integration client."""
 
 import asyncio
-from typing import TYPE_CHECKING
+from typing import Any
 import httpx
-import structlog
+from backend.config import settings
+from backend.models.context import MarketData
 
-if TYPE_CHECKING:
-    from backend.models.context import MarketData
-else:
-    try:
-        from backend.models.context import MarketData
-    except ImportError:
-        from models.context import MarketData
-
-logger = structlog.get_logger()
-
-_BASE_URL = "https://api.worldbank.org/v2/country"
-_TIMEOUT = 5.0
-_INDICATORS = {
-    "gdp_per_capita_usd": "NY.GDP.PCAP.CD",
-    "ease_of_doing_business_rank": "IC.BUS.EASE.XQ",
-    "inflation_rate_pct": "FP.CPI.TOTL.ZG",
+_COUNTRY_MAP: dict[str, str] = {
+    "in": "IN",
+    "india": "IN",
+    "us": "US",
+    "united states": "US",
+    "usa": "US",
+    "gb": "GB",
+    "uk": "GB",
+    "united kingdom": "GB",
+    "sg": "SG",
+    "singapore": "SG",
+    "ae": "AE",
+    "uae": "AE",
+    "united arab emirates": "AE",
+    "de": "DE",
+    "germany": "DE",
 }
 
 
 async def _fetch_indicator(
-    client: httpx.AsyncClient, region: str, field: str, indicator: str
-) -> tuple[str, float | None]:
-    """Fetch one World Bank indicator. Returns (field_name, value | None)."""
-    url = f"{_BASE_URL}/{region}/indicator/{indicator}"
-    params = {"format": "json", "mrv": "1"}
-    try:
-        response = await client.get(url, params=params)
-        response.raise_for_status()
-        data = response.json()
-        # World Bank wraps data: [metadata_dict, [records]]
-        records = data[1] if len(data) > 1 else []
-        if records and records[0].get("value") is not None:
-            return field, float(records[0]["value"])
-        return field, None
-    except Exception as e:
-        logger.warning("worldbank_indicator_failed", field=field, error_type=type(e).__name__)
-        return field, None
+    client: httpx.AsyncClient, code: str, indicator: str
+) -> tuple[Any | None, int | None]:
+    url = f"https://api.worldbank.org/v2/country/{code}/indicator/{indicator}?format=json&mrnev=1"
+    for attempt in range(2):
+        try:
+            response = await client.get(url)
+            if response.status_code in (502, 503) and attempt == 0:
+                await asyncio.sleep(0.5)
+                continue
+            if not response.is_success:
+                return None, None
+            data = response.json()
+            if isinstance(data, list) and len(data) > 1 and data[1]:
+                entry = data[1][0]
+                val = entry.get("value")
+                year_str = entry.get("date")
+                parsed_year = (
+                    int(year_str)
+                    if (year_str and str(year_str).isdigit() and val is not None)
+                    else None
+                )
+                return val, parsed_year
+            return None, None
+        except Exception:
+            if attempt == 0:
+                await asyncio.sleep(0.5)
+                continue
+            return None, None
+    return None, None
 
 
 async def fetch_worldbank(region: str) -> MarketData:
-    """Fetch GDP per capita, ease of doing business, inflation for a region.
-
-    All three indicators fetched in parallel. Returns MarketData with None for failed fields. Never
-    raises — failed fields silently become None.
-    """
-    if not region:
+    if not isinstance(region, str):
+        return MarketData()
+    clean_region = region.strip().lower()
+    country_code = _COUNTRY_MAP.get(clean_region)
+    if not country_code:
         return MarketData()
 
-    logger.info("worldbank_fetch_start", region=region)
+    timeout = httpx.Timeout(settings.HARVESTER_TIMEOUT_SECONDS)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        gdp_task = _fetch_indicator(client, country_code, "NY.GDP.PCAP.CD")
+        inflation_task = _fetch_indicator(client, country_code, "FP.CPI.TOTL.ZG")
+        ease_task = _fetch_indicator(client, country_code, "IC.BUS.EASE.XQ")
 
-    try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
-            results = await asyncio.gather(
-                *[
-                    _fetch_indicator(client, region, field, indicator)
-                    for field, indicator in _INDICATORS.items()
-                ],
-                return_exceptions=True,
-            )
-    except Exception as e:
-        logger.warning("worldbank_gather_failed", error_type=type(e).__name__)
-        return MarketData()
+        (gdp_val, gdp_year), (inf_val, inf_year), (ease_val, ease_year) = await asyncio.gather(
+            gdp_task, inflation_task, ease_task, return_exceptions=False
+        )
 
-    values: dict[str, float | None] = {}
-    for result in results:
-        if isinstance(result, tuple):
-            field, value = result
-            values[field] = value
+    gdp_float: float | None = float(gdp_val) if gdp_val is not None else None
+    inf_float: float | None = float(inf_val) if inf_val is not None else None
+    ease_int: int | None = int(ease_val) if ease_val is not None else None
 
-    ease_rank = values.get("ease_of_doing_business_rank")
-    market_data = MarketData(
-        gdp_per_capita_usd=values.get("gdp_per_capita_usd"),
-        ease_of_doing_business_rank=int(ease_rank) if ease_rank is not None else None,
-        inflation_rate_pct=values.get("inflation_rate_pct"),
-        source_year=2023,
+    years: list[int] = [y for y in (gdp_year, inf_year, ease_year) if y is not None]
+    source_year: int | None = max(years) if years else None
+
+    return MarketData(
+        gdp_per_capita_usd=gdp_float,
+        ease_of_doing_business_rank=ease_int,
+        inflation_rate_pct=inf_float,
+        source_year=source_year,
     )
-
-    logger.info(
-        "worldbank_fetch_complete",
-        region=region,
-        gdp_available=market_data.gdp_per_capita_usd is not None,
-        biz_rank_available=market_data.ease_of_doing_business_rank is not None,
-    )
-    return market_data

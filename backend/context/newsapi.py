@@ -1,118 +1,108 @@
-"""backend/context/newsapi.py — NewsAPI integration client."""
+"""backend/context/newsapi.py — NewsAPI integration client with in-memory caching."""
 
-import hashlib
 import time
-from typing import TYPE_CHECKING
+from typing import Any
 import httpx
-import structlog
+from backend.config import settings
+from backend.models.context import NewsItem
 
-if TYPE_CHECKING:
-    from backend.models.context import NewsItem
-    from backend.config import settings
-else:
-    try:
-        from backend.models.context import NewsItem
-        from backend.config import settings
-    except ImportError:
-        from models.context import NewsItem
-        from config import settings
+_COUNTRY_MAP: dict[str, str] = {
+    "in": "in",
+    "india": "in",
+    "us": "us",
+    "united states": "us",
+    "usa": "us",
+    "gb": "gb",
+    "uk": "gb",
+    "united kingdom": "gb",
+    "ae": "ae",
+    "uae": "ae",
+    "united arab emirates": "ae",
+    "sg": "sg",
+    "singapore": "sg",
+    "de": "de",
+    "germany": "de",
+}
 
-logger = structlog.get_logger()
-
-_CACHE: dict[str, tuple[list[NewsItem], float]] = {}
-_CACHE_TTL_SECONDS = 21_600  # 6 hours — preserve daily quota
-_NEWSAPI_URL = "https://newsapi.org/v2/everything"
-_TIMEOUT_SECONDS = 5.0
-_MAX_RESULTS = 5
-
-
-def _cache_key(region: str, industry: str) -> str:
-    """Generate MD5 hash cache key from region:industry string."""
-    raw = f"{region.lower()}:{industry.lower()}"
-    return hashlib.md5(raw.encode()).hexdigest()
+_CACHE: dict[tuple[str, str], tuple[float, list[NewsItem]]] = {}
+_CACHE_TTL_SECONDS: float = 3600.0
 
 
-def _get_cached(region: str, industry: str) -> list[NewsItem] | None:
-    """Retrieve cached news items if unexpired, else return None."""
-    key = _cache_key(region, industry)
-    entry = _CACHE.get(key)
-    if entry is None:
+def _get_from_cache(cache_key: tuple[str, str]) -> list[NewsItem] | None:
+    cached_entry = _CACHE.get(cache_key)
+    if cached_entry is None:
         return None
-    items, cached_at = entry
-    if time.time() - cached_at > _CACHE_TTL_SECONDS:
-        del _CACHE[key]
-        return None
-    logger.info("newsapi_cache_hit", region=region, industry=industry)
-    return items
+    timestamp, items = cached_entry
+    if (time.time() - timestamp) < _CACHE_TTL_SECONDS:
+        return items
+    _CACHE.pop(cache_key, None)
+    return None
 
 
-def _set_cache(region: str, industry: str, items: list[NewsItem]) -> None:
-    """Store news items in cache with current timestamp."""
-    key = _cache_key(region, industry)
-    _CACHE[key] = (items, time.time())
+def _set_cache(cache_key: tuple[str, str], items: list[NewsItem]) -> None:
+    _CACHE[cache_key] = (time.time(), items)
 
 
 async def fetch_news(region: str, industry: str) -> list[NewsItem]:
-    """Fetch up to 5 recent news articles for region + industry.
-
-    Returns [] on any error — never blocks the pipeline. Results cached for 6 hours to preserve
-    100/day quota.
-    """
-    if not settings.newsapi_key:
-        logger.warning("newsapi_key_not_set", region=region, industry=industry)
+    if not isinstance(region, str) or not isinstance(industry, str):
         return []
 
-    cached = _get_cached(region, industry)
+    clean_region = region.strip().lower()
+    clean_industry = industry.strip().lower()
+    cache_key = (clean_region, clean_industry)
+
+    cached = _get_from_cache(cache_key)
     if cached is not None:
         return cached
 
-    query = f"{industry} {region} business startup"
-    params: dict[str, str | int] = {
-        "q": query,
-        "language": "en",
-        "sortBy": "publishedAt",
-        "pageSize": _MAX_RESULTS,
-        "apiKey": settings.newsapi_key,
+    if not settings.NEWSAPI_KEY or not settings.NEWSAPI_KEY.strip():
+        return []
+
+    country_code = _COUNTRY_MAP.get(clean_region)
+    params: dict[str, Any] = {
+        "pageSize": 5,
     }
+    if clean_industry:
+        params["q"] = clean_industry
+    if country_code:
+        params["country"] = country_code
+
+    headers = {"X-Api-Key": settings.NEWSAPI_KEY}
+    url = "https://newsapi.org/v2/top-headlines"
+    timeout = httpx.Timeout(settings.HARVESTER_TIMEOUT_SECONDS)
 
     try:
-        async with httpx.AsyncClient(timeout=_TIMEOUT_SECONDS) as client:
-            response = await client.get(_NEWSAPI_URL, params=params)
-            response.raise_for_status()
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url, headers=headers, params=params)
+            if not response.is_success:
+                return []
             data = response.json()
-    except httpx.TimeoutException:
-        logger.warning("newsapi_timeout", region=region, industry=industry)
+            articles = data.get("articles", [])
+            if not isinstance(articles, list):
+                return []
+
+            news_items: list[NewsItem] = []
+            for art in articles:
+                if not isinstance(art, dict):
+                    continue
+                title = art.get("title")
+                if not title:
+                    continue
+                source_obj = art.get("source")
+                source_name = (
+                    source_obj.get("name") if isinstance(source_obj, dict) and source_obj.get("name") else "Unknown"
+                )
+                item = NewsItem(
+                    title=str(title),
+                    source=str(source_name),
+                    url=art.get("url"),
+                    published_at=art.get("publishedAt"),
+                    summary=art.get("description"),
+                )
+                news_items.append(item)
+
+            if news_items:
+                _set_cache(cache_key, news_items)
+            return news_items
+    except Exception:
         return []
-    except httpx.HTTPStatusError as e:
-        logger.warning("newsapi_http_error", status_code=e.response.status_code)
-        return []
-    except Exception as e:
-        logger.warning("newsapi_unexpected_error", error_type=type(e).__name__)
-        return []
-
-    articles = data.get("articles", [])
-    items = [
-        NewsItem(
-            title=a.get("title", ""),
-            source=a.get("source", {}).get("name", ""),
-            url=a.get("url"),
-            published_at=a.get("publishedAt"),
-            summary=a.get("description"),
-        )
-        for a in articles
-        if a.get("title")
-    ]
-
-    _set_cache(region, industry, items)
-    logger.info("newsapi_fetched", region=region, industry=industry, count=len(items))
-    return items
-
-
-async def prewarm_cache(scenarios: list[tuple[str, str]]) -> None:
-    """Pre-warm the cache for demo scenarios.
-
-    Call once before the demo. Scenarios: [(region, industry), ...]
-    """
-    for region, industry in scenarios:
-        await fetch_news(region, industry)
-        logger.info("newsapi_prewarmed", region=region, industry=industry)

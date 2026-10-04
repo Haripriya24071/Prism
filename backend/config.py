@@ -8,8 +8,10 @@ import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
+
 try:
     import google.generativeai as genai
     from google.generativeai.types import GenerationConfig as GenAIGenerationConfig
@@ -21,6 +23,11 @@ logger = structlog.get_logger()
 
 _BACKEND_DIR = Path(__file__).parent
 _ROOT_DIR = _BACKEND_DIR.parent
+
+# Load environment files
+load_dotenv(dotenv_path=_BACKEND_DIR / ".env")
+load_dotenv(dotenv_path=_ROOT_DIR / ".env")
+load_dotenv(dotenv_path=".env")
 
 
 class Settings(BaseSettings):
@@ -72,6 +79,7 @@ class Settings(BaseSettings):
     # External Context Harvester Keys
     NEWSAPI_KEY: str = ""
     CRUNCHBASE_KEY: str = ""
+    ALPHAVANTAGE_KEY: str = ""
 
     # App & Server Settings
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
@@ -116,6 +124,11 @@ class Settings(BaseSettings):
         return self.GEMINI_PRO_MODEL
 
     @property
+    def alphavantage_key(self) -> str:
+        """Alias for ALPHAVANTAGE_KEY."""
+        return self.ALPHAVANTAGE_KEY
+
+    @property
     def log_level(self) -> str:
         return self.LOG_LEVEL
 
@@ -142,6 +155,8 @@ class Settings(BaseSettings):
                     keys.append(k.strip())
         for i in range(1, 21):
             val = getattr(self, f"GEMINI_API_KEY_{i}", None)
+            if not val:
+                val = os.getenv(f"GEMINI_API_KEY_{i}") or os.getenv(f"GEMINI_KEY_{i}")
             if val and val.strip():
                 keys.append(val.strip())
         # Deduplicate preserving order
@@ -198,7 +213,6 @@ class KeyCircuitBreaker:
     _STATE_CACHE_FILE = Path("/tmp/prism_key_health.json")
 
     def __init__(self, key_pool: List[str]):
-        import json
         self.key_pool = key_pool if key_pool else [""]
         self._lock = threading.Lock()
         self._index = 0
@@ -381,7 +395,7 @@ class RotatingGeminiModel:
     """A resilient, thread-safe wrapper around Gemini GenerativeModel with:
 
     1. Multi-key circuit breaking (quarantining exhausted keys, blacklisting invalid ones).
-    2. Dynamic model cascading (e.g. flash-latest -> flash-lite -> gemini-3.5-flash) across separate quota pools.
+    2. Dynamic model cascading (e.g. flash-latest -> flash-lite -> gemini-flash-lite-latest) across separate quota pools.
     3. Thread-isolated client instances (preventing global state race conditions).
     """
 
@@ -394,17 +408,18 @@ class RotatingGeminiModel:
         if "pro" in model_name.lower():
             self.model_cascade = [
                 model_name,
-                "gemini-flash-latest",
                 "gemini-flash-lite-latest",
+                "gemini-flash-latest",
+                "gemini-1.5-flash",
                 "gemini-3.5-flash",
-                "gemini-3.5-flash-lite",
             ]
         else:
             self.model_cascade = [
                 model_name,
                 "gemini-flash-lite-latest",
+                "gemini-flash-latest",
+                "gemini-1.5-flash",
                 "gemini-3.5-flash",
-                "gemini-3.5-flash-lite",
             ]
         # Deduplicate while preserving order
         seen: set[str] = set()

@@ -2,174 +2,135 @@
 
 import asyncio
 import json
-from typing import TYPE_CHECKING
-import structlog
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+import logging
+from typing import Optional
+from backend.config import get_flash_model, settings
+from backend.models.brd import AssumptionFlag, MergedBRD
+from backend.models.context import ContextPackage
 
-if TYPE_CHECKING:
-    from backend.models.brd import MergedBRD, AssumptionFlag
-    from backend.models.context import ContextPackage
-    from backend.errors import IntakeError
-    from backend.config import get_flash_model
-else:
-    try:
-        from backend.models.brd import MergedBRD, AssumptionFlag
-        from backend.models.context import ContextPackage
-        from backend.errors import IntakeError
-        from backend.config import get_flash_model
-    except ImportError:
-        from models.brd import MergedBRD, AssumptionFlag
-        from models.context import ContextPackage
-        from errors import IntakeError
-        from config import get_flash_model
-
-logger = structlog.get_logger()
-
-_ASSUMPTION_PROMPT_TEMPLATE = """You are a critical analyst reviewing a Business Requirements Document.
-
-Your job is to find HIDDEN ASSUMPTIONS — statements the document treats as facts but which have not been proven.
-
-BRD CONTENT:
-{brd_text}
-
-CONTEXT DATA AVAILABLE:
-Region: {region}
-Industry: {industry}
-Regulatory flags: {regulatory_flags}
-
-Find the top 5 most dangerous hidden assumptions in this BRD.
-For each assumption, rate your confidence that it is indeed an assumption (not a proven fact).
-
-Return ONLY a valid JSON array. No markdown. No explanation.
-Format:
-[
-  {{
-    "assumption": "<the unproven claim>",
-    "confidence": "high|medium|low",
-    "evidence": "<what context data exists that challenges or supports this>",
-    "recommended_action": "<specific action to validate this assumption>"
-  }}
-]
-
-Return exactly 5 items. If fewer than 5 assumptions exist, return what you find."""
+logger = logging.getLogger(__name__)
 
 
-def _extract_brd_text(merged_brd: MergedBRD) -> str:
-    """Flatten MergedBRD sections into a single text block for the prompt."""
-    parts = []
-    for section in merged_brd.sections:
-        parts.append(f"[{section.title}]\n{section.content}")
-    return "\n\n".join(parts)[:6000]  # cap at 6000 chars — leave room for context
-
-
-@retry(
-    retry=retry_if_exception_type(Exception),
-    stop=stop_after_attempt(2),
-    wait=wait_exponential(multiplier=1, min=3, max=8),
-    reraise=True,
-)
-async def _call_assumptions(prompt: str) -> str:
-    from vertexai.generative_models import GenerationConfig
-
-    model = get_flash_model()
-    response = await asyncio.wait_for(
-        asyncio.to_thread(
-            model.generate_content,
-            prompt,
-            generation_config=GenerationConfig(
-                temperature=0.3,
-                max_output_tokens=1024,
-                response_mime_type="application/json",
-            ),
-        ),
-        timeout=20,
-    )
-    return response.text
-
-
-async def flag_assumptions(
-    merged_brd: MergedBRD,
-    context: ContextPackage,
-) -> list[AssumptionFlag]:
-    """Gemini 2.0 Flash call — finds top 5 hidden assumptions in the merged BRD.
-
-    Returns empty list on failure — never blocks the pipeline.
-    """
-    logger.info("assumptions_start", session_id=merged_brd.session_id)
-
-    brd_text = _extract_brd_text(merged_brd)
-    if not brd_text.strip():
-        logger.warning("assumptions_skipped", reason="empty_brd")
-        return []
-
-    prompt = _ASSUMPTION_PROMPT_TEMPLATE.format(
-        brd_text=brd_text,
-        region=context.region or "Not specified",
-        industry=context.industry or "Not specified",
-        regulatory_flags=", ".join(context.regulatory_flags[:3]) if context.regulatory_flags else "None",
-    )
-
+def _extract_assumptions_rule_based(merged_brd: MergedBRD) -> list[AssumptionFlag]:
+    """Deterministic fallback to extract assumptions from BRD sections."""
     flags: list[AssumptionFlag] = []
-    data = []
-    try:
-        raw_json = await _call_assumptions(prompt)
-        clean = raw_json.strip().lstrip("```json").lstrip("```").rstrip("```").strip()
-        parsed = json.loads(clean)
-        if isinstance(parsed, list):
-            data = parsed
-    except Exception as e:
-        logger.warning("assumptions_using_heuristic_fallback", session_id=merged_brd.session_id, error=str(e)[:120])
+    keywords = ["assume", "assuming", "expect", "forecast", "target", "predict", "projected", "adoption"]
+    
+    for section in (merged_brd.sections or []):
+        content = section.content or ""
+        lines = content.split(".")
+        for line in lines:
+            line_str = line.strip()
+            if any(kw in line_str.lower() for kw in keywords) and len(line_str) > 15:
+                flags.append(
+                    AssumptionFlag(
+                        assumption=line_str[:120],
+                        confidence="medium",
+                        evidence=f"Extracted from {section.title}",
+                        recommended_action="Validate assumption with primary user testing or historical cohort data.",
+                    )
+                )
+            if len(flags) >= 5:
+                break
+        if len(flags) >= 5:
+            break
 
-    if not data:
-        data = [
-            {
-                "assumption": f"Target customer acquisition costs in {context.region or 'the target market'} will stay low through organic product-led growth.",
-                "confidence": "high",
-                "evidence": "Market benchmarks indicate digital CAC escalates significantly beyond the initial innovator cohort.",
-                "recommended_action": "Model conservative paid acquisition economics and pilot localized outbound sales.",
-            },
-            {
-                "assumption": f"Users will readily replace existing legacy habits in {context.industry or 'the target sector'} without extensive training.",
-                "confidence": "high",
-                "evidence": "Workflow switching inertia is a primary driver of enterprise churn and onboarding drop-off.",
-                "recommended_action": "Design zero-friction concierge migration tools and self-serve onboarding guides.",
-            },
-            {
-                "assumption": "Unit economics will sustain gross margins above 70% as concurrent API volume scales.",
-                "confidence": "medium",
-                "evidence": "Heavy AI inference and third-party data processing costs can erode margins without caching.",
-                "recommended_action": "Implement semantic query caching and tiered model routing for cost containment.",
-            },
-            {
-                "assumption": f"Regional regulatory and data privacy frameworks in {context.region or 'target jurisdictions'} will remain permissive.",
-                "confidence": "medium",
-                "evidence": "Evolving compliance standards require proactive data residency and user consent auditing.",
-                "recommended_action": "Conduct quarterly legal reviews and maintain granular audit logging.",
-            },
-            {
-                "assumption": "Key platform dependencies and third-party infrastructure APIs will maintain 99.9% uptime and stable pricing.",
-                "confidence": "medium",
-                "evidence": "Upstream API outages and rate limits create cascading reliability risks for end-users.",
-                "recommended_action": "Deploy circuit breakers, multi-provider fallbacks, and local queue resilience.",
-            },
+    if not flags:
+        flags = [
+            AssumptionFlag(
+                assumption="Customer acquisition cost will remain stable as marketing scale increases.",
+                confidence="medium",
+                evidence="Standard venture market baseline",
+                recommended_action="Run initial paid ad smoke test to establish baseline CAC before scaling.",
+            ),
+            AssumptionFlag(
+                assumption="Target users will adopt digital self-serve workflow without high-touch onboarding.",
+                confidence="low",
+                evidence="Regional adoption patterns",
+                recommended_action="Conduct 10 guided customer interviews to test self-serve usability.",
+            ),
+            AssumptionFlag(
+                assumption="Regulatory licensing requirements will not delay launch timelines beyond 90 days.",
+                confidence="high",
+                evidence="Local regulatory framework",
+                recommended_action="Consult regional legal counsel on pre-licensing sandboxes.",
+            ),
         ]
 
-    for item in data[:5]:
-        try:
-            flags.append(
-                AssumptionFlag(
-                    assumption=str(item.get("assumption", "")),
-                    confidence=str(item.get("confidence", "medium")).lower(),
-                    evidence=item.get("evidence"),
-                    recommended_action=str(item.get("recommended_action", "Validate with user research")),
-                )
-            )
-        except Exception:
-            continue
+    return flags[:5]
 
-    logger.info(
-        "assumptions_complete",
-        session_id=merged_brd.session_id,
-        flag_count=len(flags),
-    )
-    return flags
+
+def _sync_flag_assumptions_gemini(merged_brd: MergedBRD, context: ContextPackage) -> Optional[list[AssumptionFlag]]:
+    """Use Gemini Flash to identify hidden assumptions in the BRD against harvested context."""
+    sections_text = "\n\n".join([f"### {s.title}\n{s.content}" for s in (merged_brd.sections or [])])
+    if not sections_text.strip():
+        return None
+
+    prompt = f"""You are a startup diligence expert. Analyze the following Business Requirement Document (BRD) sections and harvested market context.
+Identify top 3 to 5 hidden, unvalidated, or risky assumptions.
+
+Market Context:
+- Region: {context.region}
+- Industry: {context.industry}
+- Macro Inflation / GDP: {context.market_data.inflation_rate_pct if context.market_data else 'N/A'}% / ${context.market_data.gdp_per_capita_usd if context.market_data else 'N/A'}
+- Regulatory Flags: {', '.join(context.regulatory_flags or [])}
+
+BRD Sections:
+{sections_text[:3000]}
+
+Return ONLY a valid JSON array of objects with keys:
+[
+  {{
+    "assumption": "string description",
+    "confidence": "high | medium | low",
+    "evidence": "supporting evidence or context",
+    "recommended_action": "actionable validation step"
+  }}
+]"""
+
+    model = get_flash_model()
+    resp = model.generate_content(prompt)
+    if not resp or not resp.text:
+        return None
+
+    text = resp.text.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        text = "\n".join(lines[1:-1] if lines[-1].strip() == "```" else lines[1:])
+
+    data = json.loads(text)
+    if isinstance(data, list):
+        results: list[AssumptionFlag] = []
+        for item in data:
+            if isinstance(item, dict) and "assumption" in item:
+                conf = str(item.get("confidence", "medium")).lower()
+                if conf not in ("high", "medium", "low"):
+                    conf = "medium"
+                results.append(
+                    AssumptionFlag(
+                        assumption=str(item["assumption"]),
+                        confidence=conf,
+                        evidence=str(item.get("evidence", "Gemini analysis")),
+                        recommended_action=str(item.get("recommended_action", "Conduct market experiment")),
+                    )
+                )
+        return results if results else None
+    return None
+
+
+async def flag_assumptions(merged_brd: MergedBRD, context: ContextPackage) -> list[AssumptionFlag]:
+    """Flag unvalidated assumptions in the BRD using Gemini with deterministic fallback."""
+    if not isinstance(merged_brd, MergedBRD) or not isinstance(context, ContextPackage):
+        return _extract_assumptions_rule_based(merged_brd if isinstance(merged_brd, MergedBRD) else MergedBRD(session_id="unknown"))
+
+    try:
+        flags = await asyncio.wait_for(
+            asyncio.to_thread(_sync_flag_assumptions_gemini, merged_brd, context),
+            timeout=settings.EVALUATOR_TIMEOUT_SECONDS,
+        )
+        if flags:
+            return flags
+    except Exception as e:
+        logger.warning("gemini_flag_assumptions_failed: %s", type(e).__name__)
+
+    return _extract_assumptions_rule_based(merged_brd)
