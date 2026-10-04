@@ -1,7 +1,7 @@
 """backend/session_store.py — In-memory session CRUD and TTL cleanup background task."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, TYPE_CHECKING
 import uuid
 
@@ -24,7 +24,7 @@ _sessions: dict[str, dict[str, Any]] = {}
 def create_session() -> str:
     """Create a new session with default state and UUID4 identifier."""
     session_id = str(uuid.uuid4())
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     session_data: dict[str, Any] = {
         "session_id": session_id,
         "created_at": now,
@@ -49,7 +49,7 @@ def get_session(session_id: str) -> dict[str, Any] | None:
     if session is None:
         return None
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     ttl = timedelta(seconds=settings.SESSION_TTL_SECONDS)
     if now - session["last_accessed"] > ttl:
         _sessions.pop(session_id, None)
@@ -73,7 +73,7 @@ def update_session(session_id: str, updates: dict[str, Any] | None = None, **kwa
         merged_updates.update(kwargs)
 
     session.update(merged_updates)
-    session["last_accessed"] = datetime.utcnow()
+    session["last_accessed"] = datetime.now(timezone.utc)
     logger.info("session_updated", session_id=session_id, updated_keys=list(merged_updates.keys()))
     return session
 
@@ -91,7 +91,7 @@ async def cleanup_expired_sessions(interval_seconds: int = 300) -> None:
     while True:
         await asyncio.sleep(interval_seconds)
         try:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             ttl = timedelta(seconds=settings.SESSION_TTL_SECONDS)
             expired_ids = [
                 sid for sid, s in list(_sessions.items())
