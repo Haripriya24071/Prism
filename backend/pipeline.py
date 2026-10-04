@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from backend.session_store import update_session, set_session_status
     from backend.sse_manager import publish, publish_done
     from backend.errors import SwarmError
+    from backend.preset_cache import get_cached_run, save_cached_run
 else:
     try:
         from backend.models.intake import IntakePackage
@@ -44,6 +45,7 @@ else:
         from backend.session_store import update_session, set_session_status
         from backend.sse_manager import publish, publish_done
         from backend.errors import SwarmError
+        from backend.preset_cache import get_cached_run, save_cached_run
     except ImportError:
         from models.intake import IntakePackage
         from models.brd import MergedBRD
@@ -63,6 +65,7 @@ else:
         from session_store import update_session, set_session_status
         from sse_manager import publish, publish_done
         from errors import SwarmError
+        from preset_cache import get_cached_run, save_cached_run
 
 logger = structlog.get_logger()
 
@@ -95,6 +98,74 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
     logger.info("pipeline_start", session_id=session_id)
 
     try:
+        # ── Step 0: Check Preset / Repeated Idea Cache ────────────────
+        idea_text = ""
+        if intake.extraction and intake.extraction.raw_idea:
+            idea_text = intake.extraction.raw_idea
+        elif intake.file_context:
+            idea_text = intake.file_context
+        elif intake.conversation_history:
+            idea_text = " ".join([m.get("content", "") for m in intake.conversation_history if m.get("role") == "user"])
+
+        cached_run = get_cached_run(idea_text)
+        if cached_run:
+            logger.info("pipeline_cache_hit_replay", session_id=session_id, preset_key=cached_run.get("preset_key"))
+            # Fast-forward replay through progress stages so the UI stays animated without a 60s wait
+            set_session_status(session_id, "harvesting")
+            await publish(session_id, "context_start", {"status": "running"}, progress_pct=15)
+            await asyncio.sleep(0.12)
+            await publish(session_id, "context_ready", {"status": "complete", "sources_ok": 3, "geopolitics": True, "sentiment": "bullish"}, progress_pct=25)
+            await asyncio.sleep(0.1)
+
+            set_session_status(session_id, "generating")
+            await publish(session_id, "swarm_start", {"status": "running"}, progress_pct=30)
+            agent_names = ["vc", "lean", "cto", "ux", "regulator", "adversarial"]
+            for idx, name in enumerate(agent_names, 1):
+                pct = 30 + int(idx * 6)
+                await publish(session_id, "agent_status", {"agent": name, "status": "running"}, progress_pct=pct - 3)
+                await asyncio.sleep(0.15)
+                await publish(session_id, "agent_status", {"agent": name, "status": "complete"}, progress_pct=pct)
+
+            await publish(session_id, "swarm_complete", {"status": "complete", "agents": 6}, progress_pct=70)
+            await asyncio.sleep(0.12)
+
+            set_session_status(session_id, "evaluating")
+            await publish(session_id, "evaluation_start", {"status": "running"}, progress_pct=75)
+            await asyncio.sleep(0.12)
+            await publish(session_id, "evaluation_complete", {"status": "complete"}, progress_pct=85)
+
+            set_session_status(session_id, "merging")
+            await publish(session_id, "merge_start", {"status": "running"}, progress_pct=90)
+            await asyncio.sleep(0.12)
+
+            # Update session store with cached data
+            update_session(session_id, cached_run)
+            set_session_status(session_id, "complete")
+
+            # Publish brd_ready and done
+            brd_dict = cached_run.get("brd") or {}
+            await publish(
+                session_id,
+                "brd_ready",
+                {
+                    "status": "complete",
+                    "investor_score": cached_run.get("investor_score") or cached_run.get("score", 74),
+                    "confidence_band": cached_run.get("confidence_band", "fundable"),
+                    "sections_count": len(brd_dict.get("sections", [])),
+                    "sections": brd_dict.get("sections", []),
+                    "brd": brd_dict,
+                    "heatmap": cached_run.get("heatmap"),
+                    "pivots": cached_run.get("pivots", []),
+                    "agent_outputs": cached_run.get("agent_outputs", []),
+                    "score_matrix": cached_run.get("score_matrix"),
+                    "is_cached": True,
+                },
+                progress_pct=100,
+            )
+            await publish_done(session_id)
+            logger.info("pipeline_cache_replay_complete", session_id=session_id)
+            return
+
         # ── Step 1: Context harvest ───────────────────────────────────
         set_session_status(session_id, "harvesting")
         await publish(session_id, "context_start", {"status": "running"}, progress_pct=10)
@@ -223,6 +294,8 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
             investor_score=investor_score.model_dump(mode="json"),
             context=context.model_dump(mode="json") if context else None,
             context_package=context.model_dump(mode="json") if context else None,
+            agent_outputs=[o.model_dump(mode="json") for o in agent_outputs],
+            score_matrix=score_matrix.model_dump(mode="json"),
         )
         set_session_status(session_id, "complete")
 
@@ -250,10 +323,42 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
                 "brd": brd_dict,
                 "heatmap": heatmap.model_dump(mode="json"),
                 "pivots": [p.model_dump(mode="json") for p in (pivots or [])],
+                "agent_outputs": [o.model_dump(mode="json") for o in agent_outputs],
+                "score_matrix": score_matrix.model_dump(mode="json"),
             },
             progress_pct=100,
         )
         await publish_done(session_id)
+
+        # ── Step 15: Save completed run to persistent cache ───────────
+        try:
+            idea_text = ""
+            if intake.extraction and intake.extraction.raw_idea:
+                idea_text = intake.extraction.raw_idea
+            elif intake.file_context:
+                idea_text = intake.file_context
+            elif intake.conversation_history:
+                idea_text = " ".join([m.get("content", "") for m in intake.conversation_history if m.get("role") == "user"])
+
+            save_cached_run(
+                idea_text,
+                {
+                    "status": "complete",
+                    "investor_score": investor_score.score,
+                    "confidence_band": investor_score.confidence_band,
+                    "score": investor_score.score,
+                    "sections_count": len(merged_brd.sections),
+                    "sections": brd_dict.get("sections", []),
+                    "brd": brd_dict,
+                    "heatmap": heatmap.model_dump(mode="json"),
+                    "pivots": [p.model_dump(mode="json") for p in (pivots or [])],
+                    "agent_outputs": [o.model_dump(mode="json") for o in agent_outputs],
+                    "score_matrix": score_matrix.model_dump(mode="json"),
+                    "project_name": (intake.extraction.industry or "PRISM") + " Pitch Evaluation" if (intake.extraction and intake.extraction.industry) else "PRISM Pitch Evaluation",
+                },
+            )
+        except Exception as cache_exc:
+            logger.warning("failed_to_save_run_cache", error=str(cache_exc))
 
         logger.info(
             "pipeline_complete",

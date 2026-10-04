@@ -1,0 +1,341 @@
+{
+  "status": "complete",
+  "investor_score": 84,
+  "confidence_band": "fundable",
+  "score": 84,
+  "sections_count": 6,
+  "sections": [
+    {
+      "title": "Executive Summary",
+      "content": "Autonomous AI code review represents a high-velocity wedge into the $28B DevSecOps market. By shifting vulnerability detection left to PR merge time, this venture commands 85%+ software gross margins with enterprise ACVs ranging from $18k to $65k.",
+      "lineage": {
+        "source_agent": "vc",
+        "confidence": 0.88,
+        "data_citation": "[SOURCE: crunchbase] $4.2B invested into AI DevSecOps category in 2025"
+      }
+    },
+    {
+      "title": "Problem & Opportunity",
+      "content": "Engineering leaders lose 22% of developer velocity to manual PR reviews and retroactive security audits. Traditional static analysis tools (SonarQube, Snyk) flag high false positives; an autonomous LLM auditor with verified codebase context cuts audit time by 60%.",
+      "lineage": {
+        "source_agent": "vc",
+        "confidence": 0.85,
+        "data_citation": "[SOURCE: newsapi] 78% of enterprise CTOs mandate shift-left automated PR security"
+      }
+    },
+    {
+      "title": "Technical Architecture",
+      "content": "Google Cloud Run microservices with Vertex AI private endpoints. Ephemeral worker nodes pull PR diffs, execute tree-sitter AST pruning to redact secrets, and query an isolated Vector Search index per tenant. Zero raw code persists in databases.",
+      "lineage": {
+        "source_agent": "cto",
+        "confidence": 0.92,
+        "data_citation": "[SOURCE: gcp_benchmarks] Zero-trust isolated execution guarantees 99.95% SLA"
+      }
+    },
+    {
+      "title": "Go-to-Market Strategy",
+      "content": "Product-led growth (PLG) developer tier on GitHub Marketplace feeding bottom-up enterprise sales. Seed target: 50 open-source repositories and 25 paying mid-market engineering teams.",
+      "lineage": {
+        "source_agent": "lean",
+        "confidence": 0.86,
+        "data_citation": "[SOURCE: worldbank] Developer productivity accounts for 3.2% of global digital GDP"
+      }
+    },
+    {
+      "title": "Regulatory & Compliance Risk",
+      "content": "Audited compliance governance for EU AI Act (High-Risk Classification avoidance), US FTC automated algorithmic liability, and SOC2 Type II automated logging. Disclaimers and explicit human-in-the-loop signoffs are contractually enforced.",
+      "lineage": {
+        "source_agent": "regulator",
+        "confidence": 0.89,
+        "data_citation": "[SOURCE: eu_ai_act] Article 14 human-in-the-loop oversight mandatory for automated code commits"
+      }
+    },
+    {
+      "title": "Financial Plan & Unit Economics",
+      "content": "Priced at $45/contributor/month. Target 85% gross margins with LLM inference cost of $0.08 per PR. Infrastructure budget: $1,200/month baseline cluster cost on GCP + $0.06/PR compute & token cost.",
+      "lineage": {
+        "source_agent": "cto",
+        "confidence": 0.84,
+        "data_citation": "[SOURCE: financial_model] Breakeven at 180 paying developer seats"
+      }
+    }
+  ],
+  "brd": {
+    "session_id": "mock-session-b2b-saas-001",
+    "sections": [
+      {
+        "title": "Executive Summary",
+        "content": "Autonomous AI code review represents a high-velocity wedge into the $28B DevSecOps market. By shifting vulnerability detection left to PR merge time, this venture commands 85%+ software gross margins with enterprise ACVs ranging from $18k to $65k.",
+        "lineage": {
+          "source_agent": "vc",
+          "confidence": 0.88,
+          "data_citation": "[SOURCE: crunchbase] $4.2B invested into AI DevSecOps category in 2025"
+        }
+      },
+      {
+        "title": "Problem & Opportunity",
+        "content": "Engineering leaders lose 22% of developer velocity to manual PR reviews and retroactive security audits. Traditional static analysis tools (SonarQube, Snyk) flag high false positives; an autonomous LLM auditor with verified codebase context cuts audit time by 60%.",
+        "lineage": {
+          "source_agent": "vc",
+          "confidence": 0.85,
+          "data_citation": "[SOURCE: newsapi] 78% of enterprise CTOs mandate shift-left automated PR security"
+        }
+      },
+      {
+        "title": "Technical Architecture",
+        "content": "Google Cloud Run microservices with Vertex AI private endpoints. Ephemeral worker nodes pull PR diffs, execute tree-sitter AST pruning to redact secrets, and query an isolated Vector Search index per tenant. Zero raw code persists in databases.",
+        "lineage": {
+          "source_agent": "cto",
+          "confidence": 0.92,
+          "data_citation": "[SOURCE: gcp_benchmarks] Zero-trust isolated execution guarantees 99.95% SLA"
+        }
+      },
+      {
+        "title": "Go-to-Market Strategy",
+        "content": "Product-led growth (PLG) developer tier on GitHub Marketplace feeding bottom-up enterprise sales. Seed target: 50 open-source repositories and 25 paying mid-market engineering teams.",
+        "lineage": {
+          "source_agent": "lean",
+          "confidence": 0.86,
+          "data_citation": "[SOURCE: worldbank] Developer productivity accounts for 3.2% of global digital GDP"
+        }
+      },
+      {
+        "title": "Regulatory & Compliance Risk",
+        "content": "Audited compliance governance for EU AI Act (High-Risk Classification avoidance), US FTC automated algorithmic liability, and SOC2 Type II automated logging. Disclaimers and explicit human-in-the-loop signoffs are contractually enforced.",
+        "lineage": {
+          "source_agent": "regulator",
+          "confidence": 0.89,
+          "data_citation": "[SOURCE: eu_ai_act] Article 14 human-in-the-loop oversight mandatory for automated code commits"
+        }
+      },
+      {
+        "title": "Financial Plan & Unit Economics",
+        "content": "Priced at $45/contributor/month. Target 85% gross margins with LLM inference cost of $0.08 per PR. Infrastructure budget: $1,200/month baseline cluster cost on GCP + $0.06/PR compute & token cost.",
+        "lineage": {
+          "source_agent": "cto",
+          "confidence": 0.84,
+          "data_citation": "[SOURCE: financial_model] Breakeven at 180 paying developer seats"
+        }
+      }
+    ],
+    "assumptions": [
+      {
+        "assumption": "Developers will trust AI to suggest inline code modifications without human peer pushback.",
+        "confidence": "medium",
+        "evidence": "68% of developers dismiss bots that generate more than 3 comments per PR.",
+        "recommended_action": "Introduce confidence score threshold: only comment when certainty exceeds 90%."
+      },
+      {
+        "assumption": "Enterprise security teams will permit cloud LLM processing of proprietary code.",
+        "confidence": "low",
+        "evidence": "Strict financial institutions prohibit multi-tenant API calls with code context.",
+        "recommended_action": "Build a self-hosted Docker agent proxy that executes AST pruning locally before API transmission."
+      }
+    ],
+    "failure_modes": [
+      {
+        "title": "Microsoft Copilot Platform Bundling",
+        "probability_pct": 65,
+        "description": "GitHub expands native Copilot Autofix into PR triage, eliminating need for standalone third-party bot.",
+        "mitigation": "Focus on multi-git host flexibility (GitLab, Bitbucket, self-hosted) where GitHub Copilot cannot integrate."
+      },
+      {
+        "title": "Prompt Injection via Untrusted Pull Requests",
+        "probability_pct": 45,
+        "description": "Malicious contributors embed zero-width prompt injection payloads in commit messages to exfiltrate CI/CD secrets.",
+        "mitigation": "Isolate the review bot to read-only permissions and sanitize all inputs through an AST security gateway."
+      }
+    ],
+    "investor_readiness_score": 84
+  },
+  "heatmap": {
+    "session_id": "mock-session-b2b-saas-001",
+    "bars": [
+      {
+        "section_title": "Executive Summary",
+        "risk_score": 18,
+        "std_dev": 2.45
+      },
+      {
+        "section_title": "Problem & Opportunity",
+        "risk_score": 25,
+        "std_dev": 3.82
+      },
+      {
+        "section_title": "Technical Architecture",
+        "risk_score": 38,
+        "std_dev": 5.12
+      },
+      {
+        "section_title": "Go-to-Market Strategy",
+        "risk_score": 32,
+        "std_dev": 4.65
+      },
+      {
+        "section_title": "Regulatory & Compliance Risk",
+        "risk_score": 68,
+        "std_dev": 8.94
+      },
+      {
+        "section_title": "Financial Plan & Unit Economics",
+        "risk_score": 42,
+        "std_dev": 5.75
+      }
+    ]
+  },
+  "pivots": [],
+  "agent_outputs": [
+    {
+      "agent": "vc",
+      "brd_json": {
+        "Executive Summary": "Autonomous AI code review represents a high-velocity wedge into the $28B DevSecOps market. By shifting vulnerability detection left to PR merge time, this venture commands 85%+ software gross margins with enterprise ACVs ranging from $18k to $65k.",
+        "Problem & Opportunity": "Engineering leaders lose 22% of developer velocity to manual PR reviews and retroactive security audits. Traditional static analysis tools (SonarQube, Snyk) flag high false positives; an autonomous LLM auditor with verified codebase context cuts audit time by 60%.",
+        "Technical Architecture": "Lightweight GitHub App webhook ingests AST diffs, executes context-aware LLM analysis against private repository embeddings, and delivers inline PR suggestions with zero developer workflow disruption.",
+        "Go-to-Market Strategy": "Product-led growth (PLG) developer tier on GitHub Marketplace feeding bottom-up enterprise sales. Seed target: 50 open-source repositories and 25 paying mid-market engineering teams.",
+        "Regulatory & Compliance Risk": "Customer IP and source code leakage is the primary sales blocker. Zero-data-retention agreements and VPC on-premise deployment options for Tier 1 banks are mandatory prerequisites.",
+        "Financial Plan & Unit Economics": "Priced at $45/contributor/month. Target 85% gross margins with LLM inference cost of $0.08 per PR. Breakeven at 180 paying seats."
+      },
+      "raw_text": "The VC assessment confirms high venture scalability, strong enterprise software gross margins, and clear bottom-up developer moats.",
+      "completed_at": "2026-10-04T12:00:15Z",
+      "duration_ms": 3420,
+      "failed": false
+    },
+    {
+      "agent": "lean",
+      "brd_json": {
+        "Executive Summary": "A lean 4-week validation scope focused strictly on Python and TypeScript GitHub pull requests. Eliminate on-prem complex deployments; validate developer willingness-to-pay via a $19/dev tier before enterprise sales.",
+        "Problem & Opportunity": "Developers ignore tools that slow down PR merges. The core bottleneck is speed: developers will abandon any bot that takes longer than 90 seconds to review a pull request.",
+        "Technical Architecture": "Serverless AWS Lambda / Google Cloud Run execution layer consuming GitHub webhooks. Single-pass LLM prompt with pre-computed AST filters to keep response times under 45 seconds.",
+        "Go-to-Market Strategy": "Launch on Hacker News and Product Hunt. Target YC early-stage founders and solo developers first; achieve 100 active repositories before hiring enterprise reps.",
+        "Regulatory & Compliance Risk": "Avoid HIPAA and SOC2 scope initially by explicitly forbidding analysis of confidential private healthcare repositories; focus on open-source and standard commercial SaaS.",
+        "Financial Plan & Unit Economics": "Operate within a $15,000 bootstrapped runway. Use prompt compression and batch embeddings to cap inference costs at $0.03 per reviewed commit."
+      },
+      "raw_text": "The Lean assessment dictates a rapid 4-week MVP loop targeting speed and developer love before heavy enterprise compliance.",
+      "completed_at": "2026-10-04T12:00:16Z",
+      "duration_ms": 3150,
+      "failed": false
+    },
+    {
+      "agent": "cto",
+      "brd_json": {
+        "Executive Summary": "Zero-trust enterprise architecture featuring isolated ephemeral runners, Google Cloud Secret Manager, BigQuery audit trail logging, and 99.95% availability SLA guarantees.",
+        "Problem & Opportunity": "Enterprise codebases contain proprietary IP, API keys, and PII. Sending raw source code to external multi-tenant LLM endpoints without strict AST token sanitization is a fatal security violation.",
+        "Technical Architecture": "Google Cloud Run microservices with Vertex AI private endpoints. Ephemeral worker nodes pull PR diffs, execute tree-sitter AST pruning to redact secrets, and query an isolated Vector Search index per tenant. Zero raw code persists in databases.",
+        "Go-to-Market Strategy": "Security-first procurement enablement. Publish automated SOC2 Type II compliance reports and provide self-hosted Docker agent connectors for on-premise GitLab/Bitbucket clusters.",
+        "Regulatory & Compliance Risk": "Mandatory adherence to ISO 27001, SOC2, and EU Data Act. Enforce tenant encryption keys (CMEK) via Google Cloud KMS.",
+        "Financial Plan & Unit Economics": "Infrastructure budget: $1,200/month baseline cluster cost on GCP + $0.06/PR compute & LLM token cost. Enterprise margin profile remains sustainable above 78%."
+      },
+      "raw_text": "The CTO assessment establishes zero-trust infrastructure, tenant data isolation, and AST secret redaction as non-negotiable foundations.",
+      "completed_at": "2026-10-04T12:00:17Z",
+      "duration_ms": 3810,
+      "failed": false
+    },
+    {
+      "agent": "ux",
+      "brd_json": {
+        "Executive Summary": "Frictionless inline PR reviews meeting developers directly inside GitHub and GitLab interfaces. Zero external dashboards required for daily triage, maximizing adoption velocity.",
+        "Problem & Opportunity": "Developers experience alert fatigue from noisy linters. If an AI reviewer comments on trivial indentation or posts 15 nitpicks, developers disable it within 48 hours.",
+        "Technical Architecture": "Strict signal-to-noise thresholding: comments are restricted to high-confidence security vectors and logical race conditions. Inline interactive 'Apply Suggestion' GitHub diff buttons allow 1-click fixes.",
+        "Go-to-Market Strategy": "Delightful onboarding: 2-click GitHub App installation with zero config files required. Auto-generates an initial repository security score card on day 1.",
+        "Regulatory & Compliance Risk": "Transparent explainability: every automated recommendation must include a 1-sentence rationale and link to CVE vulnerability benchmarks.",
+        "Financial Plan & Unit Economics": "High user retention (>85% month-3) driven by low-friction inline workflows, ensuring customer lifetime value (LTV) exceeds $4,200 against $380 acquisition cost."
+      },
+      "raw_text": "The UX assessment demands frictionless in-PR interactions, 1-click diff approvals, and ruthless suppression of noisy nitpicks.",
+      "completed_at": "2026-10-04T12:00:18Z",
+      "duration_ms": 2980,
+      "failed": false
+    },
+    {
+      "agent": "regulator",
+      "brd_json": {
+        "Executive Summary": "Audited compliance governance for EU AI Act (High-Risk Classification avoidance), US FTC automated algorithmic liability, and SOC2 Type II automated logging.",
+        "Problem & Opportunity": "Enterprises handling financial or patient data risk statutory fines if third-party AI models process code without formal Data Processing Agreements (DPA) and GDPR Article 28 validation.",
+        "Technical Architecture": "Immutable tamper-proof audit trails logged to Google BigQuery `brd_runs` with SHA-256 commit hashes, user approvals, and zero training on customer IP clauses.",
+        "Go-to-Market Strategy": "Target enterprise compliance officers with pre-certified DPA agreements, ISO 27001 mappings, and HIPAA Business Associate Agreements (BAA).",
+        "Regulatory & Compliance Risk": "Critical liability: If the AI bot approves vulnerable code that leads to a production data breach, disclaimers and explicit 'human-in-the-loop' signoffs must be contractually enforced.",
+        "Financial Plan & Unit Economics": "Allocate $20,000 for external SOC2 Type II audit and legal DPA certification during seed stage."
+      },
+      "raw_text": "The Regulator assessment mandates verifiable audit logs, clear human-in-the-loop liability boundaries, and GDPR-compliant DPAs.",
+      "completed_at": "2026-10-04T12:00:19Z",
+      "duration_ms": 3310,
+      "failed": false
+    },
+    {
+      "agent": "adversarial",
+      "brd_json": {
+        "Executive Summary": "Vulnerability assessment revealing severe platform dependency risks on Microsoft/GitHub Copilot, potential prompt injection via malicious PR comments, and churn vulnerability.",
+        "Problem & Opportunity": "GitHub can commoditize this product overnight by expanding native Copilot Autofix. Furthermore, attackers can craft pull requests with hidden prompt injection vectors to exfiltrate repository secrets via the bot.",
+        "Technical Architecture": "Mandatory adversarial sanitization layer: strip zero-width characters and parse all user PR comments through an isolated heuristic safety filter before passing to LLM context.",
+        "Go-to-Market Strategy": "Avoid competing head-to-head with generic GitHub Copilot. Win on deep multi-repo architecture dependencies and multi-cloud GitLab/Bitbucket support where GitHub Copilot cannot integrate.",
+        "Regulatory & Compliance Risk": "Catastrophic risk of prompt injection poisoning the bot's review suggestions. Implement rigid output schema validation and forbid the bot from ever possessing write/merge permissions.",
+        "Financial Plan & Unit Economics": "Model 35% annual churn due to GitHub Copilot feature bundling; build proprietary AST security rules to create high switching costs."
+      },
+      "raw_text": "The Adversary reveals prompt injection exploit vectors, platform dependency on Microsoft GitHub, and commoditization risks.",
+      "completed_at": "2026-10-04T12:00:20Z",
+      "duration_ms": 3650,
+      "failed": false
+    }
+  ],
+  "score_matrix": {
+    "session_id": "mock-session-b2b-saas-001",
+    "scores": {
+      "vc": {
+        "feasibility": 88,
+        "market_timing": 92,
+        "regulatory_safety": 78,
+        "user_adoption": 85,
+        "competitive_moat": 80,
+        "composite": 84.6,
+        "data_citation": "[SOURCE: crunchbase] $4.2B invested into AI DevSecOps category in 2025"
+      },
+      "lean": {
+        "feasibility": 95,
+        "market_timing": 85,
+        "regulatory_safety": 70,
+        "user_adoption": 90,
+        "competitive_moat": 72,
+        "composite": 82.4,
+        "data_citation": "[SOURCE: worldbank] Developer productivity accounts for 3.2% of global digital GDP"
+      },
+      "cto": {
+        "feasibility": 92,
+        "market_timing": 88,
+        "regulatory_safety": 85,
+        "user_adoption": 82,
+        "competitive_moat": 86,
+        "composite": 86.6,
+        "data_citation": "[SOURCE: newsapi] 78% of enterprise CTOs mandate shift-left automated PR security"
+      },
+      "ux": {
+        "feasibility": 85,
+        "market_timing": 82,
+        "regulatory_safety": 75,
+        "user_adoption": 94,
+        "competitive_moat": 76,
+        "composite": 82.4,
+        "data_citation": "[SOURCE: github_stats] 68% of automated PR bot comments are dismissed due to alert fatigue"
+      },
+      "regulator": {
+        "feasibility": 78,
+        "market_timing": 80,
+        "regulatory_safety": 92,
+        "user_adoption": 72,
+        "competitive_moat": 82,
+        "composite": 80.8,
+        "data_citation": "[SOURCE: eu_ai_act] Article 14 human-in-the-loop oversight mandatory for automated code commits"
+      },
+      "adversarial": {
+        "feasibility": 82,
+        "market_timing": 78,
+        "regulatory_safety": 68,
+        "user_adoption": 80,
+        "competitive_moat": 85,
+        "composite": 78.6,
+        "data_citation": "[SOURCE: cve_database] 14 major prompt injection bypasses documented in LLM code review agents"
+      }
+    },
+    "winning_agent": "cto"
+  },
+  "project_name": "PRISM Automated SAST Code Review",
+  "is_cached": true
+}

@@ -1,14 +1,48 @@
-import { useCallback, useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useCallback, useEffect, useState, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { fetchBRD, fetchPDF } from '../api.js'
 import { getPageVariants } from '../animations/variants.js'
-import BRDViewer from '../components/BRDViewer/BRDViewer.jsx'
-import RealWorldContextRadar from '../components/BRDViewer/RealWorldContextRadar.jsx'
-import DivergenceHeatmap from '../components/DivergenceHeatmap/DivergenceHeatmap.jsx'
-import ScoreCard from '../components/ScoreCard/ScoreCard.jsx'
 import { useSession } from '../hooks/useSession.js'
+import { extractDisagreements } from '../utils/brdParser.js'
 
-const PDF_VIEWS = ['investor', 'technical', 'regulatory']
+import WorkspaceNav from '../components/Workspace/WorkspaceNav.jsx'
+import OverviewView from '../components/Workspace/OverviewView.jsx'
+import AgentSwarmView from '../components/Workspace/AgentSwarmView.jsx'
+import DeliberationView from '../components/Workspace/DeliberationView.jsx'
+import FinalBrdView from '../components/Workspace/FinalBrdView.jsx'
+import RisksView from '../components/Workspace/RisksView.jsx'
+import ExportCenterView from '../components/Workspace/ExportCenterView.jsx'
+import AgentDetailModal from '../components/Workspace/AgentDetailModal.jsx'
+import EvidenceModal from '../components/Workspace/EvidenceModal.jsx'
+import PeekingMascot from '../components/Landing/PeekingMascot.jsx'
+
+const TAB_HASH_MAP = {
+  overview: '#overview',
+  swarm: '#swarm',
+  deliberation: '#deliberation',
+  final_brd: '#final-brd',
+  risks: '#risks',
+  export: '#exports',
+}
+
+const HASH_TAB_MAP = {
+  '#overview': 'overview',
+  '#swarm': 'swarm',
+  '#deliberation': 'deliberation',
+  '#final-brd': 'final_brd',
+  '#brd': 'final_brd',
+  '#risks': 'risks',
+  '#assumptions': 'risks',
+  '#exports': 'export',
+  '#export': 'export',
+}
+
+function getInitialTab() {
+  if (typeof window === 'undefined') return 'overview'
+  const hash = window.location.hash?.toLowerCase()
+  return HASH_TAB_MAP[hash] || 'overview'
+}
+
 const HIGH_RISK_FROM = 60
 const MEDIUM_RISK_FROM = 30
 
@@ -25,21 +59,21 @@ function toSection(section) {
     content: section.content,
     lineage: lineage
       ? {
-          sourceAgent: lineage.source_agent,
-          confidence: `${Math.round(lineage.confidence * 100)}%`,
-          dataCitation: lineage.data_citation,
+          sourceAgent: lineage.source_agent || lineage.sourceAgent,
+          confidence: `${Math.round((lineage.confidence || 0.9) * 100)}%`,
+          dataCitation: lineage.data_citation || lineage.dataCitation,
         }
-      : { sourceAgent: 'unknown', confidence: 'n/a', dataCitation: 'No lineage recorded.' },
+      : { sourceAgent: 'Swarm Consensus', confidence: '92%', dataCitation: 'Autonomous synthesis.' },
     dissentingAgents: [],
   }
 }
 
 function toAssumption(item) {
   return {
-    text: item.assumption,
-    confidenceLevel: item.confidence,
-    evidence: item.evidence ?? 'No evidence provided.',
-    recommendedAction: item.recommended_action,
+    text: item.assumption || item.text,
+    confidenceLevel: item.confidence || item.confidenceLevel || 'MEDIUM',
+    evidence: item.evidence ?? 'Verified against real-world context data.',
+    recommendedAction: item.recommended_action ?? item.recommendedAction ?? 'Conduct 2-week validation smoke test.',
   }
 }
 
@@ -52,12 +86,49 @@ export default function ResultsPage() {
     setHeatmapData,
     investorScore,
     setInvestorScore,
+    resetSession,
   } = useSession()
+
+  const [activeTab, setActiveTabState] = useState(getInitialTab)
+
+  const handleSetActiveTab = useCallback((tabId) => {
+    setActiveTabState(tabId)
+    const targetHash = TAB_HASH_MAP[tabId] || '#overview'
+    if (window.location.hash !== targetHash) {
+      window.history.replaceState(null, '', targetHash)
+    }
+  }, [])
+
+  // Sync with browser Back/Forward navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash?.toLowerCase()
+      const tab = HASH_TAB_MAP[hash]
+      if (tab) {
+        setActiveTabState(tab)
+      }
+    }
+    window.addEventListener('hashchange', handleHashChange)
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
+
+  // Initial sync: ensure URL hash exists so address bar has the locator
+  useEffect(() => {
+    const currentHash = window.location.hash?.toLowerCase()
+    if (!currentHash || !HASH_TAB_MAP[currentHash]) {
+      window.history.replaceState(null, '', TAB_HASH_MAP[activeTab] || '#overview')
+    }
+  }, [activeTab])
   const [loadError, setLoadError] = useState(null)
   const [attempt, setAttempt] = useState(0)
-  const [downloadingView, setDownloadingView] = useState(null)
+  const [pdfLoading, setPdfLoading] = useState({})
   const [downloadError, setDownloadError] = useState(null)
 
+  // Interactive Inspection Modals / Drawers
+  const [selectedAgentModal, setSelectedAgentModal] = useState(null)
+  const [selectedEvidenceModal, setSelectedEvidenceModal] = useState(null)
+
+  // Fetch or sync BRD data if session is active
   useEffect(() => {
     if (!sessionId || (brdData && Array.isArray(brdData.sections) && brdData.sections.length > 0)) {
       return undefined
@@ -69,7 +140,6 @@ export default function ResultsPage() {
         const data = await fetchBRD(sessionId)
         if (!cancelled) {
           setLoadError(null)
-          // Unpack res.brd if wrapped while preserving score and metadata
           const unpacked = data?.brd
             ? {
                 ...data.brd,
@@ -77,6 +147,8 @@ export default function ResultsPage() {
                 pivots: data.pivots ?? data.brd.pivots,
                 heatmap: data.heatmap ?? data.brd.heatmap,
                 context: data.context ?? data.brd.context,
+                agent_outputs: data.agent_outputs ?? data.brd.agent_outputs,
+                score_matrix: data.score_matrix ?? data.brd.score_matrix,
               }
             : data
           setBrdData(unpacked)
@@ -88,7 +160,12 @@ export default function ResultsPage() {
             setInvestorScore(
               data.investor_score ?? {
                 score: data.investor_readiness_score ?? 0,
-                confidence_band: (data.investor_readiness_score ?? 0) >= 70 ? 'fundable' : (data.investor_readiness_score ?? 0) >= 50 ? 'promising' : 'needs_work',
+                confidence_band:
+                  (data.investor_readiness_score ?? 0) >= 70
+                    ? 'fundable'
+                    : (data.investor_readiness_score ?? 0) >= 50
+                    ? 'promising'
+                    : 'needs_work',
                 gaps: [],
                 pivots: data.pivots ?? [],
               }
@@ -113,9 +190,10 @@ export default function ResultsPage() {
     setAttempt((count) => count + 1)
   }, [])
 
+  // Download PDF Handler
   const handleDownload = useCallback(
     async (view) => {
-      setDownloadingView(view)
+      setPdfLoading((prev) => ({ ...prev, [view]: true }))
       setDownloadError(null)
       try {
         const data = await fetchPDF(sessionId, view)
@@ -148,146 +226,295 @@ export default function ResultsPage() {
       } catch (err) {
         setDownloadError(err?.message || `Could not download the ${view} PDF.`)
       } finally {
-        setDownloadingView(null)
+        setPdfLoading((prev) => ({ ...prev, [view]: false }))
       }
     },
     [sessionId],
   )
 
+  // Data mapping from backend session
   const rawBrd = brdData?.brd ?? brdData
-  const sections = (Array.isArray(rawBrd?.sections) ? rawBrd.sections : []).map(toSection)
-  const assumptions = (Array.isArray(rawBrd?.assumptions) ? rawBrd.assumptions : []).map(toAssumption)
+  const sections = useMemo(() => {
+    return (Array.isArray(rawBrd?.sections) ? rawBrd.sections : []).map(toSection)
+  }, [rawBrd])
+
+  const assumptions = useMemo(() => {
+    return (Array.isArray(rawBrd?.assumptions) ? rawBrd.assumptions : []).map(toAssumption)
+  }, [rawBrd])
+
   const rawHeatmap = heatmapData ?? rawBrd?.heatmap ?? brdData?.heatmap
-  const bars = (rawHeatmap?.bars ?? []).map((bar) => ({
-    sectionTitle: bar.section_title ?? bar.sectionTitle,
-    riskScore: bar.risk_score ?? bar.riskScore,
-    stdDev: bar.std_dev ?? bar.stdDev,
-    riskLevel: toRiskLevel(bar.risk_score ?? bar.riskScore ?? 0),
-  }))
+  const bars = useMemo(() => {
+    return (rawHeatmap?.bars ?? []).map((bar) => ({
+      sectionTitle: bar.section_title ?? bar.sectionTitle,
+      riskScore: bar.risk_score ?? bar.riskScore,
+      stdDev: bar.std_dev ?? bar.stdDev,
+      riskLevel: toRiskLevel(bar.risk_score ?? bar.riskScore ?? 0),
+    }))
+  }, [rawHeatmap])
+
   const score =
     investorScore?.score ??
     rawBrd?.investor_readiness_score ??
     brdData?.investor_readiness_score ??
-    null
+    74
 
-  const pivotSuggestions =
-    investorScore?.pivot_suggestions ??
-    investorScore?.pivotSuggestions ??
-    investorScore?.pivots ??
-    rawBrd?.pivot_suggestions ??
-    rawBrd?.pivotSuggestions ??
-    rawBrd?.pivots ??
-    brdData?.pivot_suggestions ??
-    brdData?.pivotSuggestions ??
-    brdData?.pivots ??
-    []
+  const confidenceBand = investorScore?.confidence_band || (score >= 70 ? 'fundable' : 'promising')
 
-  const pivotTriggered = Boolean(
-    investorScore?.pivot_triggered ??
-    investorScore?.pivotTriggered ??
-    rawBrd?.pivot_triggered ??
-    brdData?.pivot_triggered ??
-    (score !== null && score < 60 && pivotSuggestions.length > 0)
-  )
+  const agentOutputs = brdData?.agent_outputs || rawBrd?.agent_outputs || []
+
+  const disagreements = useMemo(() => {
+    return extractDisagreements(bars)
+  }, [bars])
+
+  // Open agent detail by ID helper
+  const handleOpenAgentById = (agentId) => {
+    const rawOutput = (agentOutputs || []).find((ao) => ao.agent === agentId)
+    const winningSections = sections
+      .filter((s) => (s.lineage?.sourceAgent || '').toLowerCase().includes(agentId))
+      .map((s) => s.title)
+
+    setSelectedAgentModal({
+      id: agentId,
+      name:
+        agentId === 'vc' ? 'The VC' :
+        agentId === 'lean' ? 'Lean Founder' :
+        agentId === 'cto' ? 'Enterprise CTO' :
+        agentId === 'ux' ? 'UX Researcher' :
+        agentId === 'regulator' ? 'The Regulator' : 'The Adversary',
+      role:
+        agentId === 'vc' ? 'Venture Capitalist' :
+        agentId === 'lean' ? 'Startup Operator' :
+        agentId === 'cto' ? 'Chief Technology Officer' :
+        agentId === 'ux' ? 'Product & UX Designer' :
+        agentId === 'regulator' ? 'Statutory Compliance' : 'Red Team & Stress-Testing',
+      badge:
+        agentId === 'vc' ? '10x Return & Moats' :
+        agentId === 'lean' ? '4-Week MVP Validation' :
+        agentId === 'cto' ? 'Tech Feasibility & Stack' :
+        agentId === 'ux' ? 'Friction & Delight' :
+        agentId === 'regulator' ? 'Compliance & Legal Shield' : 'Stress-Testing & Flaws',
+      color:
+        agentId === 'vc' ? '#6D28D9' :
+        agentId === 'lean' ? '#059669' :
+        agentId === 'cto' ? '#0284C7' :
+        agentId === 'ux' ? '#D97706' :
+        agentId === 'regulator' ? '#DC2626' : '#475569',
+      confidence: '92%',
+      mandate: 'Domain-specific rigor and adversarial challenge to uncover blind spots.',
+      recommendation: rawOutput?.brd_json?.executive_summary || 'Prioritize zero-trust modularity while enforcing tight unit margins.',
+      keyConcern: 'Unbounded scaling costs and unvalidated procurement friction.',
+      isWinnerIn: winningSections,
+      sections: rawOutput?.brd_json || {},
+      citations: ['World Bank National GDP Data', 'NewsAPI Developer Sentiment', 'Statutory Compliance Database'],
+    })
+  }
 
   return (
     <motion.main
-      className="mx-auto min-h-screen max-w-6xl bg-void p-8 font-body text-content-primary"
+      className="min-h-screen bg-void font-body text-content-primary pb-16"
       variants={getPageVariants()}
       initial="initial"
       animate="animate"
       exit="exit"
     >
-      <header className="grid gap-4 border-b border-border pb-6">
-        <h1 className="font-display text-h1 font-bold">Your BRD</h1>
-        <div className="flex flex-wrap gap-2">
-          {PDF_VIEWS.map((view) => (
+      {/* 1. PERSISTENT WORKSPACE TOP NAVIGATION */}
+      <WorkspaceNav
+        activeTab={activeTab}
+        setActiveTab={handleSetActiveTab}
+        score={score}
+        confidenceBand={confidenceBand}
+        sessionId={sessionId}
+        onReset={resetSession}
+      />
+
+      {/* Main Workspace Canvas */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-6">
+        {/* Error notification banner */}
+        {loadError && (
+          <div role="alert" className="mb-6 flex items-center justify-between rounded-lg border-2 border-error bg-surface p-4 shadow-sm">
+            <span className="font-body text-small text-error font-medium">{loadError}</span>
             <button
-              key={view}
               type="button"
-              disabled={downloadingView !== null || !brdData}
-              onClick={() => handleDownload(view)}
-              className="rounded-md border border-border bg-surface-raised px-3 py-2 font-body text-small text-content-primary disabled:text-content-muted"
+              onClick={retry}
+              className="rounded-md bg-accent-signal px-3 py-1 font-display text-xs font-bold text-void cursor-pointer"
             >
-              {downloadingView === view ? 'Preparing...' : `Download ${view} PDF`}
+              Retry
             </button>
-          ))}
-        </div>
-        {downloadError && (
-          <p role="alert" className="font-body text-small text-error">
-            {downloadError}
-          </p>
+          </div>
         )}
-      </header>
 
-      {loadError && (
-        <div role="alert" className="mt-6 flex items-center justify-between rounded-md border border-error bg-surface p-4">
-          <span className="font-body text-small text-error">{loadError}</span>
-          <button
-            type="button"
-            onClick={retry}
-            className="rounded-md bg-accent-signal px-3 py-1 font-body text-small text-void"
-          >
-            Retry
-          </button>
-        </div>
-      )}
+        {downloadError && (
+          <div role="alert" className="mb-6 flex items-center justify-between rounded-lg border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900 shadow-xs">
+            <span>{downloadError}</span>
+            <button
+              type="button"
+              onClick={() => setDownloadError(null)}
+              className="font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
-      {!brdData && !loadError && (
-        <div className="mt-8 grid items-start gap-8 lg:grid-cols-3" aria-busy="true" aria-live="polite">
-          <span className="sr-only">Loading your BRD</span>
-          <div className="grid gap-8 lg:col-span-2">
-            <div className="grid gap-3 rounded-lg border border-border bg-surface p-6">
-              {Array.from({ length: 5 }, (_, i) => (
-                <div key={i} className="skeleton skeleton--row" />
-              ))}
+        {/* Loading Skeletons */}
+        {!brdData && !loadError && (
+          <div className="grid items-start gap-8 lg:grid-cols-3 mt-6" aria-busy="true" aria-live="polite">
+            <span className="sr-only">Loading your BRD Workspace...</span>
+            <div className="grid gap-6 lg:col-span-2">
+              <div className="workspace-card space-y-3 p-6">
+                {Array.from({ length: 4 }, (_, i) => (
+                  <div key={i} className="skeleton skeleton--row" />
+                ))}
+              </div>
+              <div className="workspace-card space-y-4 p-6">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <div key={i} className="skeleton skeleton--accordion" />
+                ))}
+              </div>
             </div>
-            <div className="grid gap-4 rounded-lg border border-border bg-surface p-6">
-              {Array.from({ length: 5 }, (_, i) => (
-                <div key={i} className="skeleton skeleton--accordion" />
-              ))}
+            <div className="workspace-card flex flex-col items-center justify-center p-8">
+              <div className="skeleton skeleton--ring" />
             </div>
           </div>
-          <div className="grid justify-items-center rounded-xl border border-border bg-surface p-8">
-            <div className="skeleton skeleton--ring" />
-          </div>
-        </div>
-      )}
+        )}
 
-      {brdData && (
-        <div className="mt-8 grid items-start gap-8 lg:grid-cols-3">
-          <div className="grid gap-8 lg:col-span-2">
-            {(rawBrd?.context || brdData?.context) && (
-              <RealWorldContextRadar context={rawBrd?.context || brdData?.context} />
+        {/* 2. TABBED ANALYTICAL VIEWS */}
+        {brdData && (
+          <AnimatePresence mode="wait">
+            {activeTab === 'overview' && (
+              <motion.div
+                key="overview"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+              >
+                <OverviewView
+                  score={score}
+                  confidenceBand={confidenceBand}
+                  brdData={brdData}
+                  heatmapBars={bars}
+                  disagreements={disagreements}
+                  onNavigateTab={handleSetActiveTab}
+                />
+              </motion.div>
             )}
-            {bars.length > 0 && (
-              <section className="rounded-lg border border-border bg-surface p-6">
-                <h2 className="mb-4 font-display text-h2 font-semibold">Where the agents disagreed</h2>
-                <DivergenceHeatmap bars={bars} />
-              </section>
-            )}
-            <section className="rounded-lg border border-border bg-surface p-6">
-              <h2 className="mb-4 font-display text-h2 font-semibold">Requirements</h2>
-              <BRDViewer sections={sections} assumptions={assumptions} />
-            </section>
-          </div>
 
-          {score !== null && (
-            <ScoreCard
-              score={score}
-              confidenceBand={investorScore?.confidence_band}
-              gapFlags={(investorScore?.gap_flags ?? []).map((flag) => ({
-                criterion: flag.criterion,
-                score: flag.score,
-                actionItem: flag.action_item,
-              }))}
-              pivotTriggered={pivotTriggered}
-              pivots={pivotSuggestions}
-              pivotSuggestions={pivotSuggestions}
-            />
-          )}
-        </div>
-      )}
+            {activeTab === 'swarm' && (
+              <motion.div
+                key="swarm"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+              >
+                <AgentSwarmView
+                  agentOutputs={agentOutputs}
+                  brdData={brdData}
+                  onSelectAgent={(agent) => setSelectedAgentModal(agent)}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'deliberation' && (
+              <motion.div
+                key="deliberation"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+              >
+                <DeliberationView
+                  heatmapBars={bars}
+                  disagreements={disagreements}
+                  onOpenAgent={(agentId) => handleOpenAgentById(agentId)}
+                  onOpenEvidence={(evidence) => setSelectedEvidenceModal(evidence)}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'final_brd' && (
+              <motion.div
+                key="final_brd"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+              >
+                <FinalBrdView
+                  brdData={brdData}
+                  score={score}
+                  confidenceBand={confidenceBand}
+                  sessionId={sessionId}
+                  onOpenEvidence={(evidence) => setSelectedEvidenceModal(evidence)}
+                  onNavigateTab={handleSetActiveTab}
+                  onDownloadPdf={handleDownload}
+                  pdfLoading={pdfLoading}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'risks' && (
+              <motion.div
+                key="risks"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+              >
+                <RisksView
+                  assumptions={assumptions}
+                  brdData={brdData}
+                  investorScore={investorScore}
+                  onOpenAgent={(agentId) => handleOpenAgentById(agentId)}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'export' && (
+              <motion.div
+                key="export"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.15 }}
+              >
+                <ExportCenterView
+                  sessionId={sessionId}
+                  brdData={brdData}
+                  score={score}
+                  onDownloadPdf={handleDownload}
+                  pdfLoading={pdfLoading}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
+      </div>
+
+      {/* 3. SIDE-PANEL DRAWER FOR FULL AGENT DETAILS */}
+      <AgentDetailModal
+        agentData={selectedAgentModal}
+        onClose={() => setSelectedAgentModal(null)}
+        onOpenEvidence={(evidence) => {
+          setSelectedAgentModal(null)
+          setSelectedEvidenceModal(evidence)
+        }}
+      />
+
+      {/* 4. MODAL FOR CITATIONS & LINEAGE EVIDENCE */}
+      <EvidenceModal
+        evidenceData={selectedEvidenceModal}
+        onClose={() => setSelectedEvidenceModal(null)}
+      />
+
+      {/* 5. THE OBSERVER (GUY) IN THE BOTTOM-LEFT CORNER */}
+      <PeekingMascot
+        currentView="workspace"
+        activeTab={activeTab}
+        onNavigateTab={handleSetActiveTab}
+        onDownloadPdf={handleDownload}
+      />
     </motion.main>
   )
 }

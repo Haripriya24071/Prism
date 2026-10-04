@@ -1,0 +1,390 @@
+{
+  "status": "complete",
+  "investor_score": 79,
+  "confidence_band": "fundable",
+  "score": 79,
+  "sections_count": 6,
+  "project_name": "NexusPay Autonomous MiCA/FinCEN Compliance",
+  "is_cached": true,
+  "sections": [
+    {
+      "title": "Executive Summary & Market Imperative",
+      "content": "Cross-border B2B transactions incur $14B annually in compliance delays and false-positive sanctions freezes. NexusPay orchestrates real-time regulatory mapping between EU Markets in Crypto-Assets (MiCA) and US FinCEN guidelines.",
+      "lineage": {
+        "source_agent": "vc",
+        "confidence": 0.87,
+        "data_citation": "[SOURCE: bis_report] Cross-border payment friction costs 2.4% of total transaction value"
+      }
+    },
+    {
+      "title": "Dual-Jurisdiction Regulatory Engine",
+      "content": "Autonomous parser reconciles EU MiCA whitepaper authorization requirements with FinCEN Suspicious Activity Report (SAR) thresholds. Dynamic sanctions filtering against OFAC, EU Consolidated, and UN lists in under 45ms.",
+      "lineage": {
+        "source_agent": "regulator",
+        "confidence": 0.95,
+        "data_citation": "[SOURCE: mica_regulation] EU 2023/1114 Titles III and IV compliance mandates"
+      }
+    },
+    {
+      "title": "High-Throughput Streaming Infrastructure",
+      "content": "Event-driven Apache Kafka pipeline deployed across redundant multi-region AWS and GCP VPCs. Real-time transaction graph inspection utilizes distributed Graph Neural Networks for AML anomaly detection with sub-100ms P99 latency.",
+      "lineage": {
+        "source_agent": "cto",
+        "confidence": 0.91,
+        "data_citation": "[SOURCE: latency_benchmarks] 12,000 TPS sustained transaction validation capacity"
+      }
+    },
+    {
+      "title": "Enterprise Sales & Implementation Cycle",
+      "content": "Enterprise SaaS pricing structured at $3,500/month platform tier + $0.04 per cleared transaction. Targeted at tier-2 banks, neo-brokers, and multi-currency treasury platforms.",
+      "lineage": {
+        "source_agent": "lean",
+        "confidence": 0.83,
+        "data_citation": "[SOURCE: banking_benchmark] Average bank compliance software spend up 26% YoY"
+      }
+    },
+    {
+      "title": "Compliance Officer Copilot UX",
+      "content": "Audit-ready web console surfaces explainable AI decision paths for flagged transactions. One-click SAR draft generation eliminates 4 hours of manual case documentation per escalation.",
+      "lineage": {
+        "source_agent": "ux",
+        "confidence": 0.86,
+        "data_citation": "[SOURCE: fatf_guidance] Explainability standards for automated AML reporting"
+      }
+    },
+    {
+      "title": "Evasion & Smurfing Adversarial Testing",
+      "content": "Red team stress-tests cross-border 'smurfing' (splitting transactions under the $10,000 FinCEN reporting threshold). Temporal graph aggregation successfully links structured transactions across distributed wallets.",
+      "lineage": {
+        "source_agent": "adversarial",
+        "confidence": 0.89,
+        "data_citation": "[SOURCE: aml_typologies] Structuring and smurfing pattern recognition"
+      }
+    }
+  ],
+  "heatmap": {
+    "agents": [
+      "vc",
+      "lean",
+      "cto",
+      "ux",
+      "regulator",
+      "adversarial"
+    ],
+    "sections": [
+      "Executive Summary",
+      "Dual Regulatory Engine",
+      "Streaming Infra",
+      "Enterprise GTM",
+      "Compliance Officer UX",
+      "Smurfing Red Team"
+    ],
+    "matrix": [
+      [
+        80,
+        78,
+        82,
+        85,
+        84,
+        76
+      ],
+      [
+        82,
+        75,
+        88,
+        80,
+        95,
+        84
+      ],
+      [
+        76,
+        80,
+        92,
+        82,
+        88,
+        82
+      ],
+      [
+        85,
+        82,
+        78,
+        84,
+        80,
+        75
+      ],
+      [
+        80,
+        79,
+        85,
+        90,
+        86,
+        78
+      ],
+      [
+        78,
+        77,
+        88,
+        80,
+        90,
+        89
+      ]
+    ],
+    "divergence_score": 22
+  },
+  "pivots": [],
+  "score_matrix": {
+    "vc": 80,
+    "lean": 78,
+    "cto": 86,
+    "ux": 84,
+    "regulator": 92,
+    "adversarial": 83
+  },
+  "agent_outputs": [
+    {
+      "agent_name": "vc",
+      "role": "Venture Capital Partner",
+      "persona": "vc",
+      "score": 80,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Massive expansion in digital asset compliance spend across international banks. Focus: Enterprise FinTech",
+      "sections": [
+        {
+          "title": "VC Assessment",
+          "content": "Massive expansion in digital asset compliance spend across international banks. Recommendation emphasizes Enterprise FinTech.",
+          "lineage": {
+            "source_agent": "vc",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: vc_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Enterprise FinTech",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "lean",
+      "role": "Lean Startup Strategist",
+      "persona": "lean",
+      "score": 78,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Long enterprise procurement cycles (6-9 months) require conservative runway. Focus: Sales Velocity",
+      "sections": [
+        {
+          "title": "LEAN Assessment",
+          "content": "Long enterprise procurement cycles (6-9 months) require conservative runway. Recommendation emphasizes Sales Velocity.",
+          "lineage": {
+            "source_agent": "lean",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: lean_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Sales Velocity",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "cto",
+      "role": "Chief Technology Officer",
+      "persona": "cto",
+      "score": 86,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Kafka and Graph NN stack easily handles 10k+ TPS transaction load. Focus: Streaming Scalability",
+      "sections": [
+        {
+          "title": "CTO Assessment",
+          "content": "Kafka and Graph NN stack easily handles 10k+ TPS transaction load. Recommendation emphasizes Streaming Scalability.",
+          "lineage": {
+            "source_agent": "cto",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: cto_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Streaming Scalability",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "ux",
+      "role": "User Experience Lead",
+      "persona": "ux",
+      "score": 84,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Audit trace visualization provides immediate trust for compliance officers. Focus: Explainable AI",
+      "sections": [
+        {
+          "title": "UX Assessment",
+          "content": "Audit trace visualization provides immediate trust for compliance officers. Recommendation emphasizes Explainable AI.",
+          "lineage": {
+            "source_agent": "ux",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: ux_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Explainable AI",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "regulator",
+      "role": "Compliance & Regulatory Counsel",
+      "persona": "regulator",
+      "score": 92,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Dual-jurisdiction crosswalk provides defensible compliance safe harbors. Focus: Cross-Border MiCA",
+      "sections": [
+        {
+          "title": "REGULATOR Assessment",
+          "content": "Dual-jurisdiction crosswalk provides defensible compliance safe harbors. Recommendation emphasizes Cross-Border MiCA.",
+          "lineage": {
+            "source_agent": "regulator",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: regulator_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Cross-Border MiCA",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "adversarial",
+      "role": "Adversarial Red Team",
+      "persona": "adversarial",
+      "score": 83,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Temporal graph linking reliably uncovers distributed smurfing rings. Focus: Smurfing Detection",
+      "sections": [
+        {
+          "title": "ADVERSARIAL Assessment",
+          "content": "Temporal graph linking reliably uncovers distributed smurfing rings. Recommendation emphasizes Smurfing Detection.",
+          "lineage": {
+            "source_agent": "adversarial",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: adversarial_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Smurfing Detection",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    }
+  ],
+  "brd": {
+    "session_id": "cached_paytech",
+    "sections": [
+      {
+        "title": "Executive Summary & Market Imperative",
+        "content": "Cross-border B2B transactions incur $14B annually in compliance delays and false-positive sanctions freezes. NexusPay orchestrates real-time regulatory mapping between EU Markets in Crypto-Assets (MiCA) and US FinCEN guidelines.",
+        "lineage": {
+          "source_agent": "vc",
+          "confidence": 0.87,
+          "data_citation": "[SOURCE: bis_report] Cross-border payment friction costs 2.4% of total transaction value"
+        }
+      },
+      {
+        "title": "Dual-Jurisdiction Regulatory Engine",
+        "content": "Autonomous parser reconciles EU MiCA whitepaper authorization requirements with FinCEN Suspicious Activity Report (SAR) thresholds. Dynamic sanctions filtering against OFAC, EU Consolidated, and UN lists in under 45ms.",
+        "lineage": {
+          "source_agent": "regulator",
+          "confidence": 0.95,
+          "data_citation": "[SOURCE: mica_regulation] EU 2023/1114 Titles III and IV compliance mandates"
+        }
+      },
+      {
+        "title": "High-Throughput Streaming Infrastructure",
+        "content": "Event-driven Apache Kafka pipeline deployed across redundant multi-region AWS and GCP VPCs. Real-time transaction graph inspection utilizes distributed Graph Neural Networks for AML anomaly detection with sub-100ms P99 latency.",
+        "lineage": {
+          "source_agent": "cto",
+          "confidence": 0.91,
+          "data_citation": "[SOURCE: latency_benchmarks] 12,000 TPS sustained transaction validation capacity"
+        }
+      },
+      {
+        "title": "Enterprise Sales & Implementation Cycle",
+        "content": "Enterprise SaaS pricing structured at $3,500/month platform tier + $0.04 per cleared transaction. Targeted at tier-2 banks, neo-brokers, and multi-currency treasury platforms.",
+        "lineage": {
+          "source_agent": "lean",
+          "confidence": 0.83,
+          "data_citation": "[SOURCE: banking_benchmark] Average bank compliance software spend up 26% YoY"
+        }
+      },
+      {
+        "title": "Compliance Officer Copilot UX",
+        "content": "Audit-ready web console surfaces explainable AI decision paths for flagged transactions. One-click SAR draft generation eliminates 4 hours of manual case documentation per escalation.",
+        "lineage": {
+          "source_agent": "ux",
+          "confidence": 0.86,
+          "data_citation": "[SOURCE: fatf_guidance] Explainability standards for automated AML reporting"
+        }
+      },
+      {
+        "title": "Evasion & Smurfing Adversarial Testing",
+        "content": "Red team stress-tests cross-border 'smurfing' (splitting transactions under the $10,000 FinCEN reporting threshold). Temporal graph aggregation successfully links structured transactions across distributed wallets.",
+        "lineage": {
+          "source_agent": "adversarial",
+          "confidence": 0.89,
+          "data_citation": "[SOURCE: aml_typologies] Structuring and smurfing pattern recognition"
+        }
+      }
+    ]
+  }
+}

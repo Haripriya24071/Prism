@@ -297,6 +297,17 @@ async def get_brd(session_id: str) -> dict:
     if session is None:
         raise SessionNotFoundError(session_id)
 
+    if session.get("brd") is None:
+        # Fallback: check GCS if session was created in a separate process or worker
+        try:
+            from backend.gcp.storage import read_json
+            gcs_brd = await read_json(session_id, "merged_brd")
+            if gcs_brd:
+                session["brd"] = gcs_brd
+                session["status"] = "complete"
+        except Exception:
+            pass
+
     if session["status"] != "complete":
         return {
             "session_id": session_id,
@@ -314,35 +325,51 @@ async def get_brd(session_id: str) -> dict:
         "pivots": session.get("pivots", []),
         "investor_score": session.get("investor_score"),
         "context": session.get("context") or session.get("context_package"),
+        "agent_outputs": session.get("agent_outputs", []),
+        "score_matrix": session.get("score_matrix"),
     }
 
 
 @app.get("/brd/{session_id}/pdf")
-async def get_pdf(session_id: str, view: str = "investor", format: str = "binary"):
+async def get_pdf(session_id: str, view: str = "final", format: str = "binary"):
     session = store_get_session(session_id)
     if session is None:
         raise SessionNotFoundError(session_id)
 
-    if view not in ("investor", "technical", "regulatory"):
-        raise HTTPException(status_code=400, detail="view must be one of: investor, technical, regulatory")
+    valid_views = ("investor", "technical", "regulatory", "final", "full", "deliberation")
+    if view not in valid_views:
+        raise HTTPException(status_code=400, detail=f"view must be one of: {', '.join(valid_views)}")
+
+    target_view = "final" if view in ("final", "full") else view
 
     pdf_urls = session.get("pdf_urls", {})
-    url = pdf_urls.get(view)
+    url = pdf_urls.get(target_view)
 
     # If JSON explicitly requested and a public HTTP(S) URL is available
     if format == "json" and url and (url.startswith("http://") or url.startswith("https://")):
         return {
             "session_id": session_id,
-            "view": view,
+            "view": target_view,
             "url": url,
             "available": True,
         }
 
     brd_data = session.get("brd")
     if not brd_data:
+        # Fallback: check GCS if session was created in a separate process or worker
+        try:
+            from backend.gcp.storage import read_json
+            gcs_brd = await read_json(session_id, "merged_brd")
+            if gcs_brd:
+                brd_data = gcs_brd
+                session["brd"] = gcs_brd
+        except Exception:
+            pass
+
+    if not brd_data:
         return {
             "session_id": session_id,
-            "view": view,
+            "view": target_view,
             "url": None,
             "available": False,
             "message": "BRD has not been generated for this session yet",
@@ -374,12 +401,50 @@ async def get_pdf(session_id: str, view: str = "investor", format: str = "binary
             ))
         merged_brd = MergedBRD(session_id=session_id, sections=sections)
 
-    pdf_bytes = await generate_pdf(merged_brd, view)
+    pdf_bytes = await generate_pdf(merged_brd, target_view)
+    filename = "prism-master-brd.pdf" if target_view == "final" else f"prism-brd-{target_view}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={
-            "Content-Disposition": f'attachment; filename="prism-brd-{view}.pdf"',
+            "Content-Disposition": f'attachment; filename="{filename}"',
             "Content-Type": "application/pdf",
         },
     )
+
+
+# ── Preset Cache Endpoints for Demonstrations ──────────────────────────
+@app.get("/presets/cache")
+async def get_preset_cache_status():
+    """Return status of all pre-cached demo presets."""
+    try:
+        from backend.preset_cache import get_all_cached_status
+    except ImportError:
+        from preset_cache import get_all_cached_status
+    return {"cached": get_all_cached_status()}
+
+
+@app.post("/presets/instant-demo")
+async def launch_instant_demo(preset: str = "b2b_code_review"):
+    """Instantly initialize a session with a cached preset run for rapid demonstration."""
+    try:
+        from backend.preset_cache import get_cached_run
+    except ImportError:
+        from preset_cache import get_cached_run
+
+    cached_data = get_cached_run(preset)
+    if not cached_data:
+        raise HTTPException(status_code=404, detail=f"No cached run found for preset '{preset}'")
+
+    session_id = store_create_session()
+    store_update_session(session_id, cached_data)
+    store_set_session_status(session_id, "complete")
+
+    return {
+        "session_id": session_id,
+        "status": "complete",
+        "preset": preset,
+        "is_cached": True,
+        "data": cached_data,
+    }
+

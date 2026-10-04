@@ -83,3 +83,21 @@ export async function fetchPDF(sessionId, view = 'investor') {
   }
   return await res.json()
 }
+
+export async function fetchPresetCacheStatus() {
+  const res = await fetch(`${API}/presets/cache`)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch preset cache status: ${res.status}`)
+  }
+  return await res.json()
+}
+
+export async function launchInstantDemo(preset = 'b2b_code_review') {
+  const res = await fetch(`${API}/presets/instant-demo?preset=${encodeURIComponent(preset)}`, {
+    method: 'POST',
+  })
+  if (!res.ok) {
+    throw new Error(`Failed to launch instant demo: ${res.status}`)
+  }
+  return await res.json()
+}

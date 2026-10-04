@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { createSession, sendChat, triggerGeneration, uploadFile } from '../api.js'
+import { createSession, sendChat, triggerGeneration, uploadFile, fetchPresetCacheStatus, launchInstantDemo } from '../api.js'
 import { getPageVariants } from '../animations/variants.js'
 import ChatBox from '../components/ChatBox/ChatBox.jsx'
 import VentureDossier from '../components/Intake/VentureDossier.jsx'
@@ -13,6 +13,7 @@ import prismLogo from '../assets/landing/prism_logo.jpg'
 
 const SAMPLE_IDEAS = [
   {
+    id: 'b2b_code_review',
     title: 'B2B AI Code Review',
     tag: 'Scenario 1: High Consensus (85 Score)',
     tagColor: 'text-success bg-success/10 border-success/30',
@@ -21,6 +22,7 @@ const SAMPLE_IDEAS = [
     icon: '🚀',
   },
   {
+    id: 'p2p_social_lending',
     title: 'P2P Social Lending',
     tag: 'Scenario 2: Pivot Suggester Trigger',
     tagColor: 'text-warning bg-warning/10 border-warning/30',
@@ -29,6 +31,7 @@ const SAMPLE_IDEAS = [
     icon: '⚡',
   },
   {
+    id: 'rural_telehealth',
     title: 'Rural Telehealth AI',
     tag: 'Scenario 3: Regulated HealthTech',
     tagColor: 'text-primary bg-primary/10 border-primary/30',
@@ -37,6 +40,7 @@ const SAMPLE_IDEAS = [
     icon: '🏥',
   },
   {
+    id: 'global_paytech',
     title: 'Global PayTech AI',
     tag: 'Scenario 4: Multi-Border FinCEN',
     tagColor: 'text-accent-signal bg-accent-signal/10 border-accent-signal/30',
@@ -66,6 +70,38 @@ export default function IntakePage() {
   const [completionPct, setCompletionPct] = useState(0)
   const [suggestedChips, setSuggestedChips] = useState([])
   const [isComplete, setIsComplete] = useState(false)
+  const [cachedPresets, setCachedPresets] = useState({})
+
+  // Fetch preset cache readiness status on mount
+  useEffect(() => {
+    let isMounted = true
+    fetchPresetCacheStatus()
+      .then((data) => {
+        if (isMounted && data?.cached) {
+          setCachedPresets(data.cached)
+        }
+      })
+      .catch(() => {})
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const handleInstantDemoLaunch = async (presetId) => {
+    setIsSending(true)
+    setUploadError(null)
+    try {
+      const res = await launchInstantDemo(presetId)
+      if (res?.session_id) {
+        setSessionId(res.session_id)
+        setStatus(SESSION_STATUS.COMPLETE)
+      }
+    } catch (err) {
+      setUploadError(err?.message || 'Failed to load instant demo. Running standard evaluation...')
+    } finally {
+      setIsSending(false)
+    }
+  }
 
   // Initialize session with graceful offline fallback
   useEffect(() => {
@@ -573,35 +609,67 @@ export default function IntakePage() {
               {/* Quick Sample Prompts */}
               {turnNumber === 0 ? (
                 <div className="mb-6">
-                  <span className="font-tertiary text-micro font-bold uppercase tracking-wider text-accent-signal block mb-2.5">
-                    ⚡ One-Click Demo Scenarios (Click to Load):
-                  </span>
+                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+                    <span className="font-tertiary text-micro font-bold uppercase tracking-wider text-accent-signal block">
+                      ⚡ Demo Scenarios (Pre-Cached for Fast Demonstrations):
+                    </span>
+                    <span className="font-tertiary text-[10px] text-content-secondary hidden sm:inline">
+                      Click to load pitch into terminal, or click ⚡ Instant Demo
+                    </span>
+                  </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {SAMPLE_IDEAS.map((idea, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => handleSend(idea.prompt)}
-                        className="p-3 text-left rounded-lg border border-border-subtle bg-surface-raised hover:bg-void hover:border-accent-signal hover:shadow-md transition-all group flex flex-col justify-between shadow-xs cursor-pointer"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between gap-1 mb-1.5">
-                            <span className="text-base group-hover:scale-110 transition-transform">{idea.icon}</span>
-                            {idea.tag && (
-                              <span className={`font-display text-[9px] font-bold px-1.5 py-0.5 rounded border ${idea.tagColor}`}>
-                                {idea.tag.split(':')[0]}
-                              </span>
+                    {SAMPLE_IDEAS.map((idea, index) => {
+                      const isCached = Boolean(cachedPresets[idea.id])
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => handleSend(idea.prompt)}
+                          className="p-3 text-left rounded-lg border border-border-subtle bg-surface-raised hover:bg-void hover:border-accent-signal hover:shadow-md transition-all group flex flex-col justify-between shadow-xs cursor-pointer"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-1 mb-1.5">
+                              <span className="text-base group-hover:scale-110 transition-transform">{idea.icon}</span>
+                              <div className="flex items-center gap-1">
+                                {isCached && (
+                                  <span className="font-tertiary text-[9px] font-bold px-1.5 py-0.5 rounded border border-success/40 bg-success/15 text-success">
+                                    ⚡ Cached
+                                  </span>
+                                )}
+                                {idea.tag && (
+                                  <span className={`font-display text-[9px] font-bold px-1.5 py-0.5 rounded border ${idea.tagColor}`}>
+                                    {idea.tag.split(':')[0]}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <span className="font-display font-bold text-micro text-content-primary group-hover:text-accent-signal transition-colors block mb-1">
+                              {idea.title}
+                            </span>
+                          </div>
+                          <p className="font-body text-[11px] text-content-secondary line-clamp-2 leading-snug mb-2">
+                            &ldquo;{idea.prompt}&rdquo;
+                          </p>
+                          <div className="pt-2 border-t border-border-subtle flex items-center justify-between gap-1">
+                            <span className="font-tertiary text-[10px] text-accent-signal font-semibold group-hover:underline">
+                              Load Pitch →
+                            </span>
+                            {isCached && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleInstantDemoLaunch(idea.id)
+                                }}
+                                className="comic-action-btn text-[10px] px-2 py-0.5 bg-accent-signal text-content-inverse font-bold rounded shadow-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                                title="Instantly open workspace with full deliberation & BRD"
+                              >
+                                ⚡ Instant Demo
+                              </button>
                             )}
                           </div>
-                          <span className="font-display font-bold text-micro text-content-primary group-hover:text-accent-signal transition-colors block mb-1">
-                            {idea.title}
-                          </span>
                         </div>
-                        <p className="font-body text-[11px] text-content-secondary line-clamp-2 leading-snug">
-                          &ldquo;{idea.prompt}&rdquo;
-                        </p>
-                      </button>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               ) : (
@@ -610,17 +678,33 @@ export default function IntakePage() {
                     💡 Click to view quick startup starter templates
                   </summary>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2 pt-2 border-t border-border-subtle">
-                    {SAMPLE_IDEAS.map((idea, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => handleSend(idea.prompt)}
-                        className="p-2 text-left rounded border border-border-subtle bg-surface-raised hover:bg-void text-[11px] flex items-center gap-1.5"
-                      >
-                        <span>{idea.icon}</span>
-                        <span className="font-bold">{idea.title}</span>
-                      </button>
-                    ))}
+                    {SAMPLE_IDEAS.map((idea, index) => {
+                      const isCached = Boolean(cachedPresets[idea.id])
+                      return (
+                        <div
+                          key={index}
+                          onClick={() => handleSend(idea.prompt)}
+                          className="p-2 text-left rounded border border-border-subtle bg-surface-raised hover:bg-void text-[11px] flex items-center justify-between gap-1.5 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <span>{idea.icon}</span>
+                            <span className="font-bold truncate">{idea.title}</span>
+                          </div>
+                          {isCached && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleInstantDemoLaunch(idea.id)
+                              }}
+                              className="shrink-0 px-1.5 py-0.5 rounded font-display text-[9px] font-bold bg-accent-signal text-content-inverse hover:brightness-110"
+                            >
+                              ⚡ Demo
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
                 </details>
               )}

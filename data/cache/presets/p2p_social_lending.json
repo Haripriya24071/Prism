@@ -1,0 +1,399 @@
+{
+  "status": "complete",
+  "investor_score": 48,
+  "confidence_band": "needs_pivot",
+  "score": 48,
+  "sections_count": 6,
+  "project_name": "KiteLend P2P Social Micro-Credit",
+  "is_cached": true,
+  "sections": [
+    {
+      "title": "Executive Summary & Viability",
+      "content": "P2P consumer micro-lending across Southeast Asian social networks addresses a $32B unbanked credit gap. However, unregulated viral origination exhibits severe credit default risk (estimated 38% non-performing loan rate) without collateralized anchors.",
+      "lineage": {
+        "source_agent": "vc",
+        "confidence": 0.82,
+        "data_citation": "[SOURCE: worldbank] SE Asia unbanked adult population stands at 44%"
+      }
+    },
+    {
+      "title": "Credit Underwriting & Default Vulnerabilities",
+      "content": "Social graph profiling is highly susceptible to coordinated synthetic identity syndicates and bot rings. The Adversarial analysis demonstrates an 84% exploit probability of credit rotation loops where borrowers repay using adjacent peer accounts.",
+      "lineage": {
+        "source_agent": "adversarial",
+        "confidence": 0.94,
+        "data_citation": "[SOURCE: fraud_benchmark] Peer lending loan-cycling default attacks"
+      }
+    },
+    {
+      "title": "Financial Viability & Capital Burn",
+      "content": "A $50k bootstrap capital pool is mathematically depleted in month 3 under expected default distributions. The venture cannot survive on interest spreads without debt warehouse facilities or bank syndication.",
+      "lineage": {
+        "source_agent": "lean",
+        "confidence": 0.9,
+        "data_citation": "[SOURCE: unit_economics] Breakeven requires minimum $2.4M lending float"
+      }
+    },
+    {
+      "title": "Regulatory & Licensing Minefield",
+      "content": "OJK (Indonesia) and SEC (Philippines) enforce rigorous 2024 microfinance interest caps (max 0.3%/day) and mandatory capitalization reserves. Operating without full NBFC licensing triggers instant cease-and-desist sanctions.",
+      "lineage": {
+        "source_agent": "regulator",
+        "confidence": 0.95,
+        "data_citation": "[SOURCE: ojk_guidelines] Rule No. 10/POJK.05/2022 on Fintech Lending"
+      }
+    },
+    {
+      "title": "Borrower Experience & Social Pressure",
+      "content": "Social-reputation debt enforcement creates extreme user friction and harassment liability. App Store policies explicitly ban apps utilizing contact-list harvesting for collection pressure.",
+      "lineage": {
+        "source_agent": "ux",
+        "confidence": 0.91,
+        "data_citation": "[SOURCE: google_play_policy] Personal loan app contact book access prohibition"
+      }
+    },
+    {
+      "title": "Technical Architecture & Settlement",
+      "content": "Fast payment integration requires local e-wallet APIs (GoPay, GCash, PromptPay). Micro-loan settlement engine built on PostgreSQL with strict optimistic locking and KYC verification webhooks.",
+      "lineage": {
+        "source_agent": "cto",
+        "confidence": 0.88,
+        "data_citation": "[SOURCE: payment_rails] Direct wallet disbursement latency <1200ms"
+      }
+    }
+  ],
+  "heatmap": {
+    "agents": [
+      "vc",
+      "lean",
+      "cto",
+      "ux",
+      "regulator",
+      "adversarial"
+    ],
+    "sections": [
+      "Executive Summary",
+      "Credit Underwriting",
+      "Financial Viability",
+      "Regulatory & Licensing",
+      "Borrower Experience",
+      "Technical Architecture"
+    ],
+    "matrix": [
+      [
+        45,
+        40,
+        70,
+        60,
+        30,
+        25
+      ],
+      [
+        40,
+        35,
+        75,
+        55,
+        25,
+        20
+      ],
+      [
+        50,
+        45,
+        65,
+        50,
+        35,
+        30
+      ],
+      [
+        35,
+        30,
+        80,
+        45,
+        20,
+        15
+      ],
+      [
+        48,
+        52,
+        70,
+        40,
+        42,
+        28
+      ],
+      [
+        60,
+        55,
+        85,
+        65,
+        50,
+        40
+      ]
+    ],
+    "divergence_score": 78
+  },
+  "pivots": [
+    {
+      "title": "Merchant-Secured Supply Chain Factoring",
+      "rationale": "Shift from uncollateralized consumer loans to financing TikTok Shop / Shopee merchant inventory receivables with automatic platform escrow lockup. Reduces default risk from 38% to under 3.5%."
+    },
+    {
+      "title": "Bank-Partnered Lending-as-a-Service (LaaS)",
+      "rationale": "License the AI credit scoring algorithm to existing Tier-2 rural banks rather than lending off balance sheet. Eliminates regulatory capital reserve hurdles while generating high-margin SaaS revenue."
+    }
+  ],
+  "score_matrix": {
+    "vc": 45,
+    "lean": 40,
+    "cto": 74,
+    "ux": 52,
+    "regulator": 30,
+    "adversarial": 25
+  },
+  "agent_outputs": [
+    {
+      "agent_name": "vc",
+      "role": "Venture Capital Partner",
+      "persona": "vc",
+      "score": 45,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Unsecured peer lending without platform escrow is uninvestable in 2026. Focus: Capital Efficiency",
+      "sections": [
+        {
+          "title": "VC Assessment",
+          "content": "Unsecured peer lending without platform escrow is uninvestable in 2026. Recommendation emphasizes Capital Efficiency.",
+          "lineage": {
+            "source_agent": "vc",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: vc_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Capital Efficiency",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "lean",
+      "role": "Lean Startup Strategist",
+      "persona": "lean",
+      "score": 40,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "$50k bootstrap capital will evaporate on first cohort defaults. Focus: Runway & Breakeven",
+      "sections": [
+        {
+          "title": "LEAN Assessment",
+          "content": "$50k bootstrap capital will evaporate on first cohort defaults. Recommendation emphasizes Runway & Breakeven.",
+          "lineage": {
+            "source_agent": "lean",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: lean_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Runway & Breakeven",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "cto",
+      "role": "Chief Technology Officer",
+      "persona": "cto",
+      "score": 74,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Mobile app with local e-wallet hooks is straightforward to build. Focus: Architecture",
+      "sections": [
+        {
+          "title": "CTO Assessment",
+          "content": "Mobile app with local e-wallet hooks is straightforward to build. Recommendation emphasizes Architecture.",
+          "lineage": {
+            "source_agent": "cto",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: cto_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Architecture",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "ux",
+      "role": "User Experience Lead",
+      "persona": "ux",
+      "score": 52,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Social enforcement mechanisms cross ethical and app store boundaries. Focus: Friction & Safety",
+      "sections": [
+        {
+          "title": "UX Assessment",
+          "content": "Social enforcement mechanisms cross ethical and app store boundaries. Recommendation emphasizes Friction & Safety.",
+          "lineage": {
+            "source_agent": "ux",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: ux_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Friction & Safety",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "regulator",
+      "role": "Compliance & Regulatory Counsel",
+      "persona": "regulator",
+      "score": 30,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Strict OJK and central bank interest rate caps trigger immediate enforcement. Focus: Licensing",
+      "sections": [
+        {
+          "title": "REGULATOR Assessment",
+          "content": "Strict OJK and central bank interest rate caps trigger immediate enforcement. Recommendation emphasizes Licensing.",
+          "lineage": {
+            "source_agent": "regulator",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: regulator_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Licensing",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "adversarial",
+      "role": "Adversarial Red Team",
+      "persona": "adversarial",
+      "score": 25,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Syndicated loan-cycling rings will systematically drain lending pools. Focus: Fraud Vulnerabilities",
+      "sections": [
+        {
+          "title": "ADVERSARIAL Assessment",
+          "content": "Syndicated loan-cycling rings will systematically drain lending pools. Recommendation emphasizes Fraud Vulnerabilities.",
+          "lineage": {
+            "source_agent": "adversarial",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: adversarial_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Fraud Vulnerabilities",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    }
+  ],
+  "brd": {
+    "session_id": "cached_p2p",
+    "sections": [
+      {
+        "title": "Executive Summary & Viability",
+        "content": "P2P consumer micro-lending across Southeast Asian social networks addresses a $32B unbanked credit gap. However, unregulated viral origination exhibits severe credit default risk (estimated 38% non-performing loan rate) without collateralized anchors.",
+        "lineage": {
+          "source_agent": "vc",
+          "confidence": 0.82,
+          "data_citation": "[SOURCE: worldbank] SE Asia unbanked adult population stands at 44%"
+        }
+      },
+      {
+        "title": "Credit Underwriting & Default Vulnerabilities",
+        "content": "Social graph profiling is highly susceptible to coordinated synthetic identity syndicates and bot rings. The Adversarial analysis demonstrates an 84% exploit probability of credit rotation loops where borrowers repay using adjacent peer accounts.",
+        "lineage": {
+          "source_agent": "adversarial",
+          "confidence": 0.94,
+          "data_citation": "[SOURCE: fraud_benchmark] Peer lending loan-cycling default attacks"
+        }
+      },
+      {
+        "title": "Financial Viability & Capital Burn",
+        "content": "A $50k bootstrap capital pool is mathematically depleted in month 3 under expected default distributions. The venture cannot survive on interest spreads without debt warehouse facilities or bank syndication.",
+        "lineage": {
+          "source_agent": "lean",
+          "confidence": 0.9,
+          "data_citation": "[SOURCE: unit_economics] Breakeven requires minimum $2.4M lending float"
+        }
+      },
+      {
+        "title": "Regulatory & Licensing Minefield",
+        "content": "OJK (Indonesia) and SEC (Philippines) enforce rigorous 2024 microfinance interest caps (max 0.3%/day) and mandatory capitalization reserves. Operating without full NBFC licensing triggers instant cease-and-desist sanctions.",
+        "lineage": {
+          "source_agent": "regulator",
+          "confidence": 0.95,
+          "data_citation": "[SOURCE: ojk_guidelines] Rule No. 10/POJK.05/2022 on Fintech Lending"
+        }
+      },
+      {
+        "title": "Borrower Experience & Social Pressure",
+        "content": "Social-reputation debt enforcement creates extreme user friction and harassment liability. App Store policies explicitly ban apps utilizing contact-list harvesting for collection pressure.",
+        "lineage": {
+          "source_agent": "ux",
+          "confidence": 0.91,
+          "data_citation": "[SOURCE: google_play_policy] Personal loan app contact book access prohibition"
+        }
+      },
+      {
+        "title": "Technical Architecture & Settlement",
+        "content": "Fast payment integration requires local e-wallet APIs (GoPay, GCash, PromptPay). Micro-loan settlement engine built on PostgreSQL with strict optimistic locking and KYC verification webhooks.",
+        "lineage": {
+          "source_agent": "cto",
+          "confidence": 0.88,
+          "data_citation": "[SOURCE: payment_rails] Direct wallet disbursement latency <1200ms"
+        }
+      }
+    ]
+  }
+}

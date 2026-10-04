@@ -12,3 +12,4 @@ dist/
 build/
 *.json.key
 prism-hackathon-*.json
+data/cache/presets/idea_*.json

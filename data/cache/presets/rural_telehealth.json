@@ -1,0 +1,390 @@
+{
+  "status": "complete",
+  "investor_score": 81,
+  "confidence_band": "fundable",
+  "score": 81,
+  "sections_count": 6,
+  "project_name": "DishaHealth AI: Rural Clinical Triage",
+  "is_cached": true,
+  "sections": [
+    {
+      "title": "Executive Summary & Clinical Need",
+      "content": "Rural healthcare in India faces a 1:11,000 doctor-to-patient deficit in primary health centres. DishaHealth equips community ASHA health workers with offline-capable AI diagnostic support, prioritizing emergency maternal and cardiovascular escalations.",
+      "lineage": {
+        "source_agent": "vc",
+        "confidence": 0.89,
+        "data_citation": "[SOURCE: who_bulletin] Rural primary triage reduces clinical mortality by 42%"
+      }
+    },
+    {
+      "title": "Clinical Triage & Differential Diagnosis",
+      "content": "Multimodal diagnostic assistant guides community health workers through structured symptom trees and optical image capture. System acts strictly as decision-support, mandating physician tele-consultation before prescription.",
+      "lineage": {
+        "source_agent": "ux",
+        "confidence": 0.88,
+        "data_citation": "[SOURCE: aiims_guidelines] Clinical protocol for non-physician rural triage"
+      }
+    },
+    {
+      "title": "DISHA & DPDP Act Data Governance",
+      "content": "Strict compliance with India's Digital Personal Data Protection (DPDP) Act 2023 and DISHA standards. Zero cross-border health telemetry; all patient identifiers are tokenized locally on-device and stored in certified Indian sovereign cloud regions.",
+      "lineage": {
+        "source_agent": "regulator",
+        "confidence": 0.94,
+        "data_citation": "[SOURCE: dpdp_act_2023] Section 9: Processing of sensitive personal health data"
+      }
+    },
+    {
+      "title": "Offline-First Edge Architecture",
+      "content": "ASHA tablets operate in intermittent 2G/zero-connectivity environments. Quantized ONNX triage models (under 120MB) execute on Android NPU, synchronizing encrypted differentials to central servers once network connectivity is re-established.",
+      "lineage": {
+        "source_agent": "cto",
+        "confidence": 0.93,
+        "data_citation": "[SOURCE: edge_ai_benchmarks] 180ms inference latency on low-cost MediaTek chipsets"
+      }
+    },
+    {
+      "title": "Unit Economics & Grant Co-Financing",
+      "content": "Priced at 25 INR ($0.30) per evaluated triage session, funded via state National Health Mission (NHM) allocations and CSR healthcare grants. 12-month pilot covers 45 Primary Health Centres.",
+      "lineage": {
+        "source_agent": "lean",
+        "confidence": 0.85,
+        "data_citation": "[SOURCE: nhm_procurement] District digital health mission allocation guidelines"
+      }
+    },
+    {
+      "title": "Adversarial Safety & Hallucination Mitigation",
+      "content": "Red team analysis tests medical hallucination rates under ambiguous symptom reports. Deterministic rule-based guardrails override LLM generation for red-flag vital signs (systolic BP >180, SpO2 <90%).",
+      "lineage": {
+        "source_agent": "adversarial",
+        "confidence": 0.91,
+        "data_citation": "[SOURCE: medical_redteam] Deterministic fail-safe vital sign overrides"
+      }
+    }
+  ],
+  "heatmap": {
+    "agents": [
+      "vc",
+      "lean",
+      "cto",
+      "ux",
+      "regulator",
+      "adversarial"
+    ],
+    "sections": [
+      "Executive Summary",
+      "Clinical Triage",
+      "DISHA & DPDP",
+      "Offline Edge",
+      "Unit Economics",
+      "Hallucination Safeguards"
+    ],
+    "matrix": [
+      [
+        82,
+        80,
+        85,
+        88,
+        86,
+        75
+      ],
+      [
+        80,
+        78,
+        88,
+        92,
+        85,
+        78
+      ],
+      [
+        85,
+        75,
+        90,
+        82,
+        94,
+        82
+      ],
+      [
+        78,
+        82,
+        95,
+        86,
+        88,
+        80
+      ],
+      [
+        84,
+        86,
+        80,
+        80,
+        82,
+        74
+      ],
+      [
+        80,
+        76,
+        88,
+        84,
+        90,
+        88
+      ]
+    ],
+    "divergence_score": 18
+  },
+  "pivots": [],
+  "score_matrix": {
+    "vc": 82,
+    "lean": 79,
+    "cto": 88,
+    "ux": 86,
+    "regulator": 88,
+    "adversarial": 80
+  },
+  "agent_outputs": [
+    {
+      "agent_name": "vc",
+      "role": "Venture Capital Partner",
+      "persona": "vc",
+      "score": 82,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Strong alignment with global health impact funds and government procurement. Focus: Impact Investing",
+      "sections": [
+        {
+          "title": "VC Assessment",
+          "content": "Strong alignment with global health impact funds and government procurement. Recommendation emphasizes Impact Investing.",
+          "lineage": {
+            "source_agent": "vc",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: vc_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Impact Investing",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "lean",
+      "role": "Lean Startup Strategist",
+      "persona": "lean",
+      "score": 79,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "NHM integration provides non-dilutive grant cushion during pilot phase. Focus: Grant Runway",
+      "sections": [
+        {
+          "title": "LEAN Assessment",
+          "content": "NHM integration provides non-dilutive grant cushion during pilot phase. Recommendation emphasizes Grant Runway.",
+          "lineage": {
+            "source_agent": "lean",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: lean_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Grant Runway",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "cto",
+      "role": "Chief Technology Officer",
+      "persona": "cto",
+      "score": 88,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Quantized local models on Android tablets solve the 2G rural reality. Focus: Edge Architecture",
+      "sections": [
+        {
+          "title": "CTO Assessment",
+          "content": "Quantized local models on Android tablets solve the 2G rural reality. Recommendation emphasizes Edge Architecture.",
+          "lineage": {
+            "source_agent": "cto",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: cto_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Edge Architecture",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "ux",
+      "role": "User Experience Lead",
+      "persona": "ux",
+      "score": 86,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Simple regional-language voice prompts empower ASHA healthcare workers. Focus: Voice & Iconography",
+      "sections": [
+        {
+          "title": "UX Assessment",
+          "content": "Simple regional-language voice prompts empower ASHA healthcare workers. Recommendation emphasizes Voice & Iconography.",
+          "lineage": {
+            "source_agent": "ux",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: ux_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Voice & Iconography",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "regulator",
+      "role": "Compliance & Regulatory Counsel",
+      "persona": "regulator",
+      "score": 88,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Local tokenization and sovereign hosting strictly satisfy DPDP 2023 mandates. Focus: Data Privacy",
+      "sections": [
+        {
+          "title": "REGULATOR Assessment",
+          "content": "Local tokenization and sovereign hosting strictly satisfy DPDP 2023 mandates. Recommendation emphasizes Data Privacy.",
+          "lineage": {
+            "source_agent": "regulator",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: regulator_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Data Privacy",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    },
+    {
+      "agent_name": "adversarial",
+      "role": "Adversarial Red Team",
+      "persona": "adversarial",
+      "score": 80,
+      "confidence": 0.88,
+      "failed": false,
+      "analysis": "Deterministic override thresholds effectively eliminate hallucination risk. Focus: Clinical Boundaries",
+      "sections": [
+        {
+          "title": "ADVERSARIAL Assessment",
+          "content": "Deterministic override thresholds effectively eliminate hallucination risk. Recommendation emphasizes Clinical Boundaries.",
+          "lineage": {
+            "source_agent": "adversarial",
+            "confidence": 0.88,
+            "data_citation": "[SOURCE: adversarial_analysis]"
+          }
+        }
+      ],
+      "strengths": [
+        "High alignment with Clinical Boundaries",
+        "Clear market niche"
+      ],
+      "vulnerabilities": [
+        "Execution dependency",
+        "Regulatory friction"
+      ],
+      "assumptions": [
+        "Market adoption follows linear projections"
+      ]
+    }
+  ],
+  "brd": {
+    "session_id": "cached_telehealth",
+    "sections": [
+      {
+        "title": "Executive Summary & Clinical Need",
+        "content": "Rural healthcare in India faces a 1:11,000 doctor-to-patient deficit in primary health centres. DishaHealth equips community ASHA health workers with offline-capable AI diagnostic support, prioritizing emergency maternal and cardiovascular escalations.",
+        "lineage": {
+          "source_agent": "vc",
+          "confidence": 0.89,
+          "data_citation": "[SOURCE: who_bulletin] Rural primary triage reduces clinical mortality by 42%"
+        }
+      },
+      {
+        "title": "Clinical Triage & Differential Diagnosis",
+        "content": "Multimodal diagnostic assistant guides community health workers through structured symptom trees and optical image capture. System acts strictly as decision-support, mandating physician tele-consultation before prescription.",
+        "lineage": {
+          "source_agent": "ux",
+          "confidence": 0.88,
+          "data_citation": "[SOURCE: aiims_guidelines] Clinical protocol for non-physician rural triage"
+        }
+      },
+      {
+        "title": "DISHA & DPDP Act Data Governance",
+        "content": "Strict compliance with India's Digital Personal Data Protection (DPDP) Act 2023 and DISHA standards. Zero cross-border health telemetry; all patient identifiers are tokenized locally on-device and stored in certified Indian sovereign cloud regions.",
+        "lineage": {
+          "source_agent": "regulator",
+          "confidence": 0.94,
+          "data_citation": "[SOURCE: dpdp_act_2023] Section 9: Processing of sensitive personal health data"
+        }
+      },
+      {
+        "title": "Offline-First Edge Architecture",
+        "content": "ASHA tablets operate in intermittent 2G/zero-connectivity environments. Quantized ONNX triage models (under 120MB) execute on Android NPU, synchronizing encrypted differentials to central servers once network connectivity is re-established.",
+        "lineage": {
+          "source_agent": "cto",
+          "confidence": 0.93,
+          "data_citation": "[SOURCE: edge_ai_benchmarks] 180ms inference latency on low-cost MediaTek chipsets"
+        }
+      },
+      {
+        "title": "Unit Economics & Grant Co-Financing",
+        "content": "Priced at 25 INR ($0.30) per evaluated triage session, funded via state National Health Mission (NHM) allocations and CSR healthcare grants. 12-month pilot covers 45 Primary Health Centres.",
+        "lineage": {
+          "source_agent": "lean",
+          "confidence": 0.85,
+          "data_citation": "[SOURCE: nhm_procurement] District digital health mission allocation guidelines"
+        }
+      },
+      {
+        "title": "Adversarial Safety & Hallucination Mitigation",
+        "content": "Red team analysis tests medical hallucination rates under ambiguous symptom reports. Deterministic rule-based guardrails override LLM generation for red-flag vital signs (systolic BP >180, SpO2 <90%).",
+        "lineage": {
+          "source_agent": "adversarial",
+          "confidence": 0.91,
+          "data_citation": "[SOURCE: medical_redteam] Deterministic fail-safe vital sign overrides"
+        }
+      }
+    ]
+  }
+}
