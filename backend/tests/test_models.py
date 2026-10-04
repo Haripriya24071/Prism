@@ -1,6 +1,6 @@
 """backend/tests/test_models.py — Unit tests for Pydantic model validations."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
@@ -64,7 +64,7 @@ class TestIntakePackage:
         pkg = IntakePackage(
             session_id="test-sess-xx",
             extraction=sample_extraction,
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         )
         assert pkg.conversation_history == []
 
@@ -85,7 +85,7 @@ class TestAgentPersona:
 
 class TestAgentOutput:
     def test_failed_output_defaults(self) -> None:
-        out = AgentOutput(agent=AgentPersona.VC, failed=True, completed_at=datetime.utcnow())
+        out = AgentOutput(agent=AgentPersona.VC, failed=True, completed_at=datetime.now(timezone.utc))
         assert out.brd_json == {}
         assert out.raw_text == ""
         assert out.failed is True
