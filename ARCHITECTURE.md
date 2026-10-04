@@ -1,255 +1,204 @@
-# PRISM — Architecture
+# PRISM — System Architecture & Design Specification
 
 ---
 
-## System Overview
+## 1. System Overview
 
-PRISM is a multi-modal AI pipeline with six distinct processing layers. Each layer has a single responsibility, a defined input contract, and a defined output contract. No layer reaches across its boundary.
+PRISM is an enterprise-grade multi-modal AI intelligence pipeline engineered with six modular processing layers. Each layer adheres strictly to a single responsibility principle, defined input/output contracts, and structured error boundaries.
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│  CLIENT LAYER (Vercel — React + Vite)                               │
-│                                                                     │
-│  ┌──────────────┐ ┌────────────┐ ┌───────────┐ ┌────────────────┐  │
-│  │  ChatBox     │ │FileUpload  │ │ AgentGrid │ │ BRDViewer +    │  │
-│  │ (Text+Voice) │ │(Img + Doc) │ │(Live SSE) │ │ ScoreCard +    │  │
-│  └──────┬───────┘ └─────┬──────┘ └─────┬─────┘ │ Heatmap        │  │
-│         │               │              │        └────────────────┘  │
-└─────────┼───────────────┼──────────────┼─────────────────────────────┘
-          │   REST / SSE  │              │  SSE stream
-┌─────────▼───────────────▼──────────────▼─────────────────────────────┐
-│  API LAYER (FastAPI on Railway)                                       │
-│                                                                       │
-│  POST /intake/session    POST /intake/chat    POST /intake/upload     │
-│  GET  /session/{id}      GET  /generate/stream/{id}                   │
-│  GET  /brd/{id}          GET  /brd/{id}/pdf                           │
-│                                                                       │
-│  ┌────────────────────────────────────────────────────────────────┐   │
-│  │  ORCHESTRATION (Vertex AI — tracks session state)             │   │
-│  └────────────────────────────────────────────────────────────────┘   │
-│                                                                       │
-│  ┌────────────────────────────────────────────────────────────────┐   │
-│  │  INTAKE PROCESSOR                                              │   │
-│  │  Conversational Gemini Flash  │  Gemini Vision  │  Doc Parser │   │
-│  └────────────────────────────────────────────────────────────────┘   │
-│                           ↓                                           │
-│  ┌────────────────────────────────────────────────────────────────┐   │
-│  │  CONTEXT HARVESTER  (asyncio.gather — all 5 in parallel)      │   │
-│  │  NewsAPI │ World Bank │ Crunchbase │ Govt Data │ Gemini Ground │   │
-│  └────────────────────────────────────────────────────────────────┘   │
-│                           ↓                                           │
-│  ┌────────────────────────────────────────────────────────────────┐   │
-│  │  SWARM LAYER  (asyncio.gather — 6 Flash calls in parallel)    │   │
-│  │  VC │ Lean Founder │ CTO │ UX Researcher │ Regulator │ Adversarial│
-│  └────────────────────────────────────────────────────────────────┘   │
-│                           ↓                                           │
-│  ┌──────────────────────┐  ┌─────────────────────────────────────┐   │
-│  │  EVALUATOR           │→ │  MERGE ENGINE                       │   │
-│  │  Gemini 1.5 Pro      │  │  Gemini 1.5 Pro                     │   │
-│  │  Scores all 6 BRDs   │  │  Best base + best sections          │   │
-│  └──────────────────────┘  └─────────────────────────────────────┘   │
-│                           ↓                                           │
-│  ┌────────────────────────────────────────────────────────────────┐   │
-│  │  OUTPUT LAYER                                                  │   │
-│  │  Heatmap Calc │ Investor Score │ Pivot Suggester │ PDF Export  │   │
-│  └────────────────────────────────────────────────────────────────┘   │
-└───────────────────────────────┬───────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│  CLIENT LAYER (React 18 + Vite — Vercel / Localhost)                                   │
+│                                                                                        │
+│  ┌──────────────────┐ ┌────────────────┐ ┌────────────────┐ ┌───────────────────────┐  │
+│  │  ChatBox         │ │  FileUpload    │ │  AgentGrid     │ │  BRDViewer +          │  │
+│  │  (Text + Voice)  │ │  (Img + Doc)   │ │  (Live SSE)    │ │  ScoreCard + Heatmap  │  │
+│  └────────┬─────────┘ └───────┬────────┘ └────────┬───────┘ └───────────────────────┘  │
+│           │                   │                   │                                    │
+└───────────┼───────────────────┼───────────────────┼────────────────────────────────────┘
+            │   REST (HTTP)     │                   │  SSE Stream (`/generate/stream`)
+┌───────────▼───────────────────▼───────────────────▼────────────────────────────────────┐
+│  API & ORCHESTRATION LAYER (FastAPI — Railway / Localhost:8000)                        │
+│                                                                                        │
+│  POST /intake/session    POST /intake/chat    POST /intake/upload                      │
+│  POST /generate          GET  /generate/stream/{id}                                    │
+│  GET  /brd/{id}          GET  /brd/{id}/pdf?view={investor|technical|regulatory}       │
+│                                                                                        │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │  HIGH-THROUGHPUT GEMINI KEY POOL & SHIM (12-20 AI Studio Keys — 180+ RPM Free)   │  │
+│  │  Thread-Safe Round-Robin │ Instant 429/401 Failover │ Vertex AI Compatibility    │  │
+│  └──────────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                        │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │  INTAKE PROCESSOR                                                                │  │
+│  │  Conversational Gemini Flash  │  Gemini Multimodal Vision  │  Doc Extraction     │  │
+│  └──────────────────────────────────────────────────────────────────────────────────┘  │
+│                              ↓                                                         │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │  CONTEXT HARVESTER  (asyncio.gather — 5 Parallel Sources)                        │  │
+│  │  NewsAPI │ World Bank Open Data │ Crunchbase │ Govt Open Data │ Gemini Grounding │  │
+│  └──────────────────────────────────────────────────────────────────────────────────┘  │
+│                              ↓                                                         │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │  SWARM LAYER  (asyncio.gather — 6 Gemini Flash Personas in Parallel)             │  │
+│  │  VC │ Lean Founder │ Enterprise CTO │ UX Researcher │ Regulator │ Adversarial    │  │
+│  └──────────────────────────────────────────────────────────────────────────────────┘  │
+│                              ↓                                                         │
+│  ┌───────────────────────────────┐      ┌───────────────────────────────────────────┐  │
+│  │  EVALUATION RUBRIC ENGINE     │ ───► │  SYNTHESIS & MERGE ENGINE                 │  │
+│  │  5 Criteria × 6 Sections      │      │  Winning Base BRD + Section Transplantation│ │
+│  └───────────────────────────────┘      └───────────────────────────────────────────┘  │
+│                              ↓                                                         │
+│  ┌──────────────────────────────────────────────────────────────────────────────────┐  │
+│  │  OUTPUT ANALYSIS & REFRAMING                                                     │  │
+│  │  Divergence Heatmap │ Investor Readiness Score │ Pivot Suggester │ ReportLab PDF │  │
+│  └──────────────────────────────────────────────────────────────────────────────────┘  │
+└───────────────────────────────┬────────────────────────────────────────────────────────┘
                                 │
-┌───────────────────────────────▼───────────────────────────────────────┐
-│  GCP PERSISTENCE LAYER                                                │
-│  Cloud Storage (GCS)                   BigQuery                       │
-│  {session_id}/agent_*.json             prism_data.brd_runs            │
-│  {session_id}/merged_brd.json          prism_data.context_harvest_logs│
-│  {session_id}/output_*.pdf             prism_data.evaluator_scores    │
-└───────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────▼────────────────────────────────────────────────────────┐
+│  GOOGLE CLOUD PERSISTENCE & ANALYTICS LAYER                                            │
+│                                                                                        │
+│  Google Cloud Storage (GCS)                    Google BigQuery (Sandbox & Prod)        │
+│  - Bucket: `prism-outputs`                     - Dataset: `prism_data`                 │
+│  - Session Path: `{session_id}/agent_*.json`   - Tables: `brd_runs`                    │
+│  - Merged BRD: `{session_id}/merged_brd.json`  - Logs: `context_harvest_logs`          │
+│  - PDF Artifacts: `{session_id}/output_*.pdf`  - Local/Dev: In-memory & Silent Stream  │
+│  - Hybrid: Local GCS-schema fallback in dev                                            │
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Module Boundary Map
+## 2. Module Boundary Map
 
 ```
-main.py  (thin orchestrator only — max 150 lines)
-  └── intake/
-  │     ├── conversation.py   (Gemini Flash chat turns)
-  │     ├── vision.py         (Gemini Vision for images)
-  │     ├── document.py       (PyPDF2 + python-docx extraction)
-  │     └── extractor.py      (pulls region, industry, stage from conversation)
-  └── context/
-  │     ├── harvester.py      (orchestrates all 5 API calls)
-  │     ├── newsapi.py
-  │     ├── worldbank.py
-  │     ├── crunchbase.py
-  │     ├── govtdata.py
-  │     └── grounding.py      (Gemini Search Grounding)
-  └── agents/
-  │     ├── swarm.py          (asyncio.gather — fires all 6)
-  │     ├── prompts.py        (all system prompts — data file, no logic)
-  │     └── personas.py       (persona definitions and constraint axes)
-  └── evaluation/
-  │     ├── evaluator.py      (Gemini Pro scoring call)
-  │     ├── rubric.py         (weighted criteria constants)
-  │     └── merger.py         (Gemini Pro merge call)
-  └── output/
-  │     ├── heatmap.py        (std dev calculation — pure math, no I/O)
-  │     ├── investor_score.py (weighted sum — pure math, no I/O)
-  │     ├── pivot.py          (pivot suggester — fires if score < 60)
-  │     ├── assumptions.py    (assumption flagging layer)
-  │     ├── failure_sim.py    (failure mode simulation from Agent 6)
-  │     ├── pdf_export.py     (ReportLab)
-  │     └── stakeholder.py    (3 export views: investor / tech / regulatory)
-  └── gcp/
-  │     ├── storage.py        (GCS read/write)
-  │     └── bigquery.py       (BQ insert — fire and forget)
-  └── models/
-  │     ├── intake.py         (Pydantic: ChatRequest, UploadRequest, IntakePackage)
-  │     ├── context.py        (Pydantic: ContextPackage, NewsItem, MarketData)
-  │     ├── agents.py         (Pydantic: AgentOutput, ScoreMatrix)
-  │     ├── brd.py            (Pydantic: MergedBRD, BRDSection, LineageTag)
-  │     └── output.py         (Pydantic: HeatmapData, InvestorScore, PivotSuggestion)
-  └── errors.py               (custom exception classes)
-  └── config.py               (all env vars, API key pool, model names)
+backend/
+├── main.py                     (Thin FastAPI orchestrator — route handlers < 30 lines)
+├── config.py                   (Central settings, 20-key pool, RotatingGeminiModel shim)
+├── errors.py                   (Typed exception hierarchy: SwarmError, IntakeError, etc.)
+├── sse_manager.py              (Server-Sent Events event stream broadcaster)
+├── pipeline.py                 (End-to-end multi-stage pipeline coordinator)
+├── session_store.py            (Thread-safe session state store)
+├── intake/
+│   ├── conversation.py         (Multi-turn Gemini chat turn handler)
+│   ├── vision.py               (Gemini Multimodal image analysis for wireframes/diagrams)
+│   ├── document.py             (PyPDF2 and python-docx text extraction)
+│   └── extractor.py            (Structured JSON extraction: region, stage, budget)
+├── context/
+│   ├── harvester.py            (Parallel orchestrator across all 5 context sources)
+│   ├── newsapi.py              (Industry news articles with local caching)
+│   ├── worldbank.py            (Macroeconomic indicators: GDP, inflation, ease of business)
+│   ├── crunchbase.py           (Competitor funding history with mock fallback)
+│   ├── govtdata.py             (Statutory compliance and open data flags)
+│   └── grounding.py            (Gemini Search Grounding for cultural context)
+├── agents/
+│   ├── swarm.py                (Parallel execution of 6 personas with 45s resilient timeout)
+│   ├── personas.py             (Persona definitions and hard constraint axes)
+│   └── prompts.py              (Enriched system prompts mandating 6-section JSON + citations)
+├── evaluation/
+│   ├── evaluator.py            (Scores all 6 BRDs against 5 weighted rubric criteria)
+│   ├── rubric.py               (Rubric constants: Feasibility, Timing, Safety, Adoption, Moat)
+│   └── merger.py               (Transplants highest-scoring sections into unified BRD)
+├── output/
+│   ├── heatmap.py              (Mathematical divergence standard deviation 0-100)
+│   ├── investor_score.py       (Weighted composite readiness score + gap flags)
+│   ├── pivot.py                (Generates 3 strategic pivots if score < 60)
+│   ├── assumptions.py          (Identifies unstated assumptions with confidence ratings)
+│   ├── failure_sim.py          (Adversarial failure simulation with mitigations)
+│   ├── stakeholder.py          (Reframes BRD for Investor, Technical, and Regulatory views)
+│   └── pdf_export.py           (ReportLab asynchronous PDF generator)
+├── gcp/
+│   ├── storage.py              (Hybrid Cloud Storage read/write with GCS-schema fallback)
+│   └── bigquery.py             (Asynchronous fire-and-forget audit logger)
+└── models/
+    ├── intake.py               (Pydantic: ChatRequest, UploadRequest, IntakePackage)
+    ├── context.py              (Pydantic: ContextPackage, NewsItem, MarketData)
+    ├── agents.py               (Pydantic: AgentPersona, AgentOutput, ScoreMatrix)
+    ├── brd.py                  (Pydantic: MergedBRD, BRDSection, LineageTag)
+    └── output.py               (Pydantic: HeatmapData, InvestorScore, PivotSuggestion)
 ```
 
-**Dependency direction (strict — no upward imports):**
-```
-main.py → agents/ intake/ context/ output/ → gcp/ → models/ → errors.py → config.py
-```
+**Strict Architectural Invariant (No Upward Imports):**
+`main.py → pipeline.py → agents/ intake/ context/ output/ → gcp/ → models/ → errors.py → config.py`
 
 ---
 
-## End-to-End Data Flow
+## 3. High-Throughput Gemini Key Pool Architecture
 
-| Step | Layer | Action | Output |
-|------|-------|--------|--------|
-| 1 | Client | User speaks or types idea. Optional file upload. | Raw text / audio / file → FastAPI |
-| 2 | Intake | Conversational Gemini Flash extracts region, industry, stage, constraints. Vision runs on images. Doc parser runs on files. | `intake_package.json` |
-| 3 | Context | Harvester fires 5 API calls in parallel. Gemini Grounding for cultural layer. | `context_package` JSON — logged to BigQuery |
-| 4 | Merge | Intake + file context + context package → unified `IntakePackage` | `intake_package.json` → GCS |
-| 5 | Swarm | 6 Gemini Flash calls via `asyncio.gather()`. Each agent gets same input, different system prompt. Each output written to GCS immediately on completion. | 6 × `agent_{name}.json` in GCS |
-| 6 | Evaluation | Gemini Pro receives all 6 BRDs + context. Scores each across 5 sections × 5 criteria. Every score backed by data citation. | `score_matrix.json` |
-| 7 | Merge | Gemini Pro selects winning base BRD. Transplants highest-scoring section from each competing agent. | `merged_brd.json` with full lineage |
-| 8 | Heatmap | Pure Python std dev across per-section scores → normalised 0–100 risk scale. | `heatmap.json` |
-| 9 | Investor Score | Weighted sum of rubric scores → 0–100. Gap flags extracted. | `investor_readiness.json` |
-| 10 | Pivot Check | If score < 60 → Pivot Suggester fires 3 pivot directions with projected scores (built — not roadmap). | Appended to `investor_readiness.json` |
-| 11 | Assumption Flags | BRD scanned for hidden assumptions. Each surfaced with evidence rating and action item. | Appended to `merged_brd.json` |
-| 12 | Failure Sim | Agent 6's adversarial output processed into top 3 failure modes with probability + mitigation. | Appended to `merged_brd.json` |
-| 13 | PDF Export | ReportLab generates 3 PDFs (Investor / Technical / Regulatory views). | `output_investor.pdf, output_technical.pdf, output_regulatory.pdf` in GCS |
-| 14 | Client | SSE stream delivers agent statuses live. Final render: heatmap → BRD viewer → scorecard. | Full UI experience |
+To eliminate rate limits (15 RPM free tier) and bypass cloud billing bottlenecks, PRISM uses a **Thread-Safe Rotating Key Pool** in `backend/config.py`:
 
----
-
-## Concurrency Model
-
-```python
-# Vertex AI init — once at startup
-vertexai.init(project=settings.GCP_PROJECT_ID, location="us-central1")
-
-# Context Harvester — 5 APIs in parallel (one is Gemini Grounding via Vertex)
-context_results = await asyncio.gather(
-    fetch_news(region, industry),
-    fetch_worldbank(region),
-    fetch_crunchbase(industry),
-    fetch_govtdata(region, industry),
-    fetch_gemini_grounding(region, industry),   # Vertex AI call
-    return_exceptions=True
-)
-
-# Swarm — 6 Flash agents in parallel via Vertex AI
-flash = GenerativeModel("gemini-2.0-flash")
-agent_results = await asyncio.gather(
-    run_agent("vc",          intake_package, flash),
-    run_agent("lean",        intake_package, flash),
-    run_agent("cto",         intake_package, flash),
-    run_agent("ux",          intake_package, flash),
-    run_agent("regulator",   intake_package, flash),
-    run_agent("adversarial", intake_package, flash),
-)
-
-# Post-merge analysis — 3 Flash calls in parallel
-post_merge = await asyncio.gather(
-    flag_assumptions(merged_brd, context, flash),
-    extract_failure_modes(adversarial_output, flash),
-    reframe_stakeholder_views(merged_brd, flash),
-)
-
-# GCS reads for merge — parallel
-outputs = await asyncio.gather(
-    *[read_agent_output(session_id, name) for name in AGENT_NAMES]
-)
-
-# BigQuery logging — fire and forget
-asyncio.create_task(_log_harvest_to_bq(context, session_id))
+```
+                       ┌──────────────────────┐
+                       │  Incoming LLM Call   │
+                       └──────────┬───────────┘
+                                  │
+                       ┌──────────▼───────────┐
+                       │ RotatingGeminiModel  │
+                       └──────────┬───────────┘
+                                  │ Atomic Round-Robin Index
+          ┌───────────────────────┼───────────────────────┐
+          │                       │                       │
+┌─────────▼─────────┐   ┌─────────▼─────────┐   ┌─────────▼─────────┐
+│ Gemini Key #1     │   │ Gemini Key #2     │   │ Gemini Key #N     │
+│ (15 RPM)          │   │ (15 RPM)          │   │ (15 RPM)          │
+└─────────┬─────────┘   └─────────┬─────────┘   └─────────┬─────────┘
+          │                       │                       │
+          └───────────────────────┼───────────────────────┘
+                                  │
+          ┌───────────────────────▼───────────────────────┐
+          │ Success? ──► Return response                  │
+          │ 429 / 401? ──► Log Warning & Rotate Next Key │
+          └───────────────────────────────────────────────┘
 ```
 
----
-
-## Latency Targets
-
-| Step | Target (P95) |
-|------|-------------|
-| Intake (conversational + extraction) | < 5 seconds |
-| Context Harvester (5 APIs parallel) | < 8 seconds |
-| Swarm (6 Flash calls parallel) | < 20 seconds |
-| Evaluator (1 Pro call) | < 10 seconds |
-| Merge Engine (1 Pro call) | < 10 seconds |
-| Output calculations (heatmap + score) | < 200ms |
-| Post-merge analysis (assumptions + failure sim + stakeholder) | < 15 seconds (3 Flash parallel) |
-| PDF generation | < 3 seconds |
-| **Total end-to-end** | **< 65 seconds P95** |
+- **Pool Capacity:** 12 to 20 keys = **180 to 300 Requests Per Minute (RPM)**.
+- **Failover Strategy:** If any key encounters `429 (ResourceExhausted)` or `401 (InvalidToken)`, the client automatically falls over to the next key without failing the agent invocation.
+- **Model Resolution:** Defaults to `gemini-flash-latest` (Gemini 2.0 Flash) for sub-second generation and multimodal intake.
 
 ---
 
-## SSE Stream Events
+## 4. End-to-End Execution Sequence
 
-The frontend connects to `GET /generate/stream/{session_id}` immediately after generation starts. Events emitted:
+| Step | Component | Method / Operation | Latency (P95) | Artifact Output |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Intake** | `intake/conversation.py` | Multi-turn chat extraction | < 3s / turn | `IntakeExtraction` |
+| **2. Multimodal** | `intake/vision.py` | Image / diagram analysis | < 4s | Extracted visual context |
+| **3. Harvesting** | `context/harvester.py` | `asyncio.gather(5 sources)` | < 6s | `ContextPackage` |
+| **4. Swarm** | `agents/swarm.py` | 6 Personas in parallel | < 20s | 6 × `agent_{name}.json` |
+| **5. Evaluation** | `evaluation/evaluator.py`| Rubric scoring (5 criteria) | < 8s | `ScoreMatrix` |
+| **6. Merge** | `evaluation/merger.py` | Section transplantation | < 8s | `MergedBRD` + `LineageTag` |
+| **7. Analytics** | `output/heatmap.py` | Mathematical divergence | < 50ms | `HeatmapData` |
+| **8. Readiness** | `output/investor_score.py`| Weighted composite (0-100) | < 50ms | `InvestorScore` |
+| **9. Pivot** | `output/pivot.py` | Strategic pivots (if < 60) | < 4s | 3 Pivot Directions |
+| **10. Post-Analysis**| `output/assumptions.py` | Assumptions & Failure sim | < 6s | Enriched BRD sections |
+| **11. Export** | `output/pdf_export.py` | ReportLab PDF compilation | < 2s | 3 Stakeholder PDFs |
+| **12. Persistence**| `gcp/storage.py` & `bq.py`| Hybrid GCS & BigQuery log | Background | GCS blobs + BQ rows |
+
+---
+
+## 5. SSE Event Protocol
+
+The frontend connects to `GET /generate/stream/{session_id}`. Events are streamed in real time:
 
 ```
 event: agent_status
 data: {"agent": "vc", "status": "running", "progress_pct": 20}
 
-event: agent_status
-data: {"agent": "vc", "status": "complete", "progress_pct": 35}
-
 event: context_ready
-data: {"sources": ["newsapi", "worldbank", "crunchbase"], "progress_pct": 15}
+data: {"sources": ["newsapi", "worldbank", "crunchbase", "grounding"], "progress_pct": 35}
+
+event: agent_status
+data: {"agent": "vc", "status": "complete", "progress_pct": 50}
 
 event: evaluation_complete
-data: {"winning_agent": "lean", "score": 81, "progress_pct": 75}
+data: {"winning_agent": "cto", "score": 84, "progress_pct": 80}
 
 event: brd_ready
-data: {"session_id": "...", "investor_readiness_score": 74, "progress_pct": 100}
+data: {"session_id": "...", "investor_readiness_score": 84, "progress_pct": 100}
 ```
 
 ---
 
-## Authentication & Quota
+## 6. Enterprise Scale & Vertex AI Path
 
-PRISM calls Gemini through the Vertex AI SDK (`google-cloud-aiplatform`).
-Authentication uses a single GCP service account with Application Default Credentials (ADC).
-Quota is managed at the GCP project level — no per-key rotation required or used.
-
-```python
-# config.py — single ADC auth, no key pool
-import vertexai
-from vertexai.generative_models import GenerativeModel
-
-vertexai.init(project=settings.GCP_PROJECT_ID, location=settings.GCP_REGION)
-
-def get_flash_model() -> GenerativeModel:
-    return GenerativeModel("gemini-2.0-flash")
-
-def get_pro_model() -> GenerativeModel:
-    return GenerativeModel("gemini-1.5-pro")
-```
-
-Total Gemini calls per BRD run:
-- 1× Flash (intake/conversation extractor)
-- 5× Flash (context grounding — 1 of the 5 context sources)
-- 6× Flash (swarm — all agents in parallel)
-- 1× Flash (assumption flagging — post merge)
-- 1× Flash (failure mode extraction — post merge)
-- 1× Flash (stakeholder view reframing — post merge)
-- 1× Pro  (evaluator — scores all 6 BRDs)
-- 1× Pro  (merge engine)
-Total: 16 calls per run. All Flash calls fit within Vertex AI Flash quota. Pro calls: 2 per run.
+For enterprise deployment, PRISM transitions seamlessly to **Vertex AI Application Default Credentials (ADC)** and dedicated BigQuery analytics by toggling `ENV=production` in `config.py`. All interfaces, schemas, and data structures remain 100% identical.
