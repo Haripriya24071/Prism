@@ -59,7 +59,7 @@ export default function ResultsPage() {
   const [downloadError, setDownloadError] = useState(null)
 
   useEffect(() => {
-    if (!sessionId || brdData) {
+    if (!sessionId || (brdData && Array.isArray(brdData.sections) && brdData.sections.length > 0)) {
       return undefined
     }
     let cancelled = false
@@ -155,8 +155,8 @@ export default function ResultsPage() {
   )
 
   const rawBrd = brdData?.brd ?? brdData
-  const sections = (rawBrd?.sections ?? []).map(toSection)
-  const assumptions = (rawBrd?.assumptions ?? []).map(toAssumption)
+  const sections = (Array.isArray(rawBrd?.sections) ? rawBrd.sections : []).map(toSection)
+  const assumptions = (Array.isArray(rawBrd?.assumptions) ? rawBrd.assumptions : []).map(toAssumption)
   const rawHeatmap = heatmapData ?? rawBrd?.heatmap ?? brdData?.heatmap
   const bars = (rawHeatmap?.bars ?? []).map((bar) => ({
     sectionTitle: bar.section_title ?? bar.sectionTitle,
