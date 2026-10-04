@@ -4,7 +4,10 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Any
 import structlog
-from config import settings
+try:
+    from backend.config import settings
+except ImportError:
+    from config import settings
 
 logger = structlog.get_logger()
 
