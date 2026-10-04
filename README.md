@@ -342,14 +342,14 @@ Incoming Agent Invocation
 
 ### 1. Comic Vector Handshake Loader (`HandshakeLoader.jsx`)
 <p align="center">
-  <img src="./docs/images/handshake_loader.png" alt="PRISM Handshake Deal Loader" width="480" style="border-radius: 12px; border: 1px solid #1E3A5F;" />
+  <img src="./docs/images/handshake_loader.png" alt="PRISM Handshake Deal Loader" width="480" style="border-radius: 12px; border: 1.5px solid #18181B; box-shadow: 3px 3px 0px #18181B;" />
 </p>
 
 During swarm deliberation and context harvesting, PRISM renders a custom comic-styled handshake animation symbolizing the founder closing a deal with the market. Surrounded by floating badges (`$`, `%`, `♥`, `✔`, `📈`) on independent sinusoidal floating curves.
 
 ### 2. Live Agent Deliberation Grid (`AgentGrid.jsx`)
 <p align="center">
-  <img src="./docs/images/generation_page_view.png" alt="PRISM Live Agent Deliberation Grid" width="100%" style="border-radius: 12px; border: 1px solid #1E3A5F;" />
+  <img src="./docs/images/generation_page_view.png" alt="PRISM Live Agent Deliberation Grid" width="760" style="max-width: 100%; border-radius: 12px; border: 1.5px solid #18181B; box-shadow: 4px 4px 0px #18181B;" />
 </p>
 
 Each persona features a dedicated archetype avatar, live status chip (`queued` &rarr; `running` &rarr; `complete`), pulse border, and live deliberation thought bubbles displaying what the agent is currently debating in real time.

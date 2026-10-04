@@ -9,6 +9,9 @@ import IntakePage from './pages/IntakePage.jsx'
 import ResultsPage from './pages/ResultsPage.jsx'
 
 function renderPage(status) {
+  if (typeof window !== 'undefined' && window.location.hash === '#generation') {
+    return <GenerationPage key="generation" />
+  }
   switch (status) {
     case SESSION_STATUS.HARVESTING:
     case SESSION_STATUS.SWARM_RUNNING:
