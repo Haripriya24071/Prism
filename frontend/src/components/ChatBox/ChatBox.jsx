@@ -6,12 +6,44 @@ export { VoiceButton }
 
 const ACCEPTED_FILES = '.pdf,.png,.jpg,.jpeg,.webp,.docx'
 
+function FormattedBubble({ content, role }) {
+  if (!content) return null
+
+  if (role === 'assistant') {
+    const paragraphs = content.split('\n\n').filter(Boolean)
+    return (
+      <div className="chatbox__formatted-content">
+        {paragraphs.map((p, idx) => {
+          const parts = p.split(/(\*\*[^*]+\*\*)/g)
+          return (
+            <p key={idx} className="chatbox__para">
+              {parts.map((part, pIdx) => {
+                if (part.startsWith('**') && part.endsWith('**')) {
+                  return (
+                    <strong key={pIdx} className="font-bold text-content-primary">
+                      {part.slice(2, -2)}
+                    </strong>
+                  )
+                }
+                return part
+              })}
+            </p>
+          )
+        })}
+      </div>
+    )
+  }
+
+  return <span>{content}</span>
+}
+
 export default function ChatBox({
   messages = [],
   onSend,
   onUpload,
   disabled = false,
   uploadError = null,
+  suggestedChips = [],
 }) {
   const [draft, setDraft] = useState('')
   const fileInputRef = useRef(null)
@@ -21,7 +53,7 @@ export default function ChatBox({
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ block: 'end' })
-  }, [messages])
+  }, [messages, disabled])
 
   function send() {
     if (!canSend) {
@@ -58,16 +90,47 @@ export default function ChatBox({
             key={message.id}
             className={`chatbox__bubble chatbox__bubble--${message.role}`}
           >
-            {message.content}
+            <FormattedBubble content={message.content} role={message.role} />
           </div>
         ))}
+
+        {disabled && (
+          <div className="chatbox__bubble chatbox__bubble--assistant chatbox__bubble--typing">
+            <span className="chatbox__dot" />
+            <span className="chatbox__dot" />
+            <span className="chatbox__dot" />
+            <span className="font-tertiary text-micro text-content-secondary ml-1">
+              Calibrating venture parameters...
+            </span>
+          </div>
+        )}
+
         <div ref={logEndRef} />
       </div>
+
+      {/* Suggested Quick Reply Chips */}
+      {suggestedChips && suggestedChips.length > 0 && !disabled && (
+        <div className="chatbox__chips-row">
+          <span className="chatbox__chips-label">Quick reply suggestions:</span>
+          <div className="chatbox__chips-list">
+            {suggestedChips.map((chip, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => onSend(chip)}
+                className="chatbox__chip"
+              >
+                {chip}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="chatbox__input-container">
         <div className="chatbox__input-row">
           <label htmlFor={textareaId} className="sr-only">
-            Describe your business idea
+            Describe your business idea or answer follow-up
           </label>
           <textarea
             id={textareaId}
@@ -77,7 +140,11 @@ export default function ChatBox({
             disabled={disabled}
             onChange={(event) => setDraft(event.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe your business idea"
+            placeholder={
+              messages.length > 1
+                ? 'Answer the question above, or clarify details...'
+                : 'Describe your business idea (1–2 sentences)...'
+            }
           />
 
           <VoiceButton onTranscript={appendTranscript} disabled={disabled} />

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { createSession, sendChat, triggerGeneration, uploadFile } from '../api.js'
 import { getPageVariants } from '../animations/variants.js'
 import ChatBox from '../components/ChatBox/ChatBox.jsx'
+import VentureDossier from '../components/Intake/VentureDossier.jsx'
 import { SESSION_STATUS, useSession } from '../hooks/useSession.js'
 import HeroSection from '../components/Landing/HeroSection.jsx'
 import AgentsShowcase from '../components/Landing/AgentsShowcase.jsx'
@@ -49,6 +50,10 @@ export default function IntakePage() {
   const [isSending, setIsSending] = useState(false)
   const [isBackendOnline, setIsBackendOnline] = useState(null)
   const [readyToEvaluate, setReadyToEvaluate] = useState(false)
+  const [extraction, setExtraction] = useState({})
+  const [completionPct, setCompletionPct] = useState(0)
+  const [suggestedChips, setSuggestedChips] = useState([])
+  const [isComplete, setIsComplete] = useState(false)
 
   // Initialize session with graceful offline fallback
   useEffect(() => {
@@ -139,6 +144,22 @@ export default function IntakePage() {
       setIsBackendOnline(true)
       setTurnNumber((prev) => prev + 1)
 
+      if (res?.extraction) {
+        setExtraction(res.extraction)
+      }
+      if (typeof res?.completion_pct === 'number') {
+        setCompletionPct(res.completion_pct)
+      }
+      if (Array.isArray(res?.suggested_chips)) {
+        setSuggestedChips(res.suggested_chips)
+      }
+      if (res?.is_complete) {
+        setIsComplete(true)
+        setReadyToEvaluate(true)
+      } else if (res?.completion_pct >= 50) {
+        setReadyToEvaluate(true)
+      }
+
       if (res?.reply) {
         const assistantMsgId = `asst-msg-${msgCounter.current++}`
         const assistantMsg = {
@@ -148,20 +169,32 @@ export default function IntakePage() {
         }
         setMessages((prev) => [...prev, assistantMsg])
       }
-
-      // Allow triggering generation as soon as user has provided idea context
-      setReadyToEvaluate(true)
     } catch {
       // Backend not running / offline: provide intelligent coordinator response
       setIsBackendOnline(false)
       setTurnNumber((prev) => prev + 1)
       setReadyToEvaluate(true)
 
+      // Fallback progressive parameter filling
+      const fallbackExt = { ...extraction }
+      if (!fallbackExt.raw_idea) {
+        fallbackExt.raw_idea = messageText
+        setSuggestedChips(['🇮🇳 India', '🇺🇸 United States', '🇬🇧 United Kingdom', '🇦🇪 UAE'])
+      } else if (!fallbackExt.region) {
+        fallbackExt.region = messageText.includes('India') ? 'IN' : 'US'
+        setSuggestedChips(['💡 Fresh Idea', '🛠️ Prototype', '🚀 Active MVP'])
+      } else if (!fallbackExt.stage) {
+        fallbackExt.stage = 'idea'
+        setSuggestedChips(['🌱 Bootstrapped (<$15k)', '💼 Seed ($50k-$250k)', '🏢 Series A+'])
+      }
+      setExtraction(fallbackExt)
+      setCompletionPct((prev) => Math.min(100, (prev || 0) + 33))
+
       const demoReplyId = `asst-demo-${msgCounter.current++}`
       const demoReply = {
         id: demoReplyId,
         role: 'assistant',
-        content: `I have ingested your venture thesis: "${messageText}".\n\nAll 6 Swarm Agents (Seed VC, Bootstrapper, Enterprise CTO, UX Researcher, Policy Expert, Adversary) have been alerted and are standing by to run their independent evaluations. Click 'Run 6-Agent Swarm' above to begin the gauntlet!`,
+        content: `Captured into dossier: "${messageText}".\n\nWhat is your target geographic market or jurisdiction for launch?`,
       }
       setMessages((prev) => [...prev, demoReply])
     } finally {
@@ -369,7 +402,7 @@ export default function IntakePage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2 }}
-            className="max-w-4xl mx-auto px-4 sm:px-6 py-8"
+            className="max-w-6xl mx-auto px-4 sm:px-6 py-8"
           >
             {/* Top Breadcrumb & Step Indicator */}
             <div className="flex items-center justify-between mb-6">
@@ -389,24 +422,42 @@ export default function IntakePage() {
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-raised border border-border-subtle text-content-secondary font-tertiary text-[11px] font-semibold">
                   <span className="w-1.5 h-1.5 rounded-full bg-accent-signal"></span>
-                  Step 1 of 3: Idea Intake
+                  Step 1 of 3: Dynamic Idea Intake
                 </span>
               </div>
             </div>
 
             {/* Launchpad Terminal Card */}
             <section id="pitch-terminal" className="sketch-card p-6 sm:p-8 bg-surface border-2 border-border shadow-[6px_6px_0px_var(--color-border)] relative">
-              {/* Header */}
+              {/* Dynamic Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-border-subtle gap-4">
                 <div>
-                  <div className="inline-block px-2.5 py-0.5 rounded-full border border-border bg-accent-tint text-accent-signal font-tertiary text-[11px] font-bold uppercase tracking-wider mb-2">
-                    Intake Launchpad
-                  </div>
+                  {turnNumber === 0 ? (
+                    <div className="inline-block px-2.5 py-0.5 rounded-full border border-border bg-accent-tint text-accent-signal font-tertiary text-[11px] font-bold uppercase tracking-wider mb-2">
+                      Intake Launchpad
+                    </div>
+                  ) : isComplete || Object.values(extraction || {}).filter(Boolean).length >= 6 ? (
+                    <div className="inline-block px-2.5 py-0.5 rounded-full border border-[#2D6A4F] bg-[#D8F3DC] text-[#2D6A4F] font-tertiary text-[11px] font-bold uppercase tracking-wider mb-2">
+                      ✓ Venture Blueprint Armed & Ready (100%)
+                    </div>
+                  ) : (
+                    <div className="inline-block px-2.5 py-0.5 rounded-full border border-border bg-accent-tint text-accent-signal font-tertiary text-[11px] font-bold uppercase tracking-wider mb-2">
+                      Dynamic Intake • {completionPct}% Calibrated ({Object.values(extraction || {}).filter(Boolean).length}/6 Fields Locked)
+                    </div>
+                  )}
                   <h1 className="font-display text-h2 sm:text-h1 font-black text-content-primary">
-                    Pitch Your Idea to the Swarm
+                    {turnNumber === 0
+                      ? 'Pitch Your Idea to the Swarm'
+                      : isComplete || Object.values(extraction || {}).filter(Boolean).length >= 6
+                      ? 'Venture Thesis Locked & Armed'
+                      : `Calibrating Venture Thesis (${Object.values(extraction || {}).filter(Boolean).length} of 6 Locked)`}
                   </h1>
                   <p className="font-body text-content-secondary text-body mt-1">
-                    Describe your business concept below, or click a quick starter to test all 6 agents.
+                    {turnNumber === 0
+                      ? 'Describe your business concept below, or click a quick starter. Zero friction: form fields get locked behind the scenes.'
+                      : isComplete || Object.values(extraction || {}).filter(Boolean).length >= 6
+                      ? 'All 6 domain agents have sufficient context to simulate unit economics, tech stack, and regulatory compliance.'
+                      : 'Answer the single targeted question below. Notice how your Venture Blueprint on the right fills automatically.'}
                   </p>
                 </div>
 
@@ -423,31 +474,52 @@ export default function IntakePage() {
               </div>
 
               {/* Quick Sample Prompts */}
-              <div className="mb-6">
-                <span className="font-tertiary text-micro font-bold uppercase tracking-wider text-content-secondary block mb-2.5">
-                  Quick Starters (Click to load):
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                  {SAMPLE_IDEAS.map((idea, index) => (
-                    <button
-                      key={index}
-                      type="button"
-                      onClick={() => handleSend(idea.prompt)}
-                      className="p-3 text-left rounded-lg border border-border-subtle bg-surface-raised hover:bg-void hover:border-border transition-all group flex flex-col justify-between shadow-sm cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-base">{idea.icon}</span>
-                        <span className="font-display font-bold text-micro text-content-primary group-hover:text-accent-signal transition-colors">
-                          {idea.title}
-                        </span>
-                      </div>
-                      <p className="font-body text-[11px] text-content-secondary line-clamp-2 leading-snug">
-                        &ldquo;{idea.prompt}&rdquo;
-                      </p>
-                    </button>
-                  ))}
+              {turnNumber === 0 ? (
+                <div className="mb-6">
+                  <span className="font-tertiary text-micro font-bold uppercase tracking-wider text-content-secondary block mb-2.5">
+                    Quick Starters (Click to load):
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                    {SAMPLE_IDEAS.map((idea, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => handleSend(idea.prompt)}
+                        className="p-3 text-left rounded-lg border border-border-subtle bg-surface-raised hover:bg-void hover:border-border transition-all group flex flex-col justify-between shadow-sm cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-base">{idea.icon}</span>
+                          <span className="font-display font-bold text-micro text-content-primary group-hover:text-accent-signal transition-colors">
+                            {idea.title}
+                          </span>
+                        </div>
+                        <p className="font-body text-[11px] text-content-secondary line-clamp-2 leading-snug">
+                          &ldquo;{idea.prompt}&rdquo;
+                        </p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <details className="mb-5 text-micro font-tertiary text-content-secondary cursor-pointer">
+                  <summary className="hover:text-content-primary transition-colors">
+                    💡 Click to view quick startup starter templates
+                  </summary>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2 pt-2 border-t border-border-subtle">
+                    {SAMPLE_IDEAS.map((idea, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => handleSend(idea.prompt)}
+                        className="p-2 text-left rounded border border-border-subtle bg-surface-raised hover:bg-void text-[11px] flex items-center gap-1.5"
+                      >
+                        <span>{idea.icon}</span>
+                        <span className="font-bold">{idea.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                </details>
+              )}
 
               {/* Error Notification if any */}
               {(uploadError || (status === SESSION_STATUS.FAILED && error)) && (
@@ -478,14 +550,28 @@ export default function IntakePage() {
                 </div>
               )}
 
-              {/* ChatBox Component */}
-              <ChatBox
-                messages={messages}
-                onSend={handleSend}
-                onUpload={handleUpload}
-                disabled={isSending}
-                uploadError={uploadError}
-              />
+              {/* 2-Column Responsive Workspace: ChatBox + Venture Blueprint */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div className="lg:col-span-7 flex flex-col gap-4">
+                  <ChatBox
+                    messages={messages}
+                    onSend={handleSend}
+                    onUpload={handleUpload}
+                    disabled={isSending}
+                    uploadError={uploadError}
+                    suggestedChips={suggestedChips}
+                  />
+                </div>
+
+                <div className="lg:col-span-5 sticky top-24">
+                  <VentureDossier
+                    extraction={extraction}
+                    completionPct={completionPct}
+                    onRunSwarm={readyToEvaluate ? handleStartGeneration : undefined}
+                    isComplete={isComplete || Object.values(extraction || {}).filter(Boolean).length >= 6}
+                  />
+                </div>
+              </div>
 
               {/* Ready to Evaluate Callout Banner */}
               {readyToEvaluate && (

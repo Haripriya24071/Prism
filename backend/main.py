@@ -144,23 +144,17 @@ async def chat(request: ChatRequest) -> dict:
         history=session["conversation_history"],
     )
 
+    extraction_data = result.get("extraction", {})
     store_update_session(
         request.session_id,
-        {"conversation_history": result["updated_history"]},
+        {
+            "conversation_history": result["updated_history"],
+            "intake_package": extraction_data,
+            "status": "ready" if result["is_complete"] else "intake",
+        },
     )
 
     if result["is_complete"]:
-        full_text = " ".join(
-            t["content"] for t in result["updated_history"] if t["role"] == "user"
-        )
-        extraction = await extract_structured_fields(full_text)
-        store_update_session(
-            request.session_id,
-            {
-                "intake_package": extraction.model_dump(),
-                "status": "ready",
-            },
-        )
         store_set_session_status(request.session_id, "ready")
 
     return {
@@ -168,6 +162,11 @@ async def chat(request: ChatRequest) -> dict:
         "is_complete": result["is_complete"],
         "extraction_complete": result["is_complete"],
         "turn": len(result["updated_history"]) // 2,
+        "extraction": extraction_data,
+        "missing_fields": result.get("missing_fields", []),
+        "captured_fields": result.get("captured_fields", {}),
+        "completion_pct": result.get("completion_pct", 0),
+        "suggested_chips": result.get("suggested_chips", []),
     }
 
 

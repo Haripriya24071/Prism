@@ -168,3 +168,86 @@
     opacity: 0.8;
   }
 }
+
+/* Formatted speech bubbles */
+.chatbox__formatted-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chatbox__para {
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Quick reply suggestion chips */
+.chatbox__chips-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+}
+
+.chatbox__chips-label {
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chatbox__chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chatbox__chip {
+  padding: 4px 12px;
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  box-shadow: 2px 2px 0px var(--color-border);
+  border-radius: 9999px;
+  font-family: var(--font-tertiary);
+  font-size: var(--text-small);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.chatbox__chip:hover {
+  background-color: var(--color-accent-tint, #D8F3DC);
+  border-color: var(--color-accent-signal);
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0px var(--color-border);
+}
+
+/* Typing indicator */
+.chatbox__bubble--typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: var(--space-3) var(--space-4);
+  background-color: var(--color-surface);
+  border-color: var(--color-border-subtle);
+}
+
+.chatbox__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--color-text-secondary);
+  animation: typing-bounce 1.2s infinite ease-in-out;
+}
+
+.chatbox__dot:nth-child(1) { animation-delay: 0s; }
+.chatbox__dot:nth-child(2) { animation-delay: 0.2s; }
+.chatbox__dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
