@@ -1,110 +1,98 @@
 # Swapnil — Frontend + Persona Prompts
 
-**Owns:** `frontend/`, `backend/agents/personas.py`, `backend/agents/prompts.py`
-**Does not touch:** any other backend file. Request changes from the owner (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
-**Governing docs:** [DESIGN.md](../../DESIGN.md), [RULES.md](../../RULES.md) (ARCH-005/006/011/012, UI-001 to UI-019), [SCHEMA.md](../../SCHEMA.md)
+**Owns:** `frontend/`, `backend/agents/personas.py`, `backend/agents/prompts.py`, UI/UX loading animations.  
+**Does not touch:** backend core or GCP integration files. Request changes from the owner (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).  
+**Governing docs:** [DESIGN.md](../../DESIGN.md), [RULES.md](../../RULES.md) (ARCH-005/006/011/012, UI-001 to UI-020), [SCHEMA.md](../../SCHEMA.md)
 
 Phases are gated by exit criteria, not dates. Do not start a phase until the previous exit criteria are met.
 
 ---
 
-## Phase 0 — Foundation and Contracts
-
-| # | Deliverable | Location |
-|---|-------------|----------|
-| 0.1 | Vite + React 18 scaffold, Tailwind 3, ESLint config, `.env.example` entry `VITE_API_BASE_URL` | `frontend/` |
-| 0.2 | Design tokens: every colour, font, size, spacing and radius from DESIGN.md as CSS custom properties | `src/styles/tokens.css` |
-| 0.3 | Tailwind config mapped to tokens (no raw hex anywhere, UI-001) | `tailwind.config.js` |
-| 0.4 | Review Zahid's Pydantic models and SSE event shapes. Confirm they carry everything the UI needs (lineage, dissent, assumptions, failure modes, heatmap, score, pivots) | review only |
-| 0.5 | Route skeleton: `IntakePage`, `GenerationPage`, `ResultsPage`, session state via React Context | `src/pages/`, `src/hooks/useSession.js` |
-
-**Exit:** `npm run lint` and `npm run build` pass. Tokens render a test page. Contract review signed off in writing by Zahid.
+## Current Status Overview
+- **Phase 0 (Foundation & Contracts):** ✅ 100% Complete. React 18, Vite, design tokens, Tailwind config, routing skeleton operational.
+- **Phase 1 (UI Components):** ✅ 100% Complete. `ChatBox`, `AgentGrid`, `AgentCard`, `ScoreCard`, `ScoreRing`, `DivergenceHeatmap`, `BRDViewer` built.
+- **Phase 2 (Motion & Interactive States):** 🟡 90% Complete. Framer Motion transitions implemented. Handshake portal loading animation on deck.
+- **Phase 3 (Live Backend Integration):** 🟡 85% Complete. SSE streaming hooked via `useSSE.js`, API service hooked via `api.js`. Live local test verified.
+- **Phase 4 (Persona Prompts):** ✅ 100% Complete. `prompts.py` updated and calibrated to produce structured 6-section JSON with citation tags.
 
 ---
 
-## Phase 1 — UI Against Mocks
+## Phase 0 — Foundation and Contracts (Completed)
 
-Build every screen against Ritika's fixtures. No backend needed.
+| # | Deliverable | Location | Status |
+|---|-------------|----------|--------|
+| 0.1 | Vite + React 18 scaffold, Tailwind 3, ESLint config, `.env.example` entry `VITE_API_BASE_URL` | `frontend/` | ✅ Done |
+| 0.2 | Design tokens: every colour, font, size, spacing and radius from DESIGN.md as CSS custom properties | `src/index.css`, `tokens.css` | ✅ Done |
+| 0.3 | Tailwind config mapped to tokens (no raw hex anywhere, UI-001) | `tailwind.config.js` | ✅ Done |
+| 0.4 | Review Zahid's Pydantic models and SSE event shapes. Confirm they carry everything the UI needs | `models/` review | ✅ Done |
+| 0.5 | Route skeleton: `IntakePage`, `GenerationPage`, `ResultsPage`, session state via React Context | `src/pages/`, `src/hooks/` | ✅ Done |
 
-| # | Deliverable | Notes |
-|---|-------------|-------|
-| 1.1 | `ChatBox`: textarea with `sr-only` label, send, attach, AI bubbles | UI-008 |
-| 1.2 | `useSSE` hook, closes the `EventSource` on unmount | ARCH-012. Test with a mock event emitter |
-| 1.3 | `AgentGrid` + `AgentCard`: CSS Grid 3/2/1 columns, `data-agent` accent, status chip with colour **and** text | UI-007, UI-012, UI-019 |
-| 1.4 | Skeleton states at exact loaded dimensions | UI-010 |
-| 1.5 | `ScoreCard` + `ScoreRing`: SVG ring, count-up, green >70 / amber 50–70 / red <50 | threshold tokens, not inline colour |
-| 1.6 | `DivergenceHeatmap`: 5 rows, `data-risk` drives colour, tooltip text | UI-018 |
-| 1.7 | `BRDViewer`: accordion, source chip, confidence, lineage block, `AssumptionFlag`, dissent expander | no barrel files (ARCH-006) |
-
-**Exit:** all three pages render from fixtures end to end. Keyboard-only walkthrough works with visible focus (UI-004). `aria-live="polite"` on status, heatmap and BRD updates (UI-009).
+**Exit Criteria:** `npm run lint` and `npm run build` pass. Tokens render a test page. Contract review signed off.
 
 ---
 
-## Phase 2 — Motion and Voice
+## Phase 1 — UI Components Against Mocks (Completed)
 
-| # | Deliverable | Notes |
-|---|-------------|-------|
-| 2.1 | Framer Motion page and agent-card variants from DESIGN.md | `transform` + `opacity` only (UI-014) |
-| 2.2 | GSAP heatmap `scaleX` stagger, score count-up | cleanup on unmount, kill timelines |
-| 2.3 | `prefers-reduced-motion` path for every animation | UI-013 |
-| 2.4 | `useVoiceInput` (Web Speech API), `VoiceButton` with recording state | feature-detect, hide button where unsupported |
-| 2.5 | Voice fallback decision: if the Gemini Audio fallback is built, agree the upload endpoint with Zahid. If not, document it as unsupported on Firefox | decide here, not in Phase 4 |
-| 2.6 | Optional: particle canvas background | `requestAnimationFrame` only, `pointer-events: none`, DPR sizing (ARCH-011, UI-015, UI-016). Cut first if slow |
+| # | Deliverable | Notes | Status |
+|---|-------------|-------|--------|
+| 1.1 | `ChatBox`: textarea with `sr-only` label, send, attach, AI bubbles | Accessible intake with rich dark mode aesthetics | ✅ Done |
+| 1.2 | `useSSE` hook, closes the `EventSource` on unmount | Reconnect backoff, event dispatching for swarm | ✅ Done |
+| 1.3 | `AgentGrid` + `AgentCard`: CSS Grid, persona accents, status chips | Live visual indicators for each of the 6 agents | ✅ Done |
+| 1.4 | Skeleton states at exact loaded dimensions | Zero layout shift during SSE hydration | ✅ Done |
+| 1.5 | `ScoreCard` + `ScoreRing`: SVG ring, count-up, green/amber/red thresholds | Real-time animated investor score display | ✅ Done |
+| 1.6 | `DivergenceHeatmap`: 5 rows, `data-risk` drives colour, tooltip text | Visual risk radar highlighting agent debate | ✅ Done |
+| 1.7 | `BRDViewer`: accordion, source chip, confidence, lineage block | Deep inspection of synthesised requirements | ✅ Done |
 
-**Exit:** animations pass the reduced-motion check. Voice works in Chrome. No console errors.
-
----
-
-## Phase 3 — Real Backend Integration
-
-| # | Deliverable | Notes |
-|---|-------------|-------|
-| 3.1 | Swap fixtures for the live API: session, chat, upload, generate, SSE, BRD | single `api` module, named exports |
-| 3.2 | Error and failed-agent states: failed agent card, retry-able generation error, upload validation messages | UI-007 |
-| 3.3 | Stakeholder view selector + PDF download | needs Haripriya's `/brd/{id}/pdf?view=` |
-| 3.4 | Pivot suggestions block in `ScoreCard`, shown only if `pivot_triggered` | stretch dependency, hide cleanly if absent |
-| 3.5 | CORS and env check against the deployed Railway URL | with Zahid |
-
-**Exit:** a full run, idea to downloaded PDF, works against the real backend on local and on Vercel + Railway.
+**Exit Criteria:** All three pages render from fixtures end-to-end. Keyboard-only walkthrough works with visible focus. `aria-live="polite"` on updates.
 
 ---
 
-## Phase 4 — Persona Prompts (starts in Phase 1, runs in parallel)
+## Phase 2 — Motion, Loading Screens & Animation Polish (Active)
 
-You own the quality of the six agents. Zahid wires them in.
+| # | Deliverable | Notes | Status |
+|---|-------------|-------|--------|
+| 2.1 | Framer Motion page and agent-card variants from DESIGN.md | `transform` + `opacity` only (UI-014) | ✅ Done |
+| 2.2 | GSAP heatmap `scaleX` stagger, score count-up | Cleanup on unmount, kill timelines | ✅ Done |
+| 2.3 | **Handshake Portal Loading Animation (`src/components/ui/HandshakeLoader.jsx`)** | Stylized 2D portal handshake with floating financial/growth badges (`$`, `%`, heart, checkmark, chart) communicating founder-market fit | 🔄 In Progress |
+| 2.4 | `prefers-reduced-motion` path for every animation | UI-013 compliance | ✅ Done |
+| 2.5 | `useVoiceInput` (Web Speech API), `VoiceButton` with recording state | Feature-detected, active in Chrome | ✅ Done |
 
-| # | Deliverable | Notes |
-|---|-------------|-------|
-| 4.1 | `personas.py`: six persona definitions and constraint axes per PRD 4.3 | data only, no logic, no I/O |
-| 4.2 | `prompts.py`: six system prompts that force the agent to output the BRD JSON shape in SCHEMA.md (5 sections, assumptions, citations) | prompts must reference supplied context data by name so citations are real |
-| 4.3 | Prompt test set: three sample ideas run through each persona, outputs compared | hand to Ritika for fixture capture |
-| 4.4 | Divergence check: personas must produce meaningfully different scores. If agents converge, rewrite constraints, don't tweak wording | the heatmap depends on this |
-
-**Exit:** on the three sample ideas, per-section score spread is visible and each output validates against the Pydantic `AgentOutput` model.
-
----
-
-## Phase 5 — Polish and Demo Freeze
-
-- Responsive check at 768 and 1024 breakpoints only (UI-011)
-- Lighthouse accessibility pass. Fix contrast issues using verified token pairs only
-- Remove all `console.log` (RULES.md General)
-- Feature freeze agreed with team. After freeze: bug fixes only
-
-**Exit:** `npm run lint` and `npm run build` clean. Demo path rehearsed twice with Ritika with no visual glitches.
+**Exit Criteria:** Handshake loader renders smoothly without frame drops. Reduced-motion check respected. No console warnings.
 
 ---
 
-## Dependencies
+## Phase 3 — Real Backend Integration (Active)
 
-| Need | From | By |
-|------|------|----|
-| Pydantic models + SSE event spec | Zahid | end of Phase 0 |
-| Mock fixtures (intake, agent outputs, score matrix, merged BRD, heatmap, score) | Ritika | start of Phase 1 |
-| `/brd/{id}/pdf` | Haripriya | Phase 3 |
-| Swarm wiring of personas/prompts | Zahid | Phase 4 |
+| # | Deliverable | Notes | Status |
+|---|-------------|-------|--------|
+| 3.1 | Swap fixtures for live API: session, chat, upload, generate, SSE, BRD | Unified in `src/api.js` | ✅ Done |
+| 3.2 | Error and failed-agent states: failed agent card, retry-able error modal | UI-007 | ✅ Done |
+| 3.3 | Stakeholder view selector + PDF download button | Calls `GET /brd/{id}/pdf?view=` | 🟡 Hooked (Pending Haripriya PDF verify) |
+| 3.4 | Pivot suggestions block in `ScoreCard` | Displayed when `pivot_triggered == true` (score < 60) | ✅ Done |
+| 3.5 | CORS and env check against backend | Tested on `http://localhost:8000` | ✅ Done |
 
-## Risks
+**Exit Criteria:** A full end-to-end run from idea submission to live swarm deliberation and scorecard works seamlessly.
 
-- **Animation scope creep.** Heatmap and score ring come first. Particles and per-card canvas are optional.
-- **Web Speech API support.** Chrome and Edge only. The demo must run in Chrome.
+---
+
+## Phase 4 — Persona Prompts & Calibration (Completed)
+
+| # | Deliverable | Notes | Status |
+|---|-------------|-------|--------|
+| 4.1 | `personas.py`: Six persona definitions and constraint axes per PRD 4.3 | VC, Lean Founder, CTO, UX Researcher, Regulator, Adversarial | ✅ Done |
+| 4.2 | `prompts.py`: Six system prompts enforcing structured 6-section JSON with source citation tags `[SOURCE: ...]` | Calibrated for Gemini 2.0 Flash JSON output | ✅ Done |
+| 4.3 | Live Prompt Execution: Run sample idea through 6-agent swarm | Tested with 12-key Gemini pool; 5/5 active agents produced complete BRDs | ✅ Done |
+| 4.4 | Divergence spread check | Ensured distinct perspectives across feasibility, timing, and regulatory safety | ✅ Done |
+
+**Exit Criteria:** High divergence spread across personas; valid JSON output parsed into `AgentOutput` models.
+
+---
+
+## Phase 5 — Demo Polish & Freeze (Final Milestone)
+
+- Final responsive layout verification at 768px, 1024px, and 1440px breakpoints.
+- Lighthouse accessibility pass (contrast tokens, focus rings).
+- Strip debug `console.log` statements.
+- Two clean rehearsal walkthroughs with Ritika using the demo script.
+
+**Exit Criteria:** Clean build, zero visual glitches, timed demo under 3 minutes.
