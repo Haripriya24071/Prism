@@ -3,7 +3,13 @@
 import asyncio
 import pytest
 from errors import IntakeError, InvalidFileError
-from intake.conversation import _build_history, _sanitise_message
+from intake.conversation import (
+    _build_history,
+    _sanitise_message,
+    _detect_user_uncertainty,
+    _determine_inquired_field,
+    _resolve_uncertain_field,
+)
 from intake.document import _truncate_to_sentence, extract_document_text
 from intake.extractor import _validate_region, _validate_stage
 from intake.vision import analyse_image
@@ -140,3 +146,55 @@ class TestValidateStage:
 
     def test_none_input(self) -> None:
         assert _validate_stage(None) is None
+
+
+class TestUncertaintyHandling:
+    def test_detect_user_uncertainty_phrases(self) -> None:
+        phrases = [
+            "I don't know",
+            "i dont know",
+            "No idea at all",
+            "not sure about this",
+            "haven't decided yet",
+            "what do you recommend?",
+            "you decide",
+            "help me choose",
+            "can't figure out",
+            "dunno",
+            "idk",
+            "maybe",
+            "whatever you think is best",
+        ]
+        for phrase in phrases:
+            assert _detect_user_uncertainty(phrase) is True
+
+    def test_detect_user_uncertainty_certain_phrase(self) -> None:
+        assert _detect_user_uncertainty("I am building this in India for 50000 dollars") is False
+        assert _detect_user_uncertainty("We have a working prototype") is False
+
+    def test_determine_inquired_field(self) -> None:
+        history = [
+            {"role": "user", "content": "I want to build an invoice app"},
+            {"role": "model", "content": "Where are you planning to set this up or launch first (e.g. India, US, UK)?"},
+        ]
+        assert _determine_inquired_field("I don't know, you decide", history, ["target region / launch country"]) == "region"
+
+    def test_resolve_uncertain_field_region_india(self) -> None:
+        field, val, rationale = _resolve_uncertain_field("region", "B2B invoicing app for kirana and MSME stores with UPI", "fintech")
+        assert field == "region"
+        assert val == "IN"
+
+    def test_resolve_uncertain_field_region_us_default(self) -> None:
+        field, val, rationale = _resolve_uncertain_field("region", "Cloud devops platform for kubernetes", "saas")
+        assert field == "region"
+        assert val == "US"
+
+    def test_resolve_uncertain_field_stage(self) -> None:
+        field, val, _ = _resolve_uncertain_field("stage", "Autonomous delivery drone", "hardware")
+        assert field == "stage"
+        assert val == "idea"
+
+    def test_resolve_uncertain_field_budget(self) -> None:
+        field, val, _ = _resolve_uncertain_field("budget_range", "B2B SaaS tool", "software")
+        assert field == "budget_range"
+        assert "Bootstrapped" in val

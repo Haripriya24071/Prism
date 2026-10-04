@@ -25,15 +25,154 @@ logger = structlog.get_logger()
 _MAX_TURNS = 10
 _MAX_MSG_LEN = 2000
 
-_INTAKE_SYSTEM_PROMPT = """You are PRISM's venture intake specialist. Your job is to extract business parameters through a warm, concise conversation.
+_INTAKE_SYSTEM_PROMPT = """You are PRISM's venture intake specialist and AI co-founder. Your job is to extract business parameters through a warm, concise conversation.
 
 Rules:
 - Ask exactly ONE follow-up question per turn. Never ask multiple questions or write long essays.
 - Keep your reply under 3 sentences total.
-- In 1 sentence, acknowledge what the founder shared.
+- In 1 sentence, acknowledge what the founder shared (or state your autonomous recommendation if they are uncertain).
 - In 1 sentence, ask ONE sharp follow-up question focusing on what is still missing.
 - Once you have all 6 core parameters, output this exact token on its own line: INTAKE_COMPLETE
-- Never fabricate information the user has not provided."""
+- When the user is uncertain or says they don't know, formulate an intelligent benchmark answer autonomously, lock it in, and advance."""
+
+_UNCERTAINTY_KEYWORDS = (
+    "don't know", "dont know", "do not know", "no idea", "not sure",
+    "unsure", "uncertain", "haven't decided", "have not decided",
+    "not decided", "yet to decide", "what do you recommend", "what do you suggest",
+    "what should i", "what's best", "whats best", "you decide", "you choose",
+    "help me decide", "help me choose", "recommend something", "suggest something",
+    "not able to find out", "can't figure out", "cannot figure out", "hard to say",
+    "confused", "no preference", "default", "suggest me", "you tell me",
+    "not thought about", "havent thought", "whatever you think", "up to you",
+    "no clue", "dunno", "idk",
+)
+
+
+def _detect_user_uncertainty(text: str) -> bool:
+    """Detect if the user is expressing confusion, uncertainty, or asking the AI to decide."""
+    lower = text.lower().strip()
+    if any(kw in lower for kw in _UNCERTAINTY_KEYWORDS):
+        return True
+    if lower in {"maybe", "unsure", "any", "either", "not really", "?", "not certain"}:
+        return True
+    return False
+
+
+def _determine_inquired_field(
+    user_message: str,
+    history: list[dict[str, Any]],
+    current_missing: list[str],
+) -> str:
+    """Identify which field the user is uncertain about."""
+    user_lower = user_message.lower()
+
+    # 1. Check if the user explicitly named the parameter they don't know about
+    if any(k in user_lower for k in ["budget", "income", "money", "runway", "cost", "funds", "funding", "dollars", "pricing"]):
+        return "budget_range"
+    if any(k in user_lower for k in ["region", "country", "market", "where", "location", "place", "geography"]):
+        return "region"
+    if any(k in user_lower for k in ["stage", "prototype", "mvp", "traction", "team"]):
+        return "stage"
+    if any(k in user_lower for k in ["milestone", "success", "year one", "target", "12-month", "arr", "revenue goal"]):
+        return "success_definition"
+    if any(k in user_lower for k in ["industry", "vertical", "sector"]):
+        return "industry"
+
+    # 2. Check the LAST question in the assistant's previous message
+    last_assistant_msg = ""
+    for msg in reversed(history):
+        if msg.get("role") in ("model", "assistant"):
+            last_assistant_msg = msg.get("content", "").lower()
+            break
+
+    sentences = [s.strip() for s in last_assistant_msg.split("?") if s.strip()]
+    last_sentence = sentences[-1] if sentences else last_assistant_msg
+
+    if any(k in last_sentence for k in ["budget", "income", "money", "runway", "operating with", "projecting"]):
+        return "budget_range"
+    if any(k in last_sentence for k in ["milestone", "success", "year one", "12-month", "define success"]):
+        return "success_definition"
+    if any(k in last_sentence for k in ["stage", "prototype", "fresh", "brand-new", "team in place"]):
+        return "stage"
+    if any(k in last_sentence for k in ["region", "country", "where are you planning", "where are we setting", "launch first", "geographic"]):
+        return "region"
+    if any(k in last_sentence for k in ["industry", "vertical", "business model", "customer segment"]):
+        return "industry"
+
+    for m in current_missing:
+        if "budget" in m:
+            return "budget_range"
+        if "region" in m:
+            return "region"
+        if "stage" in m:
+            return "stage"
+        if "success" in m:
+            return "success_definition"
+        if "industry" in m:
+            return "industry"
+
+    return current_missing[0] if current_missing else "budget_range"
+
+
+def _resolve_uncertain_field(
+    target_field: str,
+    raw_idea: str,
+    industry: str | None,
+) -> tuple[str, str, str]:
+    """Generates an intelligent AI-recommended benchmark for an uncertain field.
+    Returns (field_key, resolved_value, rationale).
+    """
+    idea_lower = raw_idea.lower()
+
+    if target_field == "region":
+        indian_cues = ["upi", "india", "rupee", "₹", "inr", "msme", "gst", "kirana", "tier-2", "bangalore", "mumbai", "delhi", "bharat"]
+        uk_cues = ["uk", "united kingdom", "london", "fca", "nhs", "pound", "£"]
+        uae_cues = ["uae", "dubai", "gulf", "aed", "dirham", "mena", "middle east"]
+
+        if any(cue in idea_lower for cue in indian_cues):
+            return "region", "IN", "India offers the highest real-time digital payment volume and an enormous 63M+ MSME customer base"
+        elif any(cue in idea_lower for cue in uk_cues):
+            return "region", "GB", "The UK provides clear Open Banking standards and mature regulatory sandboxes"
+        elif any(cue in idea_lower for cue in uae_cues):
+            return "region", "AE", "The UAE provides frictionless digital trade licensing and zero corporate tax freezones"
+        else:
+            return "region", "US", "The United States represents the largest commercial software market with highest willingness to pay"
+
+    elif target_field == "stage":
+        if any(w in idea_lower for w in ["prototype", "demo", "built a", "coded", "github", "mvp"]):
+            return "stage", "prototype", "Calibrating as Working Prototype to stress-test your existing architecture"
+        return "stage", "idea", "Benchmarking at Idea Stage to stress-test core unit economics before engineering spend"
+
+    elif target_field == "budget_range":
+        is_hardware = any(w in idea_lower for w in ["hardware", "device", "iot", "sensor", "drone", "manufacturing", "fleet", "factory"])
+        if is_hardware:
+            return "budget_range", "Seed Stage ($50k-$150k)", "Hardware and physical deployments require an initial prototyping runway of $50k–$150k"
+        return "budget_range", "Bootstrapped / Pre-Seed ($10k-$25k)", "A lean $10,000–$25,000 budget allows building a working MVP to validate customer willingness-to-pay"
+
+    elif target_field == "success_definition":
+        is_b2b = any(w in idea_lower for w in ["b2b", "enterprise", "saas", "api", "compliance", "platform", "vendor", "firm", "truck", "fleet"])
+        if is_b2b:
+            return (
+                "success_definition",
+                "15 paying pilot customers and $30k ARR with positive unit economics",
+                "Securing 15 committed pilot customers proves genuine market demand and willingness to pay",
+            )
+        return (
+            "success_definition",
+            "5,000 active users with >25% organic month-1 retention",
+            "5,000 active users with strong organic retention is the gold standard benchmark for initial consumer traction",
+        )
+
+    elif target_field == "industry":
+        if any(w in idea_lower for w in ["payment", "bank", "invoice", "fintech", "money", "loan", "lending", "credit"]):
+            return "industry", "FinTech & Payments", "Mapped to FinTech & Financial Infrastructure"
+        elif any(w in idea_lower for w in ["health", "medical", "doctor", "patient", "clinic"]):
+            return "industry", "HealthTech & Digital Health", "Mapped to HealthTech"
+        elif any(w in idea_lower for w in ["logistics", "freight", "truck", "delivery", "fleet", "transport"]):
+            return "industry", "Logistics & Fleet Telematics", "Mapped to Logistics & Supply Chain"
+        return "industry", "B2B SaaS & Automation", "Mapped to B2B SaaS & Applied AI"
+
+    return target_field, "AI Benchmark Applied", "Standard venture baseline"
 
 
 def _sanitise_message(message: str) -> str:
@@ -81,6 +220,7 @@ async def _send_targeted_turn(
     missing_fields: list[str],
     next_missing: str,
     is_ready_to_complete: bool,
+    uncertainty_resolution: dict[str, str] | None = None,
 ) -> str:
     """Invokes Gemini 2.0 Flash with explicit instruction to ask ONE sharp follow-up question."""
     from vertexai.generative_models import GenerationConfig
@@ -89,13 +229,36 @@ async def _send_targeted_turn(
 
     if is_ready_to_complete:
         prompt = (
-            f"You are PRISM's AI Intake Specialist. The founder has provided all key strategic parameters:\n"
+            f"You are PRISM's AI Intake Specialist. The founder has confirmed all key strategic parameters:\n"
             f"Summary: {json.dumps(captured_fields, indent=2)}\n\n"
             f"User says: {current_message}\n\n"
             f"DIRECTIVE:\n"
             f"In 2 enthusiastic sentences, confirm that all core parameters are locked in and that our 6-agent expert swarm "
             f"(VC, Lean Founder, Enterprise CTO, UX Researcher, Policy Regulator, Adversary) has been armed with their regional data.\n"
             f"Output INTAKE_COMPLETE on a new line at the very end."
+        )
+    elif uncertainty_resolution:
+        param_label = uncertainty_resolution.get("field_label", "parameter")
+        recommended_val = uncertainty_resolution.get("value", "")
+        rationale = uncertainty_resolution.get("rationale", "")
+        prompt = (
+            f"You are PRISM's AI Intake Specialist acting as a warm, reassuring venture co-founder.\n"
+            f"The founder expressed uncertainty or said they don't know: '{current_message}'.\n"
+            f"You analyzed their venture context and autonomously decided on the optimal industry-standard benchmark:\n"
+            f"- Parameter: {param_label}\n"
+            f"- AI Benchmark Chosen: {recommended_val}\n"
+            f"- Rationale: {rationale}\n\n"
+            f"CONVERSATION SO FAR:\n{conversation_summary}\n\n"
+            f"CURRENT DOSSIER STATUS:\n"
+            f"- Captured: {json.dumps(captured_fields, indent=2)}\n"
+            f"- Still Missing: {missing_fields}\n"
+            f"- Next Parameter to Ask: {next_missing}\n\n"
+            f"STRICT RULES:\n"
+            f"1. Keep your reply UNDER 3 SENTENCES TOTAL.\n"
+            f"2. Sentence 1: Reassure the founder that uncertainty here is completely normal, and state that you've benchmarked {param_label} as '{recommended_val}' ({rationale}).\n"
+            f"3. Sentence 2: In ONE focused question, ask the next missing parameter: '{next_missing}'. (If all 6 fields are now resolved, announce that all parameters are locked and output INTAKE_COMPLETE on a new line).\n"
+            f"4. Never make the founder feel bad for not knowing. Be encouraging and proactive.\n"
+            f"5. Do NOT output INTAKE_COMPLETE until all fields are collected."
         )
     else:
         prompt = (
@@ -132,11 +295,11 @@ async def run_conversation_turn(
     session_id: str,
     message: str,
     history: list[dict[str, Any]],
+    prior_extraction: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Single conversation turn that extracts structured fields behind the scenes
-
-    and dynamically asks follow-up questions for what is missing.
-    Returns {"reply": str, "updated_history": list[dict], "is_complete": bool, "extraction": dict, ...}
+    """Single conversation turn that extracts structured fields behind the scenes,
+    dynamically asks follow-up questions for what is missing, and autonomously decides
+    benchmarks when the user expresses uncertainty or says 'I don't know'.
     """
     if len(history) >= _MAX_TURNS:
         logger.warning("conversation_max_turns_reached", session_id=session_id)
@@ -164,7 +327,75 @@ async def run_conversation_turn(
     # 2. Extract structured fields from the conversation behind the scenes
     extraction = await extract_structured_fields(all_user_text)
 
-    # 3. Analyze captured vs. missing parameters
+    # 3. Preserve prior extracted or recommended fields
+    if prior_extraction and isinstance(prior_extraction, dict):
+        if not extraction.raw_idea and prior_extraction.get("raw_idea"):
+            extraction.raw_idea = str(prior_extraction["raw_idea"])
+        if not extraction.region and prior_extraction.get("region"):
+            extraction.region = str(prior_extraction["region"])
+        if not extraction.industry and prior_extraction.get("industry"):
+            extraction.industry = str(prior_extraction["industry"])
+        if not extraction.stage and prior_extraction.get("stage"):
+            extraction.stage = prior_extraction["stage"]
+        if not extraction.budget_range and prior_extraction.get("budget_range"):
+            extraction.budget_range = str(prior_extraction["budget_range"])
+        if not extraction.success_definition and prior_extraction.get("success_definition"):
+            extraction.success_definition = str(prior_extraction["success_definition"])
+
+    # 4. Detect user uncertainty and autonomously decide the parameter
+    uncertainty_resolution: dict[str, str] | None = None
+    is_uncertain = _detect_user_uncertainty(clean_message)
+
+    if is_uncertain:
+        # Determine which parameter the user is uncertain about
+        target_param = _determine_inquired_field(clean_message, history, [
+            f for f, v in [
+                ("budget_range", extraction.budget_range),
+                ("region", extraction.region),
+                ("stage", extraction.stage),
+                ("success_definition", extraction.success_definition),
+                ("industry", extraction.industry),
+            ] if not v
+        ])
+
+        # If that parameter was already resolved, fallback to the next truly missing field
+        if getattr(extraction, target_param, None) is not None:
+            for cand in ["budget_range", "region", "stage", "success_definition", "industry"]:
+                if getattr(extraction, cand, None) is None:
+                    target_param = cand
+                    break
+
+        # Formulate and lock the AI benchmark
+        if getattr(extraction, target_param, None) is None:
+            field_key, resolved_val, rationale = _resolve_uncertain_field(
+                target_param,
+                extraction.raw_idea or clean_message,
+                extraction.industry,
+            )
+            setattr(extraction, field_key, resolved_val)
+
+            label_map = {
+                "region": "Target Launch Region",
+                "stage": "Development Stage",
+                "budget_range": "Starting Budget & Runway",
+                "success_definition": "12-Month Success Target",
+                "industry": "Industry Sector",
+            }
+            uncertainty_resolution = {
+                "field_key": field_key,
+                "field_label": label_map.get(field_key, field_key),
+                "value": resolved_val,
+                "rationale": rationale,
+            }
+            logger.info(
+                "ai_autonomous_decision_applied",
+                session_id=session_id,
+                field=field_key,
+                value=resolved_val,
+                rationale=rationale,
+            )
+
+    # 5. Analyze captured vs. missing parameters
     captured_fields: dict[str, str] = {}
     missing_fields: list[str] = []
 
@@ -224,7 +455,7 @@ async def run_conversation_turn(
         if next_missing == "none":
             next_missing = missing_fields[0]
 
-    # 4. Generate dynamic response via Gemini or resilient contextual fallback
+    # 6. Generate dynamic response via Gemini or resilient contextual fallback
     reply = ""
     try:
         reply = await _send_targeted_turn(
@@ -234,10 +465,46 @@ async def run_conversation_turn(
             missing_fields=missing_fields,
             next_missing=next_missing,
             is_ready_to_complete=is_ready_to_complete,
+            uncertainty_resolution=uncertainty_resolution,
         )
     except Exception as e:
         logger.warning("conversation_turn_targeted_fallback", session_id=session_id, error=str(e)[:120])
-        if is_ready_to_complete:
+        if uncertainty_resolution:
+            param_label = uncertainty_resolution.get("field_label", "parameter")
+            val = uncertainty_resolution.get("value", "")
+            rationale = uncertainty_resolution.get("rationale", "")
+            if is_ready_to_complete:
+                reply = (
+                    f"No worries at all! Based on your concept, I've benchmarked your {param_label} as **{val}** ({rationale}). "
+                    f"With that, all 6 core parameters are locked in! All 6 expert agents are standing by to run their evaluations.\n\nINTAKE_COMPLETE"
+                )
+            elif "region" in next_missing or "country" in next_missing:
+                reply = (
+                    f"No problem! Based on venture benchmarks, I've locked your {param_label} as **{val}** ({rationale}).\n\n"
+                    f"Where are you planning to set this up or launch first (e.g. India, US, UK, UAE)? "
+                    f"This activates live local regulations, currency rates, and geopolitical risk feeds."
+                )
+            elif "stage" in next_missing:
+                reply = (
+                    f"No problem! Based on standard venture benchmarks, I've locked your {param_label} as **{val}** ({rationale}).\n\n"
+                    f"Is this a brand-new idea starting fresh, or do you already have a working prototype or team in place?"
+                )
+            elif "budget" in next_missing or "income" in next_missing:
+                reply = (
+                    f"Understood! Based on standard early-stage benchmarks, I've locked your {param_label} as **{val}** ({rationale}).\n\n"
+                    f"What approximate budget or revenue model are you projecting to operate with over the first 12 months?"
+                )
+            elif "success" in next_missing:
+                reply = (
+                    f"Makes total sense! I've set your {param_label} to **{val}** ({rationale}) in your blueprint.\n\n"
+                    f"What primary milestone will define success for this venture in year one (e.g. active users, revenue, or enterprise pilots)?"
+                )
+            else:
+                reply = (
+                    f"Got it! I've set your {param_label} to **{val}** ({rationale}) in your blueprint.\n\n"
+                    f"Could you share what type of business model or target customer segment this will focus on?"
+                )
+        elif is_ready_to_complete:
             reg_display = captured_fields.get("Target Region", "your designated market")
             reply = (
                 f"All core strategic parameters are locked in! We have your concept in {extraction.industry or 'tech'}, "

@@ -142,6 +142,7 @@ async def chat(request: ChatRequest) -> dict:
         session_id=request.session_id,
         message=request.message,
         history=session["conversation_history"],
+        prior_extraction=session.get("intake_package"),
     )
 
     extraction_data = result.get("extraction", {})
