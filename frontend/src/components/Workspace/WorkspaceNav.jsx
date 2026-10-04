@@ -14,21 +14,32 @@ const PRIMARY_TABS = [
 export default function WorkspaceNav({
   activeTab,
   setActiveTab,
+  score,
+  confidenceBand,
   onReset,
 }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  const handleHomeRedirect = (e) => {
+    if (e) e.preventDefault()
+    if (typeof onReset === 'function') {
+      onReset()
+    }
+    window.location.hash = ''
+    window.location.href = '/'
+  }
 
   return (
     <header className="sticky top-0 z-40 w-full bg-void border-b border-border-subtle select-none">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 h-[74px] flex items-center justify-between">
         
-        {/* LEFT: Circular Logo Mark + Bold PRISM Wordmark with generous breathing room */}
+        {/* LEFT: Circular Logo Mark + Bold PRISM Wordmark - Redirects to http://localhost:5173/ */}
         <div className="flex items-center gap-3 shrink-0 mr-6 lg:mr-10">
-          <button
-            type="button"
-            onClick={() => setActiveTab('overview')}
+          <a
+            href="/"
+            onClick={handleHomeRedirect}
             className="group flex items-center gap-3 cursor-pointer select-none text-left focus-visible:outline-none"
-            aria-label="PRISM Home - Return to Overview"
+            aria-label="PRISM Home - Return to Landing Page"
           >
             <img
               src={prismLogo}
@@ -38,7 +49,7 @@ export default function WorkspaceNav({
             <span className="font-display font-black text-2xl sm:text-[28px] tracking-[0.06em] text-content-primary leading-none">
               PRISM
             </span>
-          </button>
+          </a>
         </div>
 
         {/* CENTER: Typography-Driven Text Navigation without emojis or button pills */}
@@ -69,23 +80,29 @@ export default function WorkspaceNav({
           })}
         </nav>
 
-        {/* RIGHT: Quiet Live Status Indicator + Single Strong Primary CTA */}
-        <div className="flex items-center gap-4 sm:gap-6 shrink-0 ml-4">
-          {/* Subtle Live Swarm Status */}
-          <div className="flex items-center gap-2 text-xs font-tertiary text-content-secondary">
-            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-            <span className="hidden sm:inline font-medium">Live Swarm</span>
-          </div>
+        {/* RIGHT: Workspace Readiness Score Badge + New Pitch Action */}
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0 ml-4">
+          {score !== null && score !== undefined && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border-subtle bg-surface text-xs font-display">
+              <span className="font-semibold text-content-primary">
+                Score: {score}/100
+              </span>
+              {confidenceBand && (
+                <span className="hidden sm:inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent-tint text-accent-signal uppercase tracking-wider">
+                  {confidenceBand.replace(/_/g, ' ')}
+                </span>
+              )}
+            </div>
+          )}
 
-          {/* Strong Primary CTA: Pitch Idea → */}
           {typeof onReset === 'function' && (
             <button
               type="button"
-              onClick={onReset}
-              className="px-5 py-2 bg-content-primary text-surface font-display font-semibold text-xs rounded-full hover:bg-accent-signal transition-colors shadow-sm cursor-pointer whitespace-nowrap"
-              title="Start a new founder pitch evaluation"
+              onClick={handleHomeRedirect}
+              className="px-4 py-1.5 border border-border bg-surface hover:bg-surface-raised text-content-primary font-display font-medium text-xs rounded-full transition-colors cursor-pointer whitespace-nowrap shadow-xs"
+              title="Start a new pitch evaluation"
             >
-              Pitch Idea →
+              + New Pitch
             </button>
           )}
 

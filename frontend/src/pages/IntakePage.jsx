@@ -363,9 +363,12 @@ export default function IntakePage() {
         <header className="sticky top-0 z-30 w-full bg-surface/90 backdrop-blur-md border-b border-border-subtle">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             {/* Clean Brand Logo */}
-            <button
-              type="button"
-              onClick={() => navigateTo('showcase')}
+            <a
+              href="/"
+              onClick={(e) => {
+                e.preventDefault()
+                navigateTo('showcase')
+              }}
               className="group flex items-center gap-3 hover:opacity-90 transition-all cursor-pointer select-none"
               aria-label="PRISM Home"
             >
@@ -377,7 +380,7 @@ export default function IntakePage() {
               <span className="font-display font-black text-3xl sm:text-[32px] tracking-[0.06em] text-content-primary leading-none">
                 PRISM
               </span>
-            </button>
+            </a>
 
             {/* Simple Text Navigation Links */}
             <nav className="hidden md:flex items-center gap-8" aria-label="Main Navigation">

@@ -398,6 +398,8 @@ export default function ResultsPage() {
       <WorkspaceNav
         activeTab={activeTab}
         setActiveTab={handleSetActiveTab}
+        score={score}
+        confidenceBand={confidenceBand}
         onReset={resetSession}
       />
 
