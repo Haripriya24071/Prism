@@ -17,7 +17,10 @@
     "heatmap",
     "lucide",
     "vite",
-    "tailwindcss"
+    "tailwindcss",
+    "newsapi",
+    "worldbank",
+    "govtdata"
   ],
   "ignoreWords": [],
   "import": []

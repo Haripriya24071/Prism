@@ -3,11 +3,29 @@
 import json
 from typing import TYPE_CHECKING, Any
 try:
-    import structlog
-    logger = structlog.get_logger()
+    import structlog  # type: ignore[import-not-found, import-untyped]
+    logger: Any = structlog.get_logger()
 except ImportError:
     import logging
-    logger = logging.getLogger("prism.agents.prompts")
+
+    class _FallbackLogger:
+        """Fallback adapter providing structlog-compatible keyword logging via standard logging."""
+        def __init__(self) -> None:
+            self._logger = logging.getLogger("prism.agents.prompts")
+
+        def info(self, event: str, **kwargs: Any) -> None:
+            kw_str = " ".join(f"{k}={v}" for k, v in kwargs.items()) if kwargs else ""
+            self._logger.info("%s %s", event, kw_str)
+
+        def error(self, event: str, **kwargs: Any) -> None:
+            kw_str = " ".join(f"{k}={v}" for k, v in kwargs.items()) if kwargs else ""
+            self._logger.error("%s %s", event, kw_str)
+
+        def warning(self, event: str, **kwargs: Any) -> None:
+            kw_str = " ".join(f"{k}={v}" for k, v in kwargs.items()) if kwargs else ""
+            self._logger.warning("%s %s", event, kw_str)
+
+    logger: Any = _FallbackLogger()
 
 if TYPE_CHECKING:
     from backend.agents.personas import PERSONAS

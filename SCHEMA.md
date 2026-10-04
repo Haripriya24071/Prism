@@ -11,7 +11,7 @@
 Primary record for every BRD generation session.
 
 | Column | Type | Mode | Description |
-|--------|------|------|-------------|
+| --- | --- | --- | --- |
 | `session_id` | STRING | REQUIRED | UUID v4. Server-generated. Primary key. Partition key. |
 | `created_at` | TIMESTAMP | REQUIRED | UTC. Default: `CURRENT_TIMESTAMP()` |
 | `completed_at` | TIMESTAMP | NULLABLE | UTC. Populated when status = `complete` |
@@ -38,7 +38,7 @@ Primary record for every BRD generation session.
 One row per external API call during context harvesting.
 
 | Column | Type | Mode | Description |
-|--------|------|------|-------------|
+| --- | --- | --- | --- |
 | `harvest_id` | STRING | REQUIRED | UUID v4. Primary key. |
 | `session_id` | STRING | REQUIRED | FK → `brd_runs.session_id` |
 | `harvested_at` | TIMESTAMP | REQUIRED | UTC. Default: `CURRENT_TIMESTAMP()` |
@@ -62,7 +62,7 @@ One row per external API call during context harvesting.
 One row per agent × section × criterion scoring result.
 
 | Column | Type | Mode | Description |
-|--------|------|------|-------------|
+| --- | --- | --- | --- |
 | `score_id` | STRING | REQUIRED | UUID v4. Primary key. |
 | `session_id` | STRING | REQUIRED | FK → `brd_runs.session_id` |
 | `agent_name` | STRING | REQUIRED | ENUM: `vc` / `lean` / `cto` / `ux` / `regulator` / `adversarial` |
@@ -80,7 +80,7 @@ One row per agent × section × criterion scoring result.
 ### Table: `divergence_heatmap_data`
 
 | Column | Type | Mode | Description |
-|--------|------|------|-------------|
+| --- | --- | --- | --- |
 | `heatmap_id` | STRING | REQUIRED | UUID v4. Primary key. |
 | `session_id` | STRING | REQUIRED | FK → `brd_runs.session_id` |
 | `section_name` | STRING | REQUIRED | Same ENUM as `evaluator_scores.section_name` |
@@ -99,7 +99,7 @@ One row per agent × section × criterion scoring result.
 **Bucket:** `prism-outputs`
 **Access:** Uniform Bucket-Level Access — IAM only, no ACLs.
 
-```
+```text
 prism-outputs/
 └── {session_id}/                        ← UUID v4, always lowercase
     ├── intake_package.json              ← Full intake: conversation, extracted fields, context package

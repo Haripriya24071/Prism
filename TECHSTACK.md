@@ -7,7 +7,7 @@
 ## Frontend
 
 | Technology | Version | Why |
-|-----------|---------|-----|
+| --- | --- | --- |
 | React | 18.x | Component model fits our multi-panel UI (chat, agent grid, heatmap, BRD viewer) |
 | Vite | 5.x | Fast HMR in Antigravity, zero config |
 | Framer Motion | 11.x | Declarative animations for agent card state transitions, BRD section reveals |
@@ -16,6 +16,7 @@
 | Web Speech API | Native | Voice intake — zero dependency, built into Chrome/Edge |
 
 ### Frontend Rules
+
 - No hardcoded hex values — all colours via CSS custom property tokens
 - All animations use `transform` + `opacity` only — no layout-triggering properties
 - Canvas animations use `requestAnimationFrame` exclusively
@@ -28,7 +29,7 @@
 ## Backend
 
 | Technology | Version | Why |
-|-----------|---------|-----|
+| --- | --- | --- |
 | Python | 3.11 | asyncio support, typing, Pydantic v2 |
 | FastAPI | 0.111.x | Async-native, Pydantic integration, SSE support |
 | Pydantic v2 | 2.x | Request/response validation on every endpoint |
@@ -40,6 +41,7 @@
 | python-docx | 1.x | Extracting text from uploaded Word docs |
 
 ### Backend Rules
+
 - All route handlers are thin — max 30 lines, one service call
 - No synchronous blocking calls inside `async def`
 - All config values from `config.py` — no hardcoded strings anywhere
@@ -51,7 +53,7 @@
 ## AI Layer
 
 | Model | Usage | Tier |
-|-------|-------|------|
+| --- | --- | --- |
 | Gemini 2.0 Flash | Swarm (6 calls) + Intake (1 call) + Post-merge (3 calls) via Vertex AI | Vertex AI Quota |
 | Gemini 1.5 Pro | Evaluator + Merge Engine (2 calls) via Vertex AI | Vertex AI Quota |
 | Gemini Vision | Image context extraction during intake | Vertex AI (via Flash) |
@@ -59,6 +61,7 @@
 | Gemini Search Grounding | Cultural + regulatory context harvesting | Free (within Gemini API) |
 
 ### Authentication & Quota
+
 - Vertex AI (google-cloud-aiplatform SDK) — project-level quota, no per-key rotation
 - Single GCP service account with Application Default Credentials (ADC)
 
@@ -67,7 +70,7 @@
 ## Context Harvester APIs
 
 | API | Data Provided | Free Tier |
-|-----|--------------|-----------|
+| --- | --- | --- |
 | NewsAPI | Political climate, domain news, recent events | 100 requests/day |
 | World Bank Open Data | GDP, ease of doing business, inflation, FDI | Unlimited (fully open) |
 | Crunchbase Basic | Competitor funding rounds, market activity | Limited free tier |
@@ -81,14 +84,15 @@ All 5 sources called in parallel via `asyncio.gather()` with `return_exceptions=
 ## Google Cloud Platform
 
 | Service | Usage | Free Tier |
-|---------|-------|-----------|
+| --- | --- | --- |
 | Vertex AI | Swarm job orchestration, agent state tracking | $300 free credits |
 | Cloud Storage (GCS) | Agent output blobs, merged BRD, PDF output | 5 GB free |
 | BigQuery | Context harvest logs, BRD run metadata, evaluator scores | 10 GB storage + 1 TB queries/month free |
 | Google Docs API | Optional BRD export as Google Doc | Free |
 
 ### GCS Blob Structure
-```
+
+```text
 prism-outputs/{session_id}/
 ├── intake_package.json
 ├── agent_vc.json
@@ -111,7 +115,7 @@ prism-outputs/{session_id}/
 ## Infrastructure & Hosting
 
 | Service | What | Free Tier |
-|---------|------|-----------|
+| --- | --- | --- |
 | Vercel | Frontend hosting | Free |
 | Railway | FastAPI backend | Free tier (500 hrs/month) |
 | Google Antigravity 2.0 | Development environment | Free (public preview) |
@@ -125,6 +129,7 @@ prism-outputs/{session_id}/
 Download: `antigravity.google/download` — free during public preview, available on macOS, Windows, and Linux.
 
 Antigravity 2.0 gives us:
+
 - VS Code-based AI IDE (Editor View) with full terminal
 - Agent Manager surface — higher-level task orchestration across the whole codebase
 - Native Google Cloud project integration — GCS, BigQuery, Vertex AI all connect directly
@@ -134,12 +139,14 @@ Antigravity 2.0 gives us:
 - Fractal Memory system — persistent context across sessions
 
 ### Why Antigravity Over Cursor / Windsurf / IDX
+
 - Native GCP integration means no manual credential wiring for GCS, BigQuery, Vertex AI
 - Agent Manager lets us delegate whole modules (e.g. "build the context harvester") not just autocomplete lines
 - Free during preview — no subscription cost on top of our already-free stack
 - Gemini 2.0 Flash is the same model we're calling in our swarm — consistent behaviour
 
 ### Workspace Setup
+
 ```bash
 # Install Antigravity CLI
 # Download from antigravity.google/download and install for your OS
@@ -158,7 +165,8 @@ antigravity .            # opens in Antigravity IDE
 ```
 
 ### Recommended Antigravity Extensions
-```
+
+```text
 ms-python.python
 esbenp.prettier-vscode
 bradlc.vscode-tailwindcss
@@ -170,7 +178,7 @@ ms-python.mypy-type-checker
 ## What We Deliberately Did Not Use
 
 | Skipped | Reason |
-|---------|--------|
+| --- | --- |
 | LangChain / LlamaIndex | Unnecessary abstraction over direct Gemini API calls — adds latency and obscures control flow |
 | Redux | Overkill for our state shape — React Context + local state is sufficient |
 | Docker | Antigravity + Railway handle environment — adds setup time with no demo benefit |
