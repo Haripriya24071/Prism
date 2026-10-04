@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ScoreRing } from '../ScoreCard/ScoreRing.jsx'
 import RealWorldContextRadar from '../BRDViewer/RealWorldContextRadar.jsx'
 import { extractKeyDecision } from '../../utils/brdParser.js'
@@ -9,8 +10,20 @@ export default function OverviewView({
   brdData,
   heatmapBars = [],
   disagreements = [],
+  sessionId,
   onNavigateTab,
 }) {
+  const [copiedUrl, setCopiedUrl] = useState(false)
+
+  const handleCopyUrl = () => {
+    const fullUrl = `${window.location.origin}${window.location.pathname}#overview`
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(fullUrl)
+      setCopiedUrl(true)
+      setTimeout(() => setCopiedUrl(false), 2200)
+    }
+  }
+
   const rawBrd = brdData?.brd ?? brdData
   const sections = Array.isArray(rawBrd?.sections) ? rawBrd.sections : []
   const execSection = sections.find((s) => s.title?.toLowerCase().includes('exec'))
@@ -21,7 +34,37 @@ export default function OverviewView({
   const keyDecision = extractKeyDecision(brdData, score, { confidence_band: confidenceBand })
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-5 animate-fade-in">
+      {/* Secondary Project / Session Metadata & Utilities Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-content-secondary px-1 pb-1">
+        <div className="flex items-center gap-2">
+          <span className="font-mono text-[11px] text-content-muted">Session:</span>
+          <span className="font-mono font-medium text-content-primary">
+            prism://{sessionId ? sessionId.slice(0, 8) : '0ff8f850'}/#overview
+          </span>
+          <button
+            type="button"
+            onClick={handleCopyUrl}
+            className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-surface hover:bg-surface-raised text-content-secondary hover:text-content-primary border border-border-subtle shadow-xs transition-colors cursor-pointer"
+            title="Copy shareable link"
+          >
+            {copiedUrl ? '✓ Copied' : '🔗 Copy'}
+          </button>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('prism-toggle-observer'))}
+            className="font-display text-[11px] font-medium text-content-secondary hover:text-content-primary flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Toggle Observer Mascot"
+          >
+            <span className="text-sm">🕵️</span>
+            <span>Observer Mode</span>
+          </button>
+        </div>
+      </div>
+
       {/* 1. Executive Brief: ScoreRing + Key Verdict */}
       <section className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Score Ring Card */}

@@ -1,82 +1,22 @@
 /* frontend/src/components/Workspace/Workspace.css */
 
-/* 1. Minimal, Clean, Comic Workspace Navigation */
-.comic-nav-header {
+/* 1. Refined Editorial Workspace Navigation (Inspiration Alignment) */
+.workspace-nav-header {
   position: sticky;
   top: 0;
   z-index: 40;
   background-color: var(--color-void, #FAF7F2);
-  border-bottom: 2px solid var(--color-border);
-  box-shadow: 0 2px 0 rgba(24, 24, 27, 0.03);
+  border-bottom: 1px solid var(--color-border-subtle, #E4DCD3);
 }
 
-.comic-nav-container {
+.workspace-nav-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-3);
-  padding: 0.55rem 1.25rem;
-}
-
-/* Comic URL Locator Bar */
-.comic-url-bar {
-  background-color: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  box-shadow: 1.5px 1.5px 0px var(--color-border);
-  border-radius: var(--radius-md);
-  transition: all 0.12s ease;
-}
-
-.comic-url-copy-btn:hover {
-  background-color: var(--color-accent-tint);
-  color: var(--color-accent-signal);
-}
-
-/* Minimal Comic Tab Strip */
-.comic-tabs-nav {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.comic-tab-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.7rem;
-  font-family: var(--font-display);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  border-radius: 6px;
-  border: 1.5px solid transparent;
-  background: transparent;
-  transition: all 0.12s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.comic-tab-item:hover {
-  color: var(--color-text-primary);
-  background-color: var(--color-surface-raised);
-  border-color: var(--color-border-subtle);
-  transform: translateY(-1px);
-}
-
-.comic-tab-item--active {
-  color: var(--color-text-primary);
-  background-color: var(--color-surface);
-  border: 1.5px solid var(--color-border);
-  box-shadow: 2px 2px 0px var(--color-border);
-  font-weight: 700;
-  transform: translateY(-1px);
-}
-
-.comic-tab-item--active:hover {
-  transform: translateY(-1px);
-  background-color: var(--color-surface);
-  border-color: var(--color-border);
+  height: 74px;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
 }
 
 /* Comic Action Buttons (Observer, New Pitch) */

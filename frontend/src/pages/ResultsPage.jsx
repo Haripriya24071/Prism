@@ -128,16 +128,50 @@ export default function ResultsPage() {
   const [selectedAgentModal, setSelectedAgentModal] = useState(null)
   const [selectedEvidenceModal, setSelectedEvidenceModal] = useState(null)
 
-  // Fetch or sync BRD data if session is active
+  // Fetch or sync BRD data if session is active or direct hash navigation
   useEffect(() => {
-    if (!sessionId || (brdData && Array.isArray(brdData.sections) && brdData.sections.length > 0)) {
+    if (brdData && Array.isArray(brdData.sections) && brdData.sections.length > 0) {
       return undefined
     }
     let cancelled = false
 
     async function load() {
       try {
-        const data = await fetchBRD(sessionId)
+        let activeSessionId = sessionId
+        if (!activeSessionId) {
+          // Direct hash navigation without prior session - load instant demo preset
+          const presetRes = await fetch('http://localhost:8000/presets/instant-demo?preset=b2b_code_review', {
+            method: 'POST',
+          }).then((r) => r.json()).catch(() => null)
+          if (presetRes?.data && !cancelled) {
+            setLoadError(null)
+            const payload = presetRes.data
+            const unpackedBrd = payload.brd || payload
+            setBrdData({
+              ...unpackedBrd,
+              investor_readiness_score: payload.score ?? payload.investor_score ?? 84,
+              confidence_band: payload.confidence_band || 'fundable',
+              heatmap: payload.heatmap,
+              pivots: payload.pivots,
+              agent_outputs: payload.agent_outputs,
+              score_matrix: payload.score_matrix,
+            })
+            if (payload.heatmap && typeof setHeatmapData === 'function') {
+              setHeatmapData(payload.heatmap)
+            }
+            if (typeof setInvestorScore === 'function') {
+              setInvestorScore({
+                score: payload.score ?? payload.investor_score ?? 84,
+                confidence_band: payload.confidence_band || 'fundable',
+                gaps: [],
+                pivots: payload.pivots || [],
+              })
+            }
+            return
+          }
+        }
+        if (!activeSessionId) return
+        const data = await fetchBRD(activeSessionId)
         if (!cancelled) {
           setLoadError(null)
           const unpacked = data?.brd
@@ -321,9 +355,6 @@ export default function ResultsPage() {
       <WorkspaceNav
         activeTab={activeTab}
         setActiveTab={handleSetActiveTab}
-        score={score}
-        confidenceBand={confidenceBand}
-        sessionId={sessionId}
         onReset={resetSession}
       />
 
@@ -395,6 +426,7 @@ export default function ResultsPage() {
                   brdData={brdData}
                   heatmapBars={bars}
                   disagreements={disagreements}
+                  sessionId={sessionId}
                   onNavigateTab={handleSetActiveTab}
                 />
               </motion.div>

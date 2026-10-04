@@ -9,8 +9,21 @@ import IntakePage from './pages/IntakePage.jsx'
 import ResultsPage from './pages/ResultsPage.jsx'
 
 function renderPage(status) {
-  if (typeof window !== 'undefined' && window.location.hash.startsWith('#generation')) {
-    return <GenerationPage key="generation" />
+  if (typeof window !== 'undefined') {
+    const hash = (window.location.hash || '').toLowerCase()
+    if (hash.startsWith('#generation')) {
+      return <GenerationPage key="generation" />
+    }
+    if (
+      hash === '#overview' ||
+      hash === '#swarm' ||
+      hash === '#deliberation' ||
+      hash === '#final-brd' ||
+      hash === '#risks' ||
+      hash === '#exports'
+    ) {
+      return <ResultsPage key="results" />
+    }
   }
   switch (status) {
     case SESSION_STATUS.HARVESTING:

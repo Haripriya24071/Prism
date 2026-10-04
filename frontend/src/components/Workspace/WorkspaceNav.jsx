@@ -1,141 +1,137 @@
 import { useState } from 'react'
+import prismLogo from '../../assets/landing/prism_logo.jpg'
 import './Workspace.css'
 
-const TABS = [
-  { id: 'overview', label: 'Overview', icon: '📊', hash: '#overview' },
-  { id: 'swarm', label: 'Swarm', icon: '🐝', hash: '#swarm' },
-  { id: 'deliberation', label: 'Deliberation', icon: '⚔️', hash: '#deliberation' },
-  { id: 'final_brd', label: 'Final BRD', icon: '📑', hash: '#final-brd' },
-  { id: 'risks', label: 'Risks', icon: '⚠️', hash: '#risks' },
-  { id: 'export', label: 'Exports', icon: '📥', hash: '#exports' },
+const PRIMARY_TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'swarm', label: 'Swarm' },
+  { id: 'deliberation', label: 'Deliberation' },
+  { id: 'final_brd', label: 'Final BRD' },
+  { id: 'risks', label: 'Risks' },
+  { id: 'export', label: 'Exports' },
 ]
 
 export default function WorkspaceNav({
   activeTab,
   setActiveTab,
-  score,
-  confidenceBand,
-  sessionId,
   onReset,
 }) {
-  const [copiedUrl, setCopiedUrl] = useState(false)
-  const currentTabObj = TABS.find((t) => t.id === activeTab) || TABS[0]
-  const currentHash = currentTabObj.hash
-
-  const handleCopyUrl = () => {
-    const fullUrl = `${window.location.origin}${window.location.pathname}${currentHash}`
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(fullUrl)
-      setCopiedUrl(true)
-      setTimeout(() => setCopiedUrl(false), 2200)
-    }
-  }
-
-  const handleToggleObserver = () => {
-    window.dispatchEvent(new CustomEvent('prism-toggle-observer'))
-  }
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   return (
-    <header className="comic-nav-header">
-      <div className="comic-nav-container mx-auto max-w-7xl">
-        {/* Left: Brand + Comic URL Locator */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <div
-            className="flex items-center gap-1.5 cursor-pointer select-none"
+    <header className="sticky top-0 z-40 w-full bg-void border-b border-border-subtle select-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 h-[74px] flex items-center justify-between">
+        
+        {/* LEFT: Circular Logo Mark + Bold PRISM Wordmark with generous breathing room */}
+        <div className="flex items-center gap-3 shrink-0 mr-6 lg:mr-10">
+          <button
+            type="button"
             onClick={() => setActiveTab('overview')}
-            title="PRISM Autonomous Decision Workspace"
+            className="group flex items-center gap-3 cursor-pointer select-none text-left focus-visible:outline-none"
+            aria-label="PRISM Home - Return to Overview"
           >
-            <span className="font-display font-extrabold text-xl tracking-tight text-content-primary">
+            <img
+              src={prismLogo}
+              alt="PRISM"
+              className="w-10 h-10 rounded-full border-2 border-border shadow-[1.5px_1.5px_0px_var(--color-border)] object-cover group-hover:scale-105 transition-transform duration-200"
+            />
+            <span className="font-display font-black text-2xl sm:text-[28px] tracking-[0.06em] text-content-primary leading-none">
               PRISM
             </span>
-            <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-surface border border-border text-accent-signal shadow-[1px_1px_0px_var(--color-border)]">
-              ✦ SWARM
-            </span>
-          </div>
-
-          {/* Artistic Comic URL Locator Bar */}
-          <div
-            className="comic-url-bar hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-md border border-border bg-surface text-content-secondary font-mono text-[11px] shadow-[1.5px_1.5px_0px_var(--color-border)]"
-            title="Current Site URL Locator (Click copy to share deep-link)"
-          >
-            <span className="text-accent-signal text-xs">📍</span>
-            <span className="text-content-muted text-[10px]">prism://</span>
-            {sessionId && (
-              <span className="text-content-muted text-[10px] hidden md:inline">
-                {sessionId.slice(0, 8)}/
-              </span>
-            )}
-            <span className="font-bold text-content-primary">{currentHash}</span>
-            <button
-              type="button"
-              onClick={handleCopyUrl}
-              className="comic-url-copy-btn ml-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-surface-raised hover:bg-accent-tint text-content-primary border border-border-subtle transition-colors cursor-pointer"
-              title="Copy shareable link"
-            >
-              {copiedUrl ? '✓ Copied' : '🔗 Copy'}
-            </button>
-          </div>
+          </button>
         </div>
 
-        {/* Center: Minimal Comic Navigation Tabs */}
-        <nav className="comic-tabs-nav flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none" aria-label="Workspace Views">
-          {TABS.map((tab) => {
+        {/* CENTER: Typography-Driven Text Navigation without emojis or button pills */}
+        <nav
+          className="hidden md:flex items-center gap-6 lg:gap-8 flex-1 justify-center"
+          aria-label="Workspace Views"
+        >
+          {PRIMARY_TABS.map((tab) => {
             const isActive = activeTab === tab.id
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`comic-tab-item ${
-                  isActive ? 'comic-tab-item--active' : ''
+                className={`font-display text-sm tracking-tight transition-colors cursor-pointer relative py-2 ${
+                  isActive
+                    ? 'font-semibold text-content-primary'
+                    : 'font-medium text-content-secondary hover:text-content-primary'
                 }`}
                 aria-current={isActive ? 'page' : undefined}
-                title={`Navigate to ${tab.label} (${tab.hash})`}
               >
-                <span className="text-xs" aria-hidden="true">{tab.icon}</span>
-                <span>{tab.label}</span>
+                {tab.label}
+                {isActive && (
+                  <span className="absolute -bottom-1 left-0 right-0 h-[2px] bg-content-primary rounded-full" />
+                )}
               </button>
             )
           })}
         </nav>
 
-        {/* Right: Score Pill, Observer Trigger & Reset */}
-        <div className="flex items-center gap-2 shrink-0">
-          {score !== null && score !== undefined && (
-            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-border bg-surface shadow-[1.5px_1.5px_0px_var(--color-border)]">
-              <span className="font-display font-bold text-xs text-content-primary">
-                {score}/100
-              </span>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-accent-tint text-accent-signal uppercase tracking-wider">
-                {confidenceBand ? confidenceBand.replace(/_/g, ' ') : 'Fundable'}
-              </span>
-            </div>
-          )}
+        {/* RIGHT: Quiet Live Status Indicator + Single Strong Primary CTA */}
+        <div className="flex items-center gap-4 sm:gap-6 shrink-0 ml-4">
+          {/* Subtle Live Swarm Status */}
+          <div className="flex items-center gap-2 text-xs font-tertiary text-content-secondary">
+            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+            <span className="hidden sm:inline font-medium">Live Swarm</span>
+          </div>
 
-          {/* Observer Companion Toggle Button */}
-          <button
-            type="button"
-            onClick={handleToggleObserver}
-            className="comic-action-btn comic-observer-toggle px-2.5 py-1 rounded-md border border-border bg-surface hover:bg-surface-raised text-content-primary font-display font-semibold text-xs flex items-center gap-1.5 shadow-[1.5px_1.5px_0px_var(--color-border)] transition-all cursor-pointer"
-            title="Open PRISM Observer guy (bottom-left corner)"
-          >
-            <span>🕵️</span>
-            <span className="hidden md:inline">Observer</span>
-          </button>
-
+          {/* Strong Primary CTA: Pitch Idea → */}
           {typeof onReset === 'function' && (
             <button
               type="button"
               onClick={onReset}
-              className="comic-action-btn px-2.5 py-1 rounded-md border border-border bg-surface hover:bg-surface-raised text-content-secondary hover:text-content-primary font-display font-semibold text-xs flex items-center gap-1 shadow-[1.5px_1.5px_0px_var(--color-border)] transition-all cursor-pointer"
-              title="Start a new pitch evaluation"
+              className="px-5 py-2 bg-content-primary text-surface font-display font-semibold text-xs rounded-full hover:bg-accent-signal transition-colors shadow-sm cursor-pointer whitespace-nowrap"
+              title="Start a new founder pitch evaluation"
             >
-              <span>↺</span>
-              <span className="hidden sm:inline">New Pitch</span>
+              Pitch Idea →
             </button>
           )}
+
+          {/* Mobile Menu Toggle Button */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen((prev) => !prev)}
+            className="md:hidden p-1.5 rounded text-content-secondary hover:text-content-primary cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
       </div>
+
+      {/* Mobile Navigation Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden border-t border-border-subtle bg-surface px-4 py-3 space-y-1">
+          {PRIMARY_TABS.map((tab) => {
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab.id)
+                  setMobileMenuOpen(false)
+                }}
+                className={`w-full text-left px-3 py-2 rounded-md font-display text-sm ${
+                  isActive
+                    ? 'font-bold bg-surface-raised text-content-primary'
+                    : 'font-medium text-content-secondary hover:text-content-primary'
+                }`}
+              >
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </header>
   )
 }
