@@ -1,12 +1,16 @@
 # PRISM — Design System & UI Specification
 
-> No AI slop. No generic templates. Command-center precision.
+> No AI slop. No generic templates. Executive command-center precision.
 
 ---
 
 ## 1. Design Philosophy
 
-PRISM transforms unstructured founder chaos into institutional-grade requirements. The interface should feel like an **Executive Command Center** — sleek, dark, focused, and alive with information.
+PRISM transforms unstructured founder chaos into institutional-grade requirements. The interface is engineered as an **Executive Command Center** — sleek, dark, focused, and alive with information.
+
+<p align="center">
+  <img src="./docs/images/prism_swarm_lineup.jpg" alt="PRISM Swarm Lineup" width="100%" style="border-radius: 12px; border: 1px solid #1E3A5F;" />
+</p>
 
 ### Core Principles
 1. **Information Density without Clutter:** Surface critical intelligence immediately (lineage, citations, divergence, scores) while keeping navigation intuitive.
@@ -17,7 +21,7 @@ PRISM transforms unstructured founder chaos into institutional-grade requirement
 
 ## 2. Color Palette & Design Tokens
 
-All colors are defined as CSS custom properties in `tokens.css` / `src/index.css`. Hardcoded hex codes are strictly prohibited in component markup.
+All colors are defined as CSS custom properties in `tokens.css` / `src/index.css`. Hardcoded hex codes are strictly prohibited in component markup (UI-001).
 
 ```css
 :root {
@@ -64,34 +68,21 @@ All colors are defined as CSS custom properties in `tokens.css` / `src/index.css
 ### The "Market Alignment / Handshake Deal" Loader (`HandshakeLoader.jsx`)
 During the swarm deliberation phase (when 6 agents are debating and market intelligence is being harvested), PRISM displays an iconic, stylized **Market Handshake Animation**.
 
-```
-            ( 5 )                            [ SWIPE <<< ]
-
-                 SELL IT ON THE RIGHT PLATFORM
-           (USE PLATFORMS THAT MATCH YOUR PRODUCT AND AUDIENCE)
-
-                 ($)  •
-                       (♥)              (%) •
-               ┌──┐                            ┌──┐
-            ═══╡  └──┐                      ┌──┘  ╞═══
-            ═══╡     │  🤝 [HANDSHAKE] 🤝   │     ╞═══
-               └──┬──┘                      └──┬──┘
-                  │                            │
-                     (📈)                 (✔)
-                            •
-```
+<p align="center">
+  <img src="./docs/images/handshake_loader.png" alt="PRISM Handshake Deal Loader" width="480" style="border-radius: 12px; border: 1px solid #1E3A5F;" />
+</p>
 
 #### Visual & Motion Behavior:
 1. **The Portal Sleeves:** Two clean hand-drawn arms emerge from rounded spatial portals representing the Founder and the Market/Audience reaching an agreement.
 2. **The Handshake Pulse:** A subtle, rhythmic micro-compression (`scale: [1, 1.03, 1]`) every 1.6s simulating a living partnership.
-3. **Floating Floating Financial & Trust Badges:** Five floating tokens orbit gently around the handshake using independent sinusoidal keyframe floats:
+3. **Floating Financial & Trust Badges:** Five floating tokens orbit gently around the handshake using independent sinusoidal keyframe floats:
    - **`$` (Revenue / Monetization)**: Floats upper-left with slight tilt.
    - **`%` (Market Share / Margin)**: Floats upper-right.
    - **`♥` (User Retention / Passion)**: Hovers near the center-left.
    - **`✔` (Regulatory Compliance / Quality)**: Floats lower-right.
    - **`📈` (Growth Velocity)**: Bobbing bottom-center.
-4. **Caption Typography:** Bold, high-energy headline *"SELL IT ON THE RIGHT PLATFORM"* with sub-caption *"Aligning founder vision with audience reality"*.
-5. **Accessibility / Reduced Motion:** When `prefers-reduced-motion` is active, animations settle into a crisp, static illustration with zero bobbing.
+4. **Caption Typography:** Bold headline *"SELL IT ON THE RIGHT PLATFORM"* with sub-caption *"Aligning founder vision with audience reality"*.
+5. **Accessibility / Reduced Motion:** When `prefers-reduced-motion` is active, animations settle into a crisp, static illustration with zero bobbing (UI-003).
 
 ---
 
@@ -103,10 +94,17 @@ During the swarm deliberation phase (when 6 agents are debating and market intel
 - Visual microphone pulse indicator during Web Speech API voice capture.
 - Drag-and-drop file upload zone with file-type chip badges (PDF, PNG, DOCX).
 
-### 4.2 AgentGrid (`src/components/AgentGrid/`)
+### 4.2 AgentGrid & Deliberation Cards (`src/components/AgentGrid/`)
+<p align="center">
+  <img src="./docs/images/generation_page_view.png" alt="PRISM Live Agent Deliberation Grid" width="100%" style="border-radius: 12px; border: 1px solid #1E3A5F;" />
+</p>
+
 - 6-card responsive CSS grid (3 cols desktop, 2 cols tablet, 1 col mobile).
-- Each card displays persona title, mandate, live status chip (`queued` &rarr; `running` &rarr; `complete` / `failed`), and duration in milliseconds.
-- Dynamic glowing border keyed to `--color-agent-{persona}`.
+- Each card features:
+  - Archetype portrait thumbnail and persona mandate title.
+  - Live status chip (`queued` &rarr; `running` &rarr; `complete` / `failed`) with pulsing activity ring.
+  - Glowing border keyed to `--color-agent-{persona}`.
+  - **Live Deliberation Thought Bubbles:** Displays in real time what the persona is actively arguing or critiquing.
 
 ### 4.3 Divergence Heatmap (`src/components/DivergenceHeatmap/`)
 - 6 rows representing the BRD sections (Executive Summary, Market Analysis, Functional Requirements, Technical Requirements, Risk Register, Go-To-Market).
@@ -122,6 +120,6 @@ During the swarm deliberation phase (when 6 agents are debating and market intel
 
 ### 4.5 BRDViewer (`src/components/BRDViewer/`)
 - Accordion interface for exploring each section of the merged document.
-- **Lineage Badge:** Clearly identifies which persona authored each section.
+- **Lineage Badge:** Clearly identifies which persona authored each section (`[LineageTag]`).
 - **Source Citation Chips:** Clickable source citations (`[SOURCE: worldbank]`, `[SOURCE: newsapi]`) validating real-world data grounding.
 - **Dissent Expander:** Toggle button to view conflicting points raised by other personas.
