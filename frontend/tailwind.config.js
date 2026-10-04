@@ -49,15 +49,6 @@ export default {
         low: token('color-risk-low'),
       },
     },
-    fontSize: {
-      display: token('text-display'),
-      h1: token('text-h1'),
-      h2: token('text-h2'),
-      h3: token('text-h3'),
-      body: token('text-body'),
-      small: token('text-small'),
-      micro: token('text-micro'),
-    },
     spacing: {
       0: '0px',
       px: '1px',
@@ -93,7 +84,17 @@ export default {
       xl: token('radius-xl'),
       full: '9999px',
     },
-    extend: {},
+    extend: {
+      fontSize: {
+        display: token('text-display'),
+        h1: token('text-h1'),
+        h2: token('text-h2'),
+        h3: token('text-h3'),
+        body: token('text-body'),
+        small: token('text-small'),
+        micro: token('text-micro'),
+      },
+    },
   },
   plugins: [],
 }

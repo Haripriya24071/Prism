@@ -334,16 +334,16 @@ export default function IntakePage() {
             <button
               type="button"
               onClick={() => navigateTo('showcase')}
-              className="group flex items-center gap-2.5 hover:opacity-85 transition-opacity cursor-pointer"
+              className="group flex items-center gap-3 hover:opacity-90 transition-all cursor-pointer select-none"
               aria-label="PRISM Home"
             >
               <img
                 src={prismLogo}
                 alt="PRISM Detective"
-                className="w-8 h-8 rounded-full border border-border shadow-sm object-cover"
+                className="w-10 h-10 rounded-full border-2 border-border shadow-[1.5px_1.5px_0px_var(--color-border)] object-cover group-hover:scale-105 transition-transform duration-200"
               />
-              <span className="font-display font-black text-2xl tracking-tight text-content-primary">
-                PRISM<span className="text-accent-signal">.</span>
+              <span className="font-display font-black text-3xl sm:text-[32px] tracking-[0.06em] text-content-primary leading-none">
+                PRISM
               </span>
             </button>
 
