@@ -36,21 +36,45 @@ else:
 
 logger = structlog.get_logger()
 
-_AGENT_TIMEOUT_SECONDS = 25
+_AGENT_TIMEOUT_SECONDS = 45
 _MIN_SUCCESSFUL_AGENTS = 4
 
 
 def _clean_json_response(raw_text: str) -> dict:
     """Strips markdown code fences and parses JSON from raw LLM output text."""
     clean = raw_text.strip()
-    if clean.startswith("```"):
+    if "```" in clean:
         parts = clean.split("```")
-        if len(parts) >= 2:
-            clean = parts[1].strip()
-            if clean.startswith("json"):
-                clean = clean[4:].strip()
-    res = json.loads(clean)
-    return res if isinstance(res, dict) else {}
+        for part in parts:
+            p = part.strip()
+            if p.startswith("json"):
+                p = p[4:].strip()
+            start_idx = p.find("{")
+            end_idx = p.rfind("}")
+            if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+                try:
+                    res = json.loads(p[start_idx : end_idx + 1])
+                    if isinstance(res, dict) and len(res) > 0:
+                        return res
+                except Exception:
+                    pass
+
+    # Fallback: search for first { and last } in raw text
+    start = clean.find("{")
+    end = clean.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        try:
+            res = json.loads(clean[start : end + 1])
+            if isinstance(res, dict):
+                return res
+        except Exception:
+            pass
+
+    try:
+        res = json.loads(clean)
+        return res if isinstance(res, dict) else {}
+    except Exception:
+        return {}
 
 
 async def _run_single_agent(

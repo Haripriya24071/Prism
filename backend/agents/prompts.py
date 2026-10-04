@@ -50,9 +50,9 @@ _BRD_SECTIONS = [
     "Executive Summary",
     "Market Analysis",
     "Functional Requirements",
-    "Technical Architecture",
-    "Regulatory & Compliance",
-    "Risk & Mitigation",
+    "Technical Requirements",
+    "Risk Register",
+    "Go-To-Market Strategy",
 ]
 
 _BASE_TEMPLATE = """You are acting as: {persona_title}
@@ -60,9 +60,6 @@ MANDATE: {persona_mandate}
 
 YOUR HARD CONSTRAINTS:
 {constraint_axes}
-
-BRD SECTIONS YOU ARE RESPONSIBLE FOR ENRICHING:
-{brd_sections}
 
 FOUNDER INTAKE DATA [SOURCE: founder]:
 - Raw Idea: {raw_idea}
@@ -81,9 +78,17 @@ Produce structured BRD section contributions matching your persona and mandate.
 Every claim, market stat, competitor name, or regulatory risk you mention MUST cite its source using the exact format [SOURCE: source_name].
 Allowed sources: [SOURCE: newsapi], [SOURCE: worldbank], [SOURCE: crunchbase], [SOURCE: govtdata], [SOURCE: grounding], [SOURCE: founder].
 
-Respond with a clear, professional analysis covering the BRD sections assigned.
-Do NOT output generic advice. Focus specifically on {raw_idea} in {region} ({industry}).
-"""
+Return ONLY a valid JSON object mapping each of the 6 BRD sections to your enriched analysis.
+Format:
+{{
+  "Executive Summary": "<your analysis with [SOURCE: ...] tags>",
+  "Market Analysis": "<your analysis with [SOURCE: ...] tags>",
+  "Functional Requirements": "<your analysis with [SOURCE: ...] tags>",
+  "Technical Requirements": "<your analysis with [SOURCE: ...] tags>",
+  "Risk Register": "<your analysis with [SOURCE: ...] tags>",
+  "Go-To-Market Strategy": "<your analysis with [SOURCE: ...] tags>"
+}}
+Do NOT output markdown commentary outside the JSON."""
 
 
 def _build_context_block(context: ContextPackage) -> str:
