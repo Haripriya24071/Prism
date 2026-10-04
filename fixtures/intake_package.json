@@ -1,0 +1,27 @@
+{
+  "session_id": "mock-session-b2b-saas-001",
+  "extraction": {
+    "raw_idea": "Autonomous AI code review and automated security vulnerability auditing agent for enterprise GitHub pull requests.",
+    "region": "US",
+    "industry": "Developer Tools & CyberSecurity",
+    "stage": "prototype",
+    "budget_range": "Seed Stage ($50k-$150k)",
+    "success_definition": "25 paying enterprise engineering teams and $50k ARR in 12 months"
+  },
+  "file_context": "PRISM Architecture Specification v2.0 - Zero trust security, SOC2 Type II compliance, GitHub App webhooks, isolated AST analysis sandbox.",
+  "conversation_history": [
+    {
+      "role": "user",
+      "content": "We are building an autonomous AI code reviewer for enterprise GitHub repos."
+    },
+    {
+      "role": "model",
+      "content": "Great developer tools concept! Where are you planning to deploy first?"
+    },
+    {
+      "role": "user",
+      "content": "United States initially. We have a working prototype."
+    }
+  ],
+  "created_at": "2026-10-04T12:00:00Z"
+}

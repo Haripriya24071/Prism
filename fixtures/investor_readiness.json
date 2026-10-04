@@ -1,0 +1,17 @@
+{
+  "session_id": "mock-session-b2b-saas-001",
+  "score": 84,
+  "confidence_band": "fundable",
+  "gap_flags": [
+    {
+      "criterion": "Regulatory Safety",
+      "score": 74,
+      "action_item": "Establish formal SOC2 Type II certification timeline and sign Data Processing Agreements before pilot onboarding."
+    },
+    {
+      "criterion": "Competitive Moat",
+      "score": 79,
+      "action_item": "Develop multi-repository cross-service dependency graphs to defend against standalone GitHub Copilot Autofix features."
+    }
+  ]
+}

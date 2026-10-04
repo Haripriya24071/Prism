@@ -1,0 +1,35 @@
+{
+  "session_id": "mock-session-b2b-saas-001",
+  "bars": [
+    {
+      "section_title": "Executive Summary",
+      "risk_score": 18,
+      "std_dev": 2.45
+    },
+    {
+      "section_title": "Problem & Opportunity",
+      "risk_score": 25,
+      "std_dev": 3.82
+    },
+    {
+      "section_title": "Technical Architecture",
+      "risk_score": 38,
+      "std_dev": 5.12
+    },
+    {
+      "section_title": "Go-to-Market Strategy",
+      "risk_score": 32,
+      "std_dev": 4.65
+    },
+    {
+      "section_title": "Regulatory & Compliance Risk",
+      "risk_score": 68,
+      "std_dev": 8.94
+    },
+    {
+      "section_title": "Financial Plan & Unit Economics",
+      "risk_score": 42,
+      "std_dev": 5.75
+    }
+  ]
+}

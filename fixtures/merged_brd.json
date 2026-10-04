@@ -1,0 +1,88 @@
+{
+  "session_id": "mock-session-b2b-saas-001",
+  "sections": [
+    {
+      "title": "Executive Summary",
+      "content": "Autonomous AI code review represents a high-velocity wedge into the $28B DevSecOps market. By shifting vulnerability detection left to PR merge time, this venture commands 85%+ software gross margins with enterprise ACVs ranging from $18k to $65k.",
+      "lineage": {
+        "source_agent": "vc",
+        "confidence": 0.88,
+        "data_citation": "[SOURCE: crunchbase] $4.2B invested into AI DevSecOps category in 2025"
+      }
+    },
+    {
+      "title": "Problem & Opportunity",
+      "content": "Engineering leaders lose 22% of developer velocity to manual PR reviews and retroactive security audits. Traditional static analysis tools (SonarQube, Snyk) flag high false positives; an autonomous LLM auditor with verified codebase context cuts audit time by 60%.",
+      "lineage": {
+        "source_agent": "vc",
+        "confidence": 0.85,
+        "data_citation": "[SOURCE: newsapi] 78% of enterprise CTOs mandate shift-left automated PR security"
+      }
+    },
+    {
+      "title": "Technical Architecture",
+      "content": "Google Cloud Run microservices with Vertex AI private endpoints. Ephemeral worker nodes pull PR diffs, execute tree-sitter AST pruning to redact secrets, and query an isolated Vector Search index per tenant. Zero raw code persists in databases.",
+      "lineage": {
+        "source_agent": "cto",
+        "confidence": 0.92,
+        "data_citation": "[SOURCE: gcp_benchmarks] Zero-trust isolated execution guarantees 99.95% SLA"
+      }
+    },
+    {
+      "title": "Go-to-Market Strategy",
+      "content": "Product-led growth (PLG) developer tier on GitHub Marketplace feeding bottom-up enterprise sales. Seed target: 50 open-source repositories and 25 paying mid-market engineering teams.",
+      "lineage": {
+        "source_agent": "lean",
+        "confidence": 0.86,
+        "data_citation": "[SOURCE: worldbank] Developer productivity accounts for 3.2% of global digital GDP"
+      }
+    },
+    {
+      "title": "Regulatory & Compliance Risk",
+      "content": "Audited compliance governance for EU AI Act (High-Risk Classification avoidance), US FTC automated algorithmic liability, and SOC2 Type II automated logging. Disclaimers and explicit human-in-the-loop signoffs are contractually enforced.",
+      "lineage": {
+        "source_agent": "regulator",
+        "confidence": 0.89,
+        "data_citation": "[SOURCE: eu_ai_act] Article 14 human-in-the-loop oversight mandatory for automated code commits"
+      }
+    },
+    {
+      "title": "Financial Plan & Unit Economics",
+      "content": "Priced at $45/contributor/month. Target 85% gross margins with LLM inference cost of $0.08 per PR. Infrastructure budget: $1,200/month baseline cluster cost on GCP + $0.06/PR compute & token cost.",
+      "lineage": {
+        "source_agent": "cto",
+        "confidence": 0.84,
+        "data_citation": "[SOURCE: financial_model] Breakeven at 180 paying developer seats"
+      }
+    }
+  ],
+  "assumptions": [
+    {
+      "assumption": "Developers will trust AI to suggest inline code modifications without human peer pushback.",
+      "confidence": "medium",
+      "evidence": "68% of developers dismiss bots that generate more than 3 comments per PR.",
+      "recommended_action": "Introduce confidence score threshold: only comment when certainty exceeds 90%."
+    },
+    {
+      "assumption": "Enterprise security teams will permit cloud LLM processing of proprietary code.",
+      "confidence": "low",
+      "evidence": "Strict financial institutions prohibit multi-tenant API calls with code context.",
+      "recommended_action": "Build a self-hosted Docker agent proxy that executes AST pruning locally before API transmission."
+    }
+  ],
+  "failure_modes": [
+    {
+      "title": "Microsoft Copilot Platform Bundling",
+      "probability_pct": 65,
+      "description": "GitHub expands native Copilot Autofix into PR triage, eliminating need for standalone third-party bot.",
+      "mitigation": "Focus on multi-git host flexibility (GitLab, Bitbucket, self-hosted) where GitHub Copilot cannot integrate."
+    },
+    {
+      "title": "Prompt Injection via Untrusted Pull Requests",
+      "probability_pct": 45,
+      "description": "Malicious contributors embed zero-width prompt injection payloads in commit messages to exfiltrate CI/CD secrets.",
+      "mitigation": "Isolate the review bot to read-only permissions and sanitize all inputs through an AST security gateway."
+    }
+  ],
+  "investor_readiness_score": 84
+}

@@ -1,0 +1,156 @@
+[
+  {
+    "event": "session_status",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "status": "harvesting",
+      "message": "Initiating parallel context harvesting across regional APIs..."
+    }
+  },
+  {
+    "event": "context_ready",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "sources_succeeded": ["newsapi", "worldbank", "wikipedia", "forex"],
+      "sources_failed": [],
+      "country_code": "US",
+      "duration_ms": 4250
+    }
+  },
+  {
+    "event": "agent_started",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "vc",
+      "status": "running"
+    }
+  },
+  {
+    "event": "agent_started",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "lean",
+      "status": "running"
+    }
+  },
+  {
+    "event": "agent_started",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "cto",
+      "status": "running"
+    }
+  },
+  {
+    "event": "agent_started",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "ux",
+      "status": "running"
+    }
+  },
+  {
+    "event": "agent_started",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "regulator",
+      "status": "running"
+    }
+  },
+  {
+    "event": "agent_started",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "adversarial",
+      "status": "running"
+    }
+  },
+  {
+    "event": "agent_completed",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "ux",
+      "duration_ms": 2980,
+      "failed": false
+    }
+  },
+  {
+    "event": "agent_completed",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "lean",
+      "duration_ms": 3150,
+      "failed": false
+    }
+  },
+  {
+    "event": "agent_completed",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "regulator",
+      "duration_ms": 3310,
+      "failed": false
+    }
+  },
+  {
+    "event": "agent_completed",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "vc",
+      "duration_ms": 3420,
+      "failed": false
+    }
+  },
+  {
+    "event": "agent_completed",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "adversarial",
+      "duration_ms": 3650,
+      "failed": false
+    }
+  },
+  {
+    "event": "agent_completed",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "agent": "cto",
+      "duration_ms": 3810,
+      "failed": false
+    }
+  },
+  {
+    "event": "evaluation_started",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "message": "Scoring 6 agent outputs across 5-axis impartial rubric..."
+    }
+  },
+  {
+    "event": "scores_ready",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "investor_score": 84,
+      "confidence_band": "fundable",
+      "winning_agent": "cto"
+    }
+  },
+  {
+    "event": "brd_merged",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "sections_count": 6,
+      "assumptions_count": 2,
+      "failure_modes_count": 2
+    }
+  },
+  {
+    "event": "complete",
+    "data": {
+      "session_id": "mock-session-b2b-saas-001",
+      "status": "complete",
+      "pdf_ready": true,
+      "total_duration_ms": 17820
+    }
+  }
+]

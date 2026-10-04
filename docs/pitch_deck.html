@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PRISM — Hackathon Pitch Deck (6 Slides)</title>
+  <style>
+    :root {
+      --color-void: #FAF7F2;
+      --color-surface: #FFFFFF;
+      --color-surface-raised: #F4EFEB;
+      --color-border: #1E1E1E;
+      --color-border-subtle: #E2DAD0;
+      --color-text-primary: #1E1E1E;
+      --color-text-secondary: #57534E;
+      --color-accent-signal: #2D6A4F;
+      --color-accent-tint: #D8F3DC;
+      --font-display: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: #121212;
+      color: var(--color-text-primary);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .deck-container {
+      width: 100%;
+      max-width: 1050px;
+      aspect-ratio: 16 / 9;
+      background-color: var(--color-void);
+      border: 3px solid var(--color-border);
+      border-radius: 16px;
+      box-shadow: 12px 12px 0px #000000;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      padding: 48px 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      opacity: 0;
+      transform: translateX(40px);
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    .slide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border: 1.5px solid var(--color-border);
+      border-radius: 9999px;
+      background-color: var(--color-surface-raised);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 2px 2px 0px var(--color-border);
+      width: fit-content;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 900;
+      line-height: 1.15;
+      color: var(--color-text-primary);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+      margin-bottom: 24px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      flex: 1;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      flex: 1;
+    }
+
+    .grid-6 {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+    }
+
+    .card {
+      background-color: var(--color-surface);
+      border: 2px solid var(--color-border);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 4px 4px 0px var(--color-border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .card h3 {
+      font-size: 1.05rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card p, .card li {
+      font-size: 0.9rem;
+      color: var(--color-text-secondary);
+      line-height: 1.45;
+    }
+
+    .persona-badge {
+      background: white;
+      border: 1.5px solid var(--color-border);
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+      box-shadow: 2px 2px 0px var(--color-border);
+    }
+    .persona-badge .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+    .persona-badge .name { font-size: 0.75rem; font-weight: 800; display: block; }
+    .persona-badge .mandate { font-size: 0.65rem; color: var(--color-text-secondary); }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      background: white;
+      border: 2px solid var(--color-border);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 4px 4px 0px var(--color-border);
+    }
+
+    th, td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--color-border-subtle);
+    }
+
+    th {
+      background-color: var(--color-surface-raised);
+      font-weight: 800;
+      border-bottom: 2px solid var(--color-border);
+    }
+
+    .stat-pill {
+      display: inline-block;
+      padding: 4px 10px;
+      background-color: var(--color-accent-tint);
+      border: 1px solid var(--color-accent-signal);
+      border-radius: 6px;
+      font-weight: 800;
+      color: var(--color-accent-signal);
+      font-size: 0.85rem;
+    }
+
+    /* Controls Bar */
+    .controls-bar {
+      margin-top: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      color: white;
+      font-size: 0.9rem;
+    }
+
+    .ctrl-btn {
+      padding: 8px 16px;
+      background: #2D6A4F;
+      color: white;
+      border: 2px solid #1E1E1E;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 3px 3px 0px #000000;
+      transition: all 0.15s ease;
+    }
+
+    .ctrl-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0px #000000;
+    }
+
+    .dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #444;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .dot.active {
+      background: #2D6A4F;
+      box-shadow: 0 0 8px #2D6A4F;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="deck-container" id="deck">
+
+    <!-- Slide 1: Title -->
+    <div class="slide active" id="slide-1">
+      <div>
+        <div class="slide-badge">⚡ Manipal Hackathon 2026 • Enterprise AI Track</div>
+        <h1>PRISM: Autonomous Multi-Perspective Venture Swarm</h1>
+        <p class="subtitle">"One Idea. Six Perspectives. One Ground Truth."</p>
+      </div>
+
+      <div class="card" style="background: #F4EFEB; padding: 24px; border: 2px solid #1E1E1E;">
+        <h3 style="font-size: 1.2rem;">🤝 The Autonomous Co-Founder Consortium</h3>
+        <p style="margin-bottom: 16px;">PRISM stress-tests startup concepts by pitting 6 specialized adversarial AI personas against an impartial 5-axis rubric with live regional market & regulatory data.</p>
+        <div class="grid-6">
+          <div class="persona-badge"><span class="icon">💼</span><span class="name">The VC</span><span class="mandate">10x Scale & Moats</span></div>
+          <div class="persona-badge"><span class="icon">⚡</span><span class="name">Lean Dev</span><span class="mandate">4-Wk MVP Runway</span></div>
+          <div class="persona-badge"><span class="icon">🛡️</span><span class="name">The CTO</span><span class="mandate">Zero-Trust SLAs</span></div>
+          <div class="persona-badge"><span class="icon">🎯</span><span class="name">The UX</span><span class="mandate">Time-to-Value</span></div>
+          <div class="persona-badge"><span class="icon">⚖️</span><span class="name">Regulator</span><span class="mandate">GDPR & DPDP</span></div>
+          <div class="persona-badge"><span class="icon">🧨</span><span class="name">Adversary</span><span class="mandate">Exploits & Churn</span></div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--color-text-secondary);">
+        <span>Team: Swapnil Ghosh • Zahid • Haripriya • Ritika</span>
+        <span class="stat-pill">Slide 1 of 6</span>
+      </div>
+    </div>
+
+    <!-- Slide 2: Crisis of 1-Shot AI -->
+    <div class="slide" id="slide-2">
+      <div>
+        <div class="slide-badge" style="background: #FEE2E2; color: #DC2626; border-color: #DC2626;">The Crisis</div>
+        <h1>Why "Agreeable AI" Kills 90% of Startups</h1>
+        <p class="subtitle">Single-prompt LLMs are sycophantic yes-men that praise flawed venture concepts into ruin.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <h3>🤡 The Echo Chamber</h3>
+          <p>Generic ChatGPT prompts suffer from sycophancy: they optimize for pleasing the user, praising unviable unit economics and ignoring fatal distribution bottlenecks.</p>
+        </div>
+        <div class="card">
+          <h3>🌍 Blind to Ground Reality</h3>
+          <p>Static LLMs possess zero awareness of current regional FX volatility, local central bank interest rates, or statutory GDPR / EU AI Act enforcement penalties.</p>
+        </div>
+        <div class="card">
+          <h3>📉 Zero Accountability</h3>
+          <p>1-shot PRDs provide no evidence citations, no line-by-line provenance, and zero challenger audits. The user cannot see what assumptions were never tested.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 16px;">
+        <span>$1.3 Trillion wasted globally on software failures due to unvalidated assumptions.</span>
+        <span class="stat-pill">Slide 2 of 6</span>
+      </div>
+    </div>
+
+    <!-- Slide 3: Structured Disagreement Engine -->
+    <div class="slide" id="slide-3">
+      <div>
+        <div class="slide-badge">The Architecture</div>
+        <h1>The Structured Disagreement Engine</h1>
+        <p class="subtitle">Autonomous adversarial competition replaces sycophancy with mathematical consensus.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h3>⚡ Parallel Swarm Pipeline</h3>
+          <ul style="padding-left: 18px; margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+            <li><strong>Zero-Friction Intake:</strong> Conversational dynamic questioning locks 6 parameters behind the scenes.</li>
+            <li><strong>Live Regional Harvester:</strong> Real-time REST ingestion (NewsAPI, World Bank, Wikipedia, Forex).</li>
+            <li><strong>6-Agent Debate:</strong> Asynchronous execution across 6 competing analytical mandate prompts.</li>
+            <li><strong>Mathematical Consensus:</strong> Rubric scoring, variance heatmap, and section lineage synthesis.</li>
+          </ul>
+        </div>
+        <div class="card" style="background: #F4FAF5; border-color: #2D6A4F;">
+          <h3 style="color: #2D6A4F;">📊 5-Axis Impartial Rubric</h3>
+          <p style="margin-bottom: 12px;">Every agent's BRD submission is strictly scored across 5 objective axes (0-100):</p>
+          <div style="display: flex; flex-direction: column; gap: 6px; font-size: 0.85rem;">
+            <div><strong>1. Technical Feasibility:</strong> Cloud infra, data flow, engineering scope.</div>
+            <div><strong>2. Market Timing:</strong> TAM, demand tailwinds, competitive density.</div>
+            <div><strong>3. Regulatory Safety:</strong> Data sovereignty, DPDP, statutory licenses.</div>
+            <div><strong>4. User Adoption:</strong> Friction, time-to-value, viral referral loop.</div>
+            <div><strong>5. Competitive Moat:</strong> Defensibility against Big Tech bundling.</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 16px;">
+        <span>Every merged section tagged with [LineageTag] for 100% auditability.</span>
+        <span class="stat-pill">Slide 3 of 6</span>
+      </div>
+    </div>
+
+    <!-- Slide 4: Google Cloud Hero Slide -->
+    <div class="slide" id="slide-4">
+      <div>
+        <div class="slide-badge">Cloud Infrastructure</div>
+        <h1>Enterprise Google Cloud Architecture</h1>
+        <p class="subtitle">Production-grade, resilient, zero-operational-cost architecture deployed on GCP.</p>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>GCP Component</th>
+            <th>Technical Role & Innovation</th>
+            <th>Cost & Tier</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Vertex AI & Gemini 2.0 Flash</strong></td>
+            <td>Sub-second LLM inference, 48-pool multi-key cascade, per-thread client isolation</td>
+            <td><span class="stat-pill">₹0 Free Tier</span></td>
+          </tr>
+          <tr>
+            <td><strong>Google Cloud Storage (GCS)</strong></td>
+            <td>SHA-256 validated blob persistence (<code>prism-outputs/{id}/</code>) with signed URLs</td>
+            <td><span class="stat-pill">5 GB Free Tier</span></td>
+          </tr>
+          <tr>
+            <td><strong>Google BigQuery</strong></td>
+            <td>Audit trail logging (<code>brd_runs</code>, <code>context_harvest_logs</code>) for compliance</td>
+            <td><span class="stat-pill">10 GB Sandbox</span></td>
+          </tr>
+          <tr>
+            <td><strong>Google Cloud Run</strong></td>
+            <td>Containerized FastAPI runtime with auto-scaling down to zero instances</td>
+            <td><span class="stat-pill">2M Req/Mo Free</span></td>
+          </tr>
+          <tr>
+            <td><strong>Autonomous Heuristic Swarm</strong></td>
+            <td>Guarantees 100% pipeline completion (6/6 agents) during upstream network disconnects</td>
+            <td><span class="stat-pill">Failsafe 0ms</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 16px;">
+        <span>Zero hardcoded credentials • Strict security validation on all GCS blobs.</span>
+        <span class="stat-pill">Slide 4 of 6</span>
+      </div>
+    </div>
+
+    <!-- Slide 5: Side-by-Side Verification -->
+    <div class="slide" id="slide-5">
+      <div>
+        <div class="slide-badge">Visual Proof</div>
+        <h1>Side-by-Side: 1-Shot ChatGPT vs. PRISM</h1>
+        <p class="subtitle">Real-world comparative verification on an Enterprise B2B SaaS pitch.</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card" style="border-color: #DC2626;">
+          <h3 style="color: #DC2626;">❌ 1-Shot ChatGPT PRD</h3>
+          <ul style="padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+            <li><strong>Tone:</strong> Enthusiastic yes-man; assumes 100% adoption.</li>
+            <li><strong>Regional Reality:</strong> Generic US boilerplate; ignores local laws.</li>
+            <li><strong>Architecture:</strong> "Use React and Node.js with a database."</li>
+            <li><strong>Vulnerabilities:</strong> Completely unmentioned.</li>
+            <li><strong>Traceability:</strong> Uncited wall of text.</li>
+          </ul>
+        </div>
+
+        <div class="card" style="border-color: #2D6A4F; background: #F4FAF5;">
+          <h3 style="color: #2D6A4F;">✅ PRISM Swarm BRD</h3>
+          <ul style="padding-left: 18px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem;">
+            <li><strong>Tone:</strong> Ruthlessly objective across 6 competing perspectives.</li>
+            <li><strong>Regional Reality:</strong> Grounded in live local news, FX & World Bank data.</li>
+            <li><strong>Architecture:</strong> Zero-trust AST secret redaction & Cloud Run SLAs.</li>
+            <li><strong>Vulnerabilities:</strong> Unmasks prompt injection & Copilot bundling risks.</li>
+            <li><strong>Traceability:</strong> Section-by-section <code>[LineageTag]</code> + verified citations.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 16px;">
+        <span>Includes Strategic Pivot Suggester with 3 actionable alternatives for high-risk ventures.</span>
+        <span class="stat-pill">Slide 5 of 6</span>
+      </div>
+    </div>
+
+    <!-- Slide 6: Production Metrics & Roadmap -->
+    <div class="slide" id="slide-6">
+      <div>
+        <div class="slide-badge">Traction & Future</div>
+        <h1>Production Metrics & Autonomous Roadmap</h1>
+        <p class="subtitle">Validated performance today. Automated execution tomorrow.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div style="font-size: 2.2rem; font-weight: 900; color: #2D6A4F; margin-bottom: 4px;">&lt; 35s</div>
+          <h3>P95 End-to-End Latency</h3>
+          <p>Full 10-step pipeline: intake, 4 harvesters, 6 agents, rubric scoring, and PDF generation.</p>
+        </div>
+        <div class="card">
+          <div style="font-size: 2.2rem; font-weight: 900; color: #2D6A4F; margin-bottom: 4px;">100%</div>
+          <h3>Guaranteed Completion</h3>
+          <p>Autonomous Heuristic Swarm Recovery ensures zero crashes across 6/6 expert agent outputs.</p>
+        </div>
+        <div class="card">
+          <div style="font-size: 2.2rem; font-weight: 900; color: #2D6A4F; margin-bottom: 4px;">227+</div>
+          <h3>Passing Test Cases</h3>
+          <p>Comprehensive unit, integration, and Pydantic schema validation test suite.</p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 16px; background: #FFFFFF;">
+        <h3>🚀 Upcoming Roadmap Milestones</h3>
+        <p><strong>1. Automated Sprint Epic Generation:</strong> 1-click export of BRD requirements to Jira & Linear tickets.<br>
+        <strong>2. Continuous Confidence Decay:</strong> Telemetry hooks to GitHub & Datadog recalculating Investor Scores post-launch.<br>
+        <strong>3. Autonomous Pivot Prototyper:</strong> Auto-generating Next.js boilerplate repos for recommended strategic pivots.</p>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--color-text-secondary); margin-top: 12px;">
+        <span>Live System: http://localhost:5173/#pitch</span>
+        <span class="stat-pill">Slide 6 of 6</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation Controls -->
+  <div class="controls-bar">
+    <button class="ctrl-btn" id="prev-btn" onclick="prevSlide()">← Prev</button>
+    <div class="dots" id="dots-container"></div>
+    <button class="ctrl-btn" id="next-btn" onclick="nextSlide()">Next →</button>
+    <span style="font-size: 0.8rem; color: #888; margin-left: 12px;">Use Arrow Keys (← / →) or Space</span>
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 6;
+
+    const dotsContainer = document.getElementById('dots-container');
+    for (let i = 1; i <= totalSlides; i++) {
+      const dot = document.createElement('div');
+      dot.className = `dot ${i === 1 ? 'active' : ''}`;
+      dot.onclick = () => goToSlide(i);
+      dotsContainer.appendChild(dot);
+    }
+
+    function updateSlides() {
+      for (let i = 1; i <= totalSlides; i++) {
+        const slide = document.getElementById(`slide-${i}`);
+        if (slide) {
+          slide.classList.toggle('active', i === currentSlide);
+        }
+      }
+      const dots = document.querySelectorAll('.dot');
+      dots.forEach((dot, idx) => {
+        dot.classList.toggle('active', idx + 1 === currentSlide);
+      });
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateSlides();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateSlides();
+      }
+    }
+
+    function goToSlide(n) {
+      currentSlide = n;
+      updateSlides();
+    }
+
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      }
+    });
+  </script>
+</body>
+</html>

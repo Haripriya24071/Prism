@@ -1,0 +1,60 @@
+{
+  "session_id": "mock-session-b2b-saas-001",
+  "scores": {
+    "vc": {
+      "feasibility": 88,
+      "market_timing": 92,
+      "regulatory_safety": 78,
+      "user_adoption": 85,
+      "competitive_moat": 80,
+      "composite": 84.6,
+      "data_citation": "[SOURCE: crunchbase] $4.2B invested into AI DevSecOps category in 2025"
+    },
+    "lean": {
+      "feasibility": 95,
+      "market_timing": 85,
+      "regulatory_safety": 70,
+      "user_adoption": 90,
+      "competitive_moat": 72,
+      "composite": 82.4,
+      "data_citation": "[SOURCE: worldbank] Developer productivity accounts for 3.2% of global digital GDP"
+    },
+    "cto": {
+      "feasibility": 92,
+      "market_timing": 88,
+      "regulatory_safety": 85,
+      "user_adoption": 82,
+      "competitive_moat": 86,
+      "composite": 86.6,
+      "data_citation": "[SOURCE: newsapi] 78% of enterprise CTOs mandate shift-left automated PR security"
+    },
+    "ux": {
+      "feasibility": 85,
+      "market_timing": 82,
+      "regulatory_safety": 75,
+      "user_adoption": 94,
+      "competitive_moat": 76,
+      "composite": 82.4,
+      "data_citation": "[SOURCE: github_stats] 68% of automated PR bot comments are dismissed due to alert fatigue"
+    },
+    "regulator": {
+      "feasibility": 78,
+      "market_timing": 80,
+      "regulatory_safety": 92,
+      "user_adoption": 72,
+      "competitive_moat": 82,
+      "composite": 80.8,
+      "data_citation": "[SOURCE: eu_ai_act] Article 14 human-in-the-loop oversight mandatory for automated code commits"
+    },
+    "adversarial": {
+      "feasibility": 82,
+      "market_timing": 78,
+      "regulatory_safety": 68,
+      "user_adoption": 80,
+      "competitive_moat": 85,
+      "composite": 78.6,
+      "data_citation": "[SOURCE: cve_database] 14 major prompt injection bypasses documented in LLM code review agents"
+    }
+  },
+  "winning_agent": "cto"
+}
