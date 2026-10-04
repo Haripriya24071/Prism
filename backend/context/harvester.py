@@ -1,7 +1,7 @@
 """backend/context/harvester.py — Aggregates all 7 context sources in parallel."""
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 try:
@@ -162,5 +162,5 @@ async def harvest_context(intake: Any) -> ContextPackage:
         forex_data=forex_data,
         source_urls=source_urls,
         failed_sources=failed_sources,
-        harvested_at=datetime.utcnow(),
+        harvested_at=datetime.now(timezone.utc),
     )
