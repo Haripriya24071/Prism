@@ -61,30 +61,6 @@
   background-color: color-mix(in srgb, var(--color-accent-signal) 14%, transparent);
 }
 
-.app-header__right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.app-header__deck-link {
-  font-family: var(--font-display);
-  font-size: var(--text-small);
-  font-weight: 700;
-  color: var(--color-accent-signal);
-  text-decoration: none;
-  padding: 4px 10px;
-  border: 1.5px solid var(--color-accent-signal);
-  border-radius: var(--radius-sm);
-  background-color: color-mix(in srgb, var(--color-accent-signal) 10%, transparent);
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-
-.app-header__deck-link:hover {
-  background-color: var(--color-accent-signal);
-  color: var(--color-surface);
-}
 
 .app-header__session {
   display: grid;

@@ -27,20 +27,9 @@ export function Header({ currentStage = 'intake', sessionId }) {
         ))}
       </nav>
 
-      <div className="app-header__right">
-        <a
-          href="/pitch_deck.html"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="app-header__deck-link"
-          title="Open interactive 6-slide Hackathon Pitch Deck"
-        >
-          Pitch Deck ↗
-        </a>
-        <div className="app-header__session">
-          <span className="app-header__dot" aria-hidden="true" />
-          {sessionId ? `Session: ${sessionId.slice(0, 8)}...` : 'Ready'}
-        </div>
+      <div className="app-header__session">
+        <span className="app-header__dot" aria-hidden="true" />
+        {sessionId ? `Session: ${sessionId.slice(0, 8)}...` : 'Ready'}
       </div>
     </header>
   )

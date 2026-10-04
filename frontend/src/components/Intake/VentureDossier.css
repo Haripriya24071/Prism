@@ -59,22 +59,32 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 12px;
-  background-color: var(--color-border);
-  color: var(--color-surface);
+  padding: 5px 14px;
+  background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+  color: #ffffff;
   font-family: var(--font-display);
   font-size: var(--text-micro);
   font-weight: 700;
-  border-radius: var(--radius-md);
-  box-shadow: 2px 2px 0px var(--color-border);
+  border-radius: 9999px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35);
   cursor: pointer;
-  transition: all 0.15s ease;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .venture-matrix__cta-btn:hover {
-  background-color: #2D6A4F;
-  transform: translate(-1px, -1px);
-  box-shadow: 3px 3px 0px var(--color-border);
+  background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.5);
+}
+
+.venture-matrix__cta-arrow {
+  transition: transform 0.15s ease;
+}
+
+.venture-matrix__cta-btn:hover .venture-matrix__cta-arrow {
+  transform: translateX(2px);
 }
 
 /* 6-Column Responsive Grid */

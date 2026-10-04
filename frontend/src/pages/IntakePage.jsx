@@ -374,16 +374,6 @@ export default function IntakePage() {
               >
                 How It Works
               </button>
-              <a
-                href="/pitch_deck.html"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-display text-sm font-bold text-accent-signal hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer"
-                title="Open interactive 6-slide Hackathon Pitch Deck"
-              >
-                <span>Pitch Deck</span>
-                <span className="text-xs">↗</span>
-              </a>
             </nav>
 
             {/* Right Side: Clean Status & Single Neat Action */}
@@ -413,9 +403,11 @@ export default function IntakePage() {
                 <button
                   type="button"
                   onClick={handleStartGeneration}
-                  className="px-5 py-2 bg-accent-signal text-surface font-display font-bold text-xs rounded-full hover:opacity-90 transition-opacity shadow-sm cursor-pointer animate-pulse"
+                  className="group inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white font-display font-bold text-xs rounded-full shadow-[0_2px_12px_rgba(5,150,105,0.4)] hover:shadow-[0_4px_16px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap"
                 >
-                  Run Swarm →
+                  <span className="w-2 h-2 rounded-full bg-emerald-200 animate-pulse" />
+                  <span>Launch 6-Agent Swarm</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">→</span>
                 </button>
               ) : (
                 <button
@@ -555,10 +547,25 @@ export default function IntakePage() {
                   <button
                     type="button"
                     onClick={handleStartGeneration}
-                    className="px-5 py-2.5 bg-accent-signal text-surface font-display font-bold text-small rounded-lg shadow-[3px_3px_0px_var(--color-border)] hover:opacity-90 transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer animate-pulse"
+                    className="group relative inline-flex items-center gap-2.5 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white font-display font-extrabold text-sm tracking-wide shadow-[0_4px_16px_rgba(5,150,105,0.4)] hover:shadow-[0_6px_22px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 whitespace-nowrap cursor-pointer flex-shrink-0"
                   >
-                    <span>⚡ Run 6-Agent Swarm</span>
-                    <span>→</span>
+                    <span className="flex h-2.5 w-2.5 relative flex-shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-100"></span>
+                    </span>
+                    <span>Run 6-Agent Swarm</span>
+                    <svg
+                      className="w-4 h-4 text-emerald-200 transition-transform duration-200 group-hover:translate-x-1 flex-shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
                   </button>
                 )}
               </div>
@@ -670,25 +677,45 @@ export default function IntakePage() {
 
               {/* Ready to Evaluate Callout Banner */}
               {readyToEvaluate && (
-                <div className="mt-6 p-5 rounded-xl border-2 border-border bg-accent-tint/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">🐝</span>
+                <div className="mt-6 p-5 sm:p-6 rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/10 via-surface to-emerald-950/5 flex flex-col sm:flex-row items-center justify-between gap-5 shadow-xs">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl flex-shrink-0">
+                      🐝
+                    </div>
                     <div>
-                      <div className="font-display font-bold text-body text-content-primary">
-                        Swarm Coordinates Locked & Ready
+                      <div className="font-display font-bold text-body text-content-primary flex items-center gap-2">
+                        <span>Swarm Coordinates Calibrated & Armed</span>
+                        <span className="font-tertiary text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 font-bold border border-emerald-500/20">
+                          6 of 6 Ready
+                        </span>
                       </div>
-                      <div className="font-body text-small text-content-secondary">
-                        All 6 personas (VC, Bootstrapper, CTO, UX, Regulator, Rival) are calibrated.
+                      <div className="font-body text-small text-content-secondary mt-0.5">
+                        All 6 personas (VC, Bootstrapper, CTO, UX, Regulator, Rival) have sufficient context to simulate.
                       </div>
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={handleStartGeneration}
-                    className="px-6 py-3 bg-border text-surface font-display font-bold text-body rounded-lg shadow-[3px_3px_0px_var(--color-border)] hover:bg-accent-signal transition-all flex items-center gap-2 flex-shrink-0 cursor-pointer"
+                    className="group relative inline-flex items-center gap-2.5 px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-600 text-white font-display font-extrabold text-sm tracking-wide shadow-[0_4px_16px_rgba(5,150,105,0.4)] hover:shadow-[0_6px_22px_rgba(5,150,105,0.55)] hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 whitespace-nowrap cursor-pointer flex-shrink-0"
                   >
+                    <span className="flex h-2.5 w-2.5 relative flex-shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-100"></span>
+                    </span>
                     <span>Launch 6-Agent Swarm</span>
-                    <span>→</span>
+                    <svg
+                      className="w-4 h-4 text-emerald-200 transition-transform duration-200 group-hover:translate-x-1 flex-shrink-0"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
                   </button>
                 </div>
               )}

@@ -127,8 +127,8 @@ export default function VentureDossier({
                 onClick={onRunSwarm}
                 className="venture-matrix__cta-btn"
               >
-                <span>⚡ Run Swarm</span>
-                <span>→</span>
+                <span>Launch Swarm</span>
+                <span className="venture-matrix__cta-arrow">→</span>
               </button>
             )}
           </div>
