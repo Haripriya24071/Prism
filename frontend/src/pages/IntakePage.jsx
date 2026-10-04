@@ -15,8 +15,7 @@ const SAMPLE_IDEAS = [
   {
     id: 'b2b_code_review',
     title: 'B2B AI Code Review',
-    tag: 'Scenario 1: High Consensus (85 Score)',
-    tagColor: 'text-success bg-success/10 border-success/30',
+    highlight: 'Consensus 85',
     prompt:
       'I want to build an automated AI code review and security vulnerability auditing platform for enterprise GitHub pull requests. We target US & EU tech enterprises, currently pre-seed with $150k budget, targeting $500k ARR in year 1.',
     icon: '🚀',
@@ -24,8 +23,7 @@ const SAMPLE_IDEAS = [
   {
     id: 'p2p_social_lending',
     title: 'P2P Social Lending',
-    tag: 'Scenario 2: Pivot Suggester Trigger',
-    tagColor: 'text-warning bg-warning/10 border-warning/30',
+    highlight: 'Pivot Alert',
     prompt:
       'I am launching a peer-to-peer consumer micro-lending platform on social media apps in Southeast Asia, targeting unbanked gig workers with $50k bootstrap capital and targeting 50,000 active borrowers in year one.',
     icon: '⚡',
@@ -33,8 +31,7 @@ const SAMPLE_IDEAS = [
   {
     id: 'rural_telehealth',
     title: 'Rural Telehealth AI',
-    tag: 'Scenario 3: Regulated HealthTech',
-    tagColor: 'text-primary bg-primary/10 border-primary/30',
+    highlight: 'DPDP Regulated',
     prompt:
       'We are creating an AI remote patient diagnostic and clinical triage platform for rural health clinics across India, operating with $80k grant funding, requiring strict compliance with DISHA and DPDP health data laws.',
     icon: '🏥',
@@ -42,8 +39,7 @@ const SAMPLE_IDEAS = [
   {
     id: 'global_paytech',
     title: 'Global PayTech AI',
-    tag: 'Scenario 4: Multi-Border FinCEN',
-    tagColor: 'text-accent-signal bg-accent-signal/10 border-accent-signal/30',
+    highlight: 'FinCEN / MiCA',
     prompt:
       'Autonomous AI regulatory compliance officer for cross-border B2B payments under EU MiCA and US FinCEN regulations, targeting international supply chains with $120k seed runway.',
     icon: '⚖️',
@@ -606,53 +602,61 @@ export default function IntakePage() {
                 )}
               </div>
 
-              {/* Quick Sample Prompts */}
+              {/* Clean Comic Benchmark Pitches Shelf */}
               {turnNumber === 0 ? (
-                <div className="mb-6">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
-                    <span className="font-tertiary text-micro font-bold uppercase tracking-wider text-accent-signal block">
-                      ⚡ Demo Scenarios (Pre-Cached for Fast Demonstrations):
-                    </span>
-                    <span className="font-tertiary text-[10px] text-content-secondary hidden sm:inline">
-                      Click to load pitch into terminal, or click ⚡ Instant Demo
-                    </span>
+                <div className="mb-6 p-3.5 sm:p-4 rounded-xl border-2 border-content-primary bg-surface shadow-[3px_3px_0px_#18181B]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 pb-2.5 mb-3 border-b border-border-subtle">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-accent-signal text-content-inverse text-[11px] font-bold">
+                        ⚡
+                      </span>
+                      <h3 className="font-display font-bold text-xs uppercase tracking-wider text-content-primary">
+                        Benchmark Founder Pitches
+                      </h3>
+                      <span className="font-tertiary text-[10px] text-content-secondary hidden md:inline">
+                        — Pre-evaluated across 6 agent personas
+                      </span>
+                    </div>
+                    <p className="font-tertiary text-[10px] text-content-secondary">
+                      Click a card to edit, or tap <strong className="text-content-primary font-bold">⚡ Instant Demo</strong> for full synthesized BRD
+                    </p>
                   </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {SAMPLE_IDEAS.map((idea, index) => {
+                    {SAMPLE_IDEAS.map((idea) => {
                       const isCached = Boolean(cachedPresets[idea.id])
                       return (
                         <div
-                          key={index}
+                          key={idea.id}
                           onClick={() => handleSend(idea.prompt)}
-                          className="p-3 text-left rounded-lg border border-border-subtle bg-surface-raised hover:bg-void hover:border-accent-signal hover:shadow-md transition-all group flex flex-col justify-between shadow-xs cursor-pointer"
+                          className="group relative p-3 rounded-lg border border-content-primary/70 bg-void hover:bg-surface-raised hover:border-content-primary hover:shadow-[2px_2px_0px_#18181B] transition-all flex flex-col justify-between cursor-pointer"
                         >
                           <div>
-                            <div className="flex items-center justify-between gap-1 mb-1.5">
+                            {/* Header: Icon + Highlight Tag */}
+                            <div className="flex items-center justify-between gap-1.5 mb-1.5">
                               <span className="text-base group-hover:scale-110 transition-transform">{idea.icon}</span>
-                              <div className="flex items-center gap-1">
-                                {isCached && (
-                                  <span className="font-tertiary text-[9px] font-bold px-1.5 py-0.5 rounded border border-success/40 bg-success/15 text-success">
-                                    ⚡ Cached
-                                  </span>
-                                )}
-                                {idea.tag && (
-                                  <span className={`font-display text-[9px] font-bold px-1.5 py-0.5 rounded border ${idea.tagColor}`}>
-                                    {idea.tag.split(':')[0]}
-                                  </span>
-                                )}
-                              </div>
+                              <span className="font-tertiary text-[9px] font-bold px-1.5 py-0.5 rounded bg-surface border border-border-subtle text-content-secondary">
+                                {idea.highlight || idea.tag?.split(':')[0]}
+                              </span>
                             </div>
-                            <span className="font-display font-bold text-micro text-content-primary group-hover:text-accent-signal transition-colors block mb-1">
+
+                            {/* Title */}
+                            <h4 className="font-display font-bold text-xs text-content-primary group-hover:text-accent-signal transition-colors mb-1">
                               {idea.title}
-                            </span>
+                            </h4>
+
+                            {/* Excerpt */}
+                            <p className="font-body text-[11px] text-content-secondary line-clamp-2 leading-snug mb-3">
+                              &ldquo;{idea.prompt}&rdquo;
+                            </p>
                           </div>
-                          <p className="font-body text-[11px] text-content-secondary line-clamp-2 leading-snug mb-2">
-                            &ldquo;{idea.prompt}&rdquo;
-                          </p>
+
+                          {/* Footer with clean, cohesive CTAs */}
                           <div className="pt-2 border-t border-border-subtle flex items-center justify-between gap-1">
-                            <span className="font-tertiary text-[10px] text-accent-signal font-semibold group-hover:underline">
-                              Load Pitch →
+                            <span className="font-tertiary text-[10px] font-semibold text-content-secondary group-hover:text-content-primary flex items-center gap-0.5">
+                              Draft Pitch <span className="transition-transform group-hover:translate-x-0.5">→</span>
                             </span>
+
                             {isCached && (
                               <button
                                 type="button"
@@ -660,10 +664,10 @@ export default function IntakePage() {
                                   e.stopPropagation()
                                   handleInstantDemoLaunch(idea.id)
                                 }}
-                                className="comic-action-btn text-[10px] px-2 py-0.5 bg-accent-signal text-content-inverse font-bold rounded shadow-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                                className="px-2 py-1 text-[10px] font-display font-bold rounded bg-surface hover:bg-content-primary text-content-primary hover:text-content-inverse border border-content-primary shadow-[1.5px_1.5px_0px_#18181B] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer flex items-center gap-1"
                                 title="Instantly open workspace with full deliberation & BRD"
                               >
-                                ⚡ Instant Demo
+                                <span>⚡ Instant Demo</span>
                               </button>
                             )}
                           </div>
@@ -673,18 +677,18 @@ export default function IntakePage() {
                   </div>
                 </div>
               ) : (
-                <details className="mb-5 text-micro font-tertiary text-content-secondary cursor-pointer">
-                  <summary className="hover:text-content-primary transition-colors">
-                    💡 Click to view quick startup starter templates
+                <details className="mb-5 p-2.5 rounded-lg border border-content-primary/60 bg-surface shadow-[2px_2px_0px_#18181B] text-xs font-tertiary text-content-secondary cursor-pointer">
+                  <summary className="font-bold text-content-primary flex items-center gap-1.5 hover:text-accent-signal transition-colors">
+                    <span>💡</span> Need inspiration? Load benchmark founder pitches
                   </summary>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-2 pt-2 border-t border-border-subtle">
-                    {SAMPLE_IDEAS.map((idea, index) => {
+                    {SAMPLE_IDEAS.map((idea) => {
                       const isCached = Boolean(cachedPresets[idea.id])
                       return (
                         <div
-                          key={index}
+                          key={idea.id}
                           onClick={() => handleSend(idea.prompt)}
-                          className="p-2 text-left rounded border border-border-subtle bg-surface-raised hover:bg-void text-[11px] flex items-center justify-between gap-1.5 cursor-pointer"
+                          className="p-2 text-left rounded border border-border-subtle bg-void hover:bg-surface-raised text-[11px] flex items-center justify-between gap-1.5 cursor-pointer"
                         >
                           <div className="flex items-center gap-1.5 truncate">
                             <span>{idea.icon}</span>
@@ -697,7 +701,7 @@ export default function IntakePage() {
                                 e.stopPropagation()
                                 handleInstantDemoLaunch(idea.id)
                               }}
-                              className="shrink-0 px-1.5 py-0.5 rounded font-display text-[9px] font-bold bg-accent-signal text-content-inverse hover:brightness-110"
+                              className="shrink-0 px-2 py-0.5 rounded font-display text-[9px] font-bold bg-surface hover:bg-content-primary text-content-primary hover:text-content-inverse border border-content-primary shadow-[1px_1px_0px_#18181B] transition-all"
                             >
                               ⚡ Demo
                             </button>

@@ -9,7 +9,7 @@ import IntakePage from './pages/IntakePage.jsx'
 import ResultsPage from './pages/ResultsPage.jsx'
 
 function renderPage(status) {
-  if (typeof window !== 'undefined' && window.location.hash === '#generation') {
+  if (typeof window !== 'undefined' && window.location.hash.startsWith('#generation')) {
     return <GenerationPage key="generation" />
   }
   switch (status) {

@@ -18,13 +18,29 @@ export default function GenerationPage() {
   const { sessionId, status, agentStatuses, error } = useSession()
   const { contextReady, progressPct, stageMessage } = useSSE(sessionId)
 
+  const isPreview = typeof window !== 'undefined' && (
+    window.location.hash.includes('preview') ||
+    window.location.hash.includes('live')
+  )
+
+  const defaultStatuses = isPreview ? {
+    vc: 'complete',
+    lean: 'complete',
+    cto: 'running',
+    ux: 'complete',
+    regulator: 'running',
+    adversarial: 'running',
+  } : {}
+
   const agents = AGENT_CONFIGS.map((agent) => ({
     ...agent,
-    status: agentStatuses[agent.name] || 'pending',
+    status: agentStatuses[agent.name] || defaultStatuses[agent.name] || 'pending',
   }))
 
   const displayMessage = stageMessage || (
-    contextReady
+    isPreview
+      ? 'Context intelligence active — 6 agents stress-testing your market fit...'
+      : contextReady
       ? 'Context intelligence active — 6 agents stress-testing your market fit...'
       : 'Harvesting real-world market, regulatory & cultural context...'
   )
@@ -63,7 +79,7 @@ export default function GenerationPage() {
       </div>
 
       {/* 6-Agent Live Progress Grid */}
-      <section aria-labelledby="agent-grid-heading">
+      <section aria-labelledby="agent-grid-heading" id="agent-grid-section">
         <div className="flex items-center justify-between mb-4">
           <h2 id="agent-grid-heading" className="font-display text-h3 text-content-primary font-bold">
             Live Agent Deliberation
