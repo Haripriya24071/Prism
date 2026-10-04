@@ -2,7 +2,12 @@
 
 import json
 from typing import TYPE_CHECKING, Any
-import structlog
+try:
+    import structlog
+    logger = structlog.get_logger()
+except ImportError:
+    import logging
+    logger = logging.getLogger("prism.agents.prompts")
 
 if TYPE_CHECKING:
     from backend.agents.personas import PERSONAS
@@ -20,8 +25,6 @@ else:
         from models.agents import AgentPersona
         from models.context import ContextPackage
         from models.intake import IntakePackage
-
-logger = structlog.get_logger()
 
 __all__ = ["build_agent_prompt", "_BRD_SECTIONS", "_BASE_TEMPLATE", "_build_context_block"]
 
