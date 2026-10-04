@@ -4,40 +4,65 @@
 
 ## 1. Team Ownership & Responsibilities
 
-Each team member owns defined modules with clear boundaries. Cross-boundary modifications require coordination with the respective owner. Detailed phased roadmaps are located in `docs/roadmap/`:
+Detailed phased roadmaps are located in `docs/roadmap/`:
 - [SWAPNIL.md](docs/roadmap/SWAPNIL.md) — Frontend Architecture, UI Components, Animation, System Prompts.
 - [ZAHID.md](docs/roadmap/ZAHID.md) — Backend Core, FastAPI App, Key Pool Orchestration, Evaluation Rubric.
 - [HARIPRIYA.md](docs/roadmap/HARIPRIYA.md) — External Context Harvester APIs, BigQuery Tables, Cloud Storage, PDF Export.
 - [RITIKA.md](docs/roadmap/RITIKA.md) — QA Test Suites, Pitch Deck (PPT), Demo Script, Video Fallback.
 
+## Branch Strategy
+
+All commits go directly to `main`. This is a hackathon — no feature branches, no PRs.
+
+Before every push:
+```bash
+git pull --rebase origin main
+```
+Then push:
+```bash
+git push origin main
+```
+If a rebase conflict occurs, resolve it file by file. Never use `git push --force`.
+
+## File Ownership
+
+Each teammate owns specific files. Only edit files you own unless you have explicitly agreed a change with the owner in the team chat.
+
+| Owner | Files / Folders |
+|-------|----------------|
+| Zahid (Backend Lead) | `backend/` — all Python files |
+| Swapnil (Frontend Lead) | `frontend/` or `src/` — all UI files |
+| Haripriya (GCP + Infra) | GCP project config, `backend/gcp/`, deployment scripts |
+| Ritika (QA + Slides) | `tests/` additions, presentation deck, demo script |
+
+If you need a change in someone else's files, message them first and let them make the commit.
+
 ---
 
 ## 2. Local Development Environment
 
-### 2.1 Backend Setup
-1. Activate the Python virtual environment:
-   ```bash
-   source .venv/bin/activate
-   pip install -r backend/requirements.txt
-   ```
-2. Configure `backend/.env`:
-   ```env
-   # Add your Google AI Studio Gemini API keys (up to 20 keys supported):
-   GEMINI_API_KEY_1=your_gemini_key_here
-   GEMINI_FLASH_MODEL=gemini-flash-latest
-   GEMINI_PRO_MODEL=gemini-flash-latest
+### 2.1 Backend Onboarding (for teammates reading this for the first time)
 
-   # GCP Project Configuration:
-   GCP_PROJECT_ID=prism-hackathon-510523
-   GCS_BUCKET_NAME=prism-outputs
-   BIGQUERY_DATASET=prism_data
-   GOOGLE_APPLICATION_CREDENTIALS=./prism-hackathon-510523-489baa57ba00.json
-   ```
-3. Start the backend development server:
-   ```bash
-   uvicorn backend.main:app --reload --port 8000
-   ```
-   *Interactive OpenAPI docs: `http://localhost:8000/docs`*
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate          # Windows
+pip install -r requirements.txt
+cp .env.example .env           # fill in GCP_PROJECT_ID and credentials
+uvicorn main:app --reload --port 8000
+```
+
+Check it works:
+```bash
+curl http://localhost:8000/health
+# Expected: {"status":"ok","version":"0.1.0"}
+```
+
+Run tests:
+```bash
+python -m pytest tests/ -v
+# Expected: 129 passed
+```
 
 ### 2.2 Frontend Setup
 1. Navigate to `frontend/`:
@@ -56,21 +81,10 @@ Before submitting changes or committing code, run these verification steps:
 
 1. **Verify No Circular Imports:**
    ```bash
-   .venv/bin/python -c "import backend.main; print('Import check passed!')"
+   python -c "import main; print('Import check passed!')"
    ```
 
-2. **Verify Swarm & Key Pool Health:**
-   ```bash
-   .venv/bin/python -c "
-   import backend.config as cfg
-   print('Active keys:', len(cfg._KEYS))
-   m = cfg.get_flash_model()
-   res = m.generate_content('Verify PRISM')
-   print('LLM Response:', res.text.strip())
-   "
-   ```
-
-3. **Frontend Lint & Build:**
+2. **Frontend Lint & Build:**
    ```bash
    cd frontend
    npm run build
@@ -78,12 +92,62 @@ Before submitting changes or committing code, run these verification steps:
 
 ---
 
-## 4. Git Branching & Commit Discipline
+## Commit Discipline
 
-- **Branch Naming:**
-  - `feat/feature-name` (e.g. `feat/handshake-loader`)
-  - `fix/bug-description` (e.g. `fix/swarm-timeout`)
-  - `docs/doc-update`
-- **Commit Messages:**
-  - Use clear imperative verbs: `Add HandshakeLoader animation to generation screen`, `Fix BigQuery fire-and-forget logging`.
-  - Never commit raw API keys, private keys, or credentials to Git. Ensure `.env` is ignored in `.gitignore`.
+- One logical change per commit. Never stage unrelated files together.
+- Format: `type(scope): description`
+  - `feat(backend): add ...`
+  - `fix(backend): correct ...`
+  - `docs: update ...`
+  - `test(backend): add ...`
+  - `refactor(backend): ...`
+- Before committing Python files: `python -c "import <module>"` must exit 0.
+- Never commit `.env`, `venv/`, `__pycache__/`, or `*.pyc`.
+- Run `mypy backend/ --ignore-missing-imports --python-version 3.11` before pushing — must be clean.
+
+---
+
+## Demo Day Checklist (run the night before)
+
+```bash
+# 1. Pull latest
+git pull --rebase origin main
+
+# 2. Confirm tests pass
+cd backend
+python -m pytest tests/ -v
+
+# 3. Pre-warm NewsAPI cache
+python demo_runner.py --prewarm
+
+# 4. Dry-run all three scenarios (requires real GCP credentials)
+python demo_runner.py IndiaFintechSMB
+python demo_runner.py SingaporeEdTechB2B
+python demo_runner.py USHealthTechConsumer
+
+# 5. Start the server
+uvicorn main:app --port 8000
+
+# 6. Confirm health endpoint
+curl http://localhost:8000/health
+```
+
+---
+
+## What Each Backend Module Does (quick reference)
+
+| Module | Purpose |
+|--------|---------|
+| `main.py` | FastAPI app — 8 endpoints, Vertex AI lifespan init |
+| `pipeline.py` | Full BRD pipeline — 14 steps, SSE progress events |
+| `config.py` | All env vars, Vertex AI ADC init, model helpers |
+| `session_store.py` | In-memory session CRUD with UUID4 IDs and TTL |
+| `sse_manager.py` | Per-session asyncio queues for live SSE streaming |
+| `intake/` | Conversation, vision, document, field extraction |
+| `context/` | 5 parallel data sources + harvester orchestrator |
+| `agents/` | 6 persona definitions, prompt builder, swarm |
+| `evaluation/` | Rubric, Gemini Pro scorer, BRD merge engine |
+| `output/` | Heatmap, investor score, assumptions, PDF export |
+| `gcp/` | GCS read/write, BigQuery logging, local dev fallback |
+| `demo_config.py` | 3 demo scenarios with talking points |
+| `demo_runner.py` | End-to-end dry-run CLI |
