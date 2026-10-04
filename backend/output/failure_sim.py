@@ -4,9 +4,14 @@ import asyncio
 import json
 import logging
 from typing import Optional
-from backend.config import get_flash_model, settings
-from backend.models.agents import AgentOutput
-from backend.models.brd import FailureMode
+try:
+    from backend.config import get_flash_model, settings
+    from backend.models.agents import AgentOutput
+    from backend.models.brd import FailureMode
+except ImportError:
+    from config import get_flash_model, settings
+    from models.agents import AgentOutput
+    from models.brd import FailureMode
 
 logger = logging.getLogger(__name__)
 
