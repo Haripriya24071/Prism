@@ -30,40 +30,47 @@ class TestTruncateToSentence:
 
 
 class TestExtractDocumentText:
-    def test_empty_bytes_raises(self) -> None:
+    @pytest.mark.asyncio
+    async def test_empty_bytes_raises(self) -> None:
         with pytest.raises(InvalidFileError) as exc:
-            asyncio.get_event_loop().run_until_complete(extract_document_text(b"", "pdf"))
+            await extract_document_text(b"", "pdf")
         assert "empty" in exc.value.message.lower()
 
-    def test_bad_pdf_magic_raises(self) -> None:
+    @pytest.mark.asyncio
+    async def test_bad_pdf_magic_raises(self) -> None:
         with pytest.raises(InvalidFileError) as exc:
-            asyncio.get_event_loop().run_until_complete(extract_document_text(b"this is not a pdf", "pdf"))
+            await extract_document_text(b"this is not a pdf", "pdf")
         assert "valid PDF" in exc.value.message
 
-    def test_bad_docx_magic_raises(self) -> None:
+    @pytest.mark.asyncio
+    async def test_bad_docx_magic_raises(self) -> None:
         with pytest.raises(InvalidFileError) as exc:
-            asyncio.get_event_loop().run_until_complete(extract_document_text(b"not a zip", "doc"))
+            await extract_document_text(b"not a zip", "doc")
         assert "valid DOCX" in exc.value.message
 
-    def test_unsupported_type_raises(self) -> None:
+    @pytest.mark.asyncio
+    async def test_unsupported_type_raises(self) -> None:
         with pytest.raises(InvalidFileError) as exc:
-            asyncio.get_event_loop().run_until_complete(extract_document_text(b"anything", "xlsx"))
+            await extract_document_text(b"anything", "xlsx")
         assert "Unsupported" in exc.value.message
 
 
 class TestAnalyseImageValidation:
-    def test_empty_bytes_raises(self) -> None:
+    @pytest.mark.asyncio
+    async def test_empty_bytes_raises(self) -> None:
         with pytest.raises(InvalidFileError):
-            asyncio.get_event_loop().run_until_complete(analyse_image(b""))
+            await analyse_image(b"")
 
-    def test_oversized_raises(self) -> None:
+    @pytest.mark.asyncio
+    async def test_oversized_raises(self) -> None:
         with pytest.raises(InvalidFileError) as exc:
-            asyncio.get_event_loop().run_until_complete(analyse_image(b"x" * (11 * 1024 * 1024)))
+            await analyse_image(b"x" * (11 * 1024 * 1024))
         assert "10 MB" in exc.value.message
 
-    def test_wrong_format_raises(self) -> None:
+    @pytest.mark.asyncio
+    async def test_wrong_format_raises(self) -> None:
         with pytest.raises(InvalidFileError) as exc:
-            asyncio.get_event_loop().run_until_complete(analyse_image(b"not an image at all"))
+            await analyse_image(b"not an image at all")
         assert "JPEG" in exc.value.message or "PNG" in exc.value.message
 
 
