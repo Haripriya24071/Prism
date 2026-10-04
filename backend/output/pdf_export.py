@@ -7,7 +7,10 @@ from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer
-from backend.models.brd import MergedBRD
+try:
+    from backend.models.brd import MergedBRD
+except ImportError:
+    from models.brd import MergedBRD
 
 
 def _sync_generate_pdf(merged_brd: MergedBRD, view: Literal["investor", "technical", "regulatory"]) -> bytes:
