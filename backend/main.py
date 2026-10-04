@@ -101,6 +101,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 
 # Exception Handlers
@@ -402,7 +403,34 @@ async def get_pdf(session_id: str, view: str = "final", format: str = "binary"):
         merged_brd = MergedBRD(session_id=session_id, sections=sections)
 
     pdf_bytes = await generate_pdf(merged_brd, target_view)
-    filename = "prism-master-brd.pdf" if target_view == "final" else f"prism-brd-{target_view}.pdf"
+
+    # Format a relevant, human-readable filename for downloaded PDFs
+    project_slug = ""
+    if isinstance(brd_data, dict):
+        raw_name = brd_data.get("project_name") or session.get("preset") or ""
+        if not raw_name and session.get("intake"):
+            intake_data = session["intake"]
+            raw_name = getattr(intake_data, "raw_idea", "") or (intake_data.get("raw_idea") if isinstance(intake_data, dict) else "")
+        if raw_name:
+            import re
+            cleaned = re.sub(r'[^a-zA-Z0-9]+', '_', raw_name.strip()).strip('_')
+            if cleaned:
+                project_slug = cleaned[:35]
+
+    view_slug_map = {
+        "final": "Master_BRD",
+        "full": "Master_BRD",
+        "investor": "Investor_Brief",
+        "technical": "Technical_Architecture",
+        "regulatory": "Regulatory_Compliance",
+        "deliberation": "Swarm_Deliberation",
+    }
+    if project_slug:
+        view_slug = view_slug_map.get(target_view, target_view.title())
+        filename = f"PRISM_{project_slug}_{view_slug}.pdf"
+    else:
+        filename = "prism-master-brd.pdf" if target_view == "final" else f"prism-brd-{target_view}.pdf"
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",

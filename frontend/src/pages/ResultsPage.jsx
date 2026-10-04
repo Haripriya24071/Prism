@@ -224,29 +224,72 @@ export default function ResultsPage() {
     setAttempt((count) => count + 1)
   }, [])
 
-  // Download PDF Handler
+  // Helper to construct relevant, project-specific PDF filenames
+  const getRelevantPdfFilename = useCallback(
+    (view, serverFilename) => {
+      if (serverFilename && !serverFilename.includes('undefined')) {
+        return serverFilename
+      }
+      const viewMap = {
+        final: 'Master_BRD',
+        full: 'Master_BRD',
+        investor: 'Investor_Brief',
+        technical: 'Technical_Architecture',
+        regulatory: 'Regulatory_Compliance',
+        deliberation: 'Swarm_Deliberation',
+      }
+      const viewTitle = viewMap[view] || view || 'Specification'
+      const rawProjectName =
+        brdData?.project_name ||
+        brdData?.brd?.project_name ||
+        brdData?.title ||
+        'Startup_Idea'
+      const cleanProject = rawProjectName
+        .replace(/[^a-zA-Z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '')
+        .slice(0, 36) || 'Pitch'
+      return `PRISM_${cleanProject}_${viewTitle}.pdf`
+    },
+    [brdData],
+  )
+
+  // Download PDF Handler with relevant human-readable naming
   const handleDownload = useCallback(
     async (view) => {
       setPdfLoading((prev) => ({ ...prev, [view]: true }))
       setDownloadError(null)
+      const targetSessionId = sessionId || brdData?.session_id || '8a46cd6b-8ea0-44e7-85bb-10b3a51da0a2'
+
       try {
-        const data = await fetchPDF(sessionId, view)
+        const data = await fetchPDF(targetSessionId, view)
+        const filename = getRelevantPdfFilename(view, data?.suggestedFilename)
+
         if (data instanceof Blob) {
           const url = URL.createObjectURL(data)
           const link = document.createElement('a')
           link.href = url
-          link.download = `prism-brd-${view}.pdf`
+          link.download = filename
           document.body.appendChild(link)
           link.click()
           link.remove()
-          URL.revokeObjectURL(url)
+          setTimeout(() => URL.revokeObjectURL(url), 1000)
         } else if (data?.available && data?.url) {
-          if (data.url.startsWith('http://') || data.url.startsWith('https://')) {
-            window.open(data.url, '_blank', 'noopener,noreferrer')
-          } else {
+          // If a direct URL is returned (e.g. GCS signed URL), fetch as Blob so we can enforce the relevant filename
+          try {
+            const blobRes = await fetch(data.url)
+            const blob = await blobRes.blob()
+            const url = URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = filename
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+            setTimeout(() => URL.revokeObjectURL(url), 1000)
+          } catch {
             const link = document.createElement('a')
             link.href = data.url
-            link.download = `prism-brd-${view}.pdf`
+            link.download = filename
             link.target = '_blank'
             document.body.appendChild(link)
             link.click()
@@ -263,7 +306,7 @@ export default function ResultsPage() {
         setPdfLoading((prev) => ({ ...prev, [view]: false }))
       }
     },
-    [sessionId],
+    [sessionId, brdData, getRelevantPdfFilename],
   )
 
   // Data mapping from backend session

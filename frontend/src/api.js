@@ -78,10 +78,27 @@ export async function fetchPDF(sessionId, view = 'investor') {
     throw new Error(`Fetch PDF failed: ${res.status} ${res.statusText}`)
   }
   const contentType = res.headers.get('content-type') || ''
-  if (contentType.includes('application/pdf') || contentType.includes('octet-stream')) {
-    return await res.blob()
+  const contentDisposition = res.headers.get('content-disposition') || ''
+  let serverFilename = null
+  if (contentDisposition) {
+    const match = contentDisposition.match(/filename=["']?([^"';]+)["']?/)
+    if (match?.[1]) {
+      serverFilename = match[1].trim()
+    }
   }
-  return await res.json()
+
+  if (contentType.includes('application/pdf') || contentType.includes('octet-stream')) {
+    const blob = await res.blob()
+    if (serverFilename) {
+      blob.suggestedFilename = serverFilename
+    }
+    return blob
+  }
+  const json = await res.json()
+  if (serverFilename && json) {
+    json.suggestedFilename = serverFilename
+  }
+  return json
 }
 
 export async function fetchPresetCacheStatus() {
