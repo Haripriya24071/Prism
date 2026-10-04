@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { sanitizeVoiceInput } from '../utils/voiceSanitizer.js'
+
 export function useVoiceInput({ onTranscript, onError } = {}) {
   const [isRecording, setIsRecording] = useState(false)
   const recognitionRef = useRef(null)
@@ -79,8 +81,9 @@ export function useVoiceInput({ onTranscript, onError } = {}) {
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
           const piece = event.results[i][0].transcript.trim()
-          if (piece) {
-            newTranscript = newTranscript ? `${newTranscript} ${piece}` : piece
+          const sanitized = sanitizeVoiceInput(piece)
+          if (sanitized) {
+            newTranscript = newTranscript ? `${newTranscript} ${sanitized}` : sanitized
           }
         }
       }

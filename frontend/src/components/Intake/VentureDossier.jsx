@@ -1,77 +1,78 @@
+import { useState } from 'react'
 import './VentureDossier.css'
 
 const PARAMETER_CONFIG = [
   {
     key: 'raw_idea',
-    label: 'Core Concept & Offer',
+    label: 'Core Concept',
     icon: '💡',
-    placeholder: 'Listening for problem statement & what you are building...',
-    tag: 'Problem & Value Loop',
+    placeholder: 'Listening for problem & value proposition...',
   },
   {
     key: 'region',
-    label: 'Target Region',
+    label: 'Target Market',
     icon: '🌍',
-    placeholder: 'Where are we setting it up? E.g., India, US, UK, UAE...',
-    tag: 'Regional REST Harvesters',
+    placeholder: 'Pending region selection...',
   },
   {
     key: 'industry',
-    label: 'Industry Vertical',
+    label: 'Sector Vertical',
     icon: '🏷️',
-    placeholder: 'Fintech, Healthcare, B2B SaaS, Logistics...',
-    tag: 'Sector Intelligence',
+    placeholder: 'Pending industry classification...',
   },
   {
     key: 'stage',
     label: 'Venture Stage',
     icon: '🚀',
-    placeholder: 'Fresh new idea, working prototype, or active MVP with a team?',
-    tag: 'Execution Maturity',
+    placeholder: 'Pending maturity level...',
   },
   {
     key: 'budget_range',
-    label: 'Budget & Income Range',
+    label: 'Runway / Budget',
     icon: '💰',
-    placeholder: 'Expected revenue model, starting budget, or runway...',
-    tag: 'Unit Economics Grounding',
+    placeholder: 'Pending economic range...',
   },
   {
     key: 'success_definition',
     label: '12-Month Target',
     icon: '🎯',
-    placeholder: 'What milestone defines success for you in year one?',
-    tag: 'Success Benchmark',
+    placeholder: 'Pending key milestone...',
   },
 ]
 
 function formatRegionName(code) {
   if (!code) return null
   const map = {
-    IN: '🇮🇳 India (IN)',
-    US: '🇺🇸 United States (US)',
-    GB: '🇬🇧 United Kingdom (GB)',
-    AE: '🇦🇪 UAE (AE)',
-    SG: '🇸🇬 Singapore (SG)',
-    DE: '🇩🇪 Germany (DE)',
-    EU: '🇪🇺 European Union (EU)',
-    AU: '🇦🇺 Australia (AU)',
+    IN: '🇮🇳 India',
+    US: '🇺🇸 United States',
+    GB: '🇬🇧 United Kingdom',
+    AE: '🇦🇪 UAE',
+    SG: '🇸🇬 Singapore',
+    DE: '🇩🇪 Germany',
+    EU: '🇪🇺 European Union',
+    AU: '🇦🇺 Australia',
   }
-  return map[code.toUpperCase()] || `🌐 ${code.toUpperCase()}`
+  return map[code.toUpperCase()] || code.toUpperCase()
 }
 
 function formatStageName(stage) {
   if (!stage) return null
   const map = {
-    idea: '💡 Idea Stage (Pre-development)',
+    idea: '💡 Idea (Pre-Seed)',
     prototype: '🛠️ Working Prototype',
-    mvp: '🚀 Active MVP (Testing with users)',
-    growth: '📈 Growth & Scaling Stage',
+    mvp: '🚀 Active MVP',
+    growth: '📈 Growth & Scaling',
   }
   return map[stage.toLowerCase()] || stage
 }
 
-export default function VentureDossier({ extraction = {}, completionPct = 0, onRunSwarm, isComplete = false }) {
+export default function VentureDossier({
+  extraction = {},
+  completionPct = 0,
+  onRunSwarm,
+  isComplete = false,
+}) {
+  const [showHarvesterInfo, setShowHarvesterInfo] = useState(false)
   const fields = extraction || {}
 
   const capturedCount = PARAMETER_CONFIG.filter((param) => {
@@ -80,37 +81,62 @@ export default function VentureDossier({ extraction = {}, completionPct = 0, onR
   }).length
 
   const progress = Math.max(completionPct, Math.round((capturedCount / 6) * 100))
+  const isReady = capturedCount >= 3 || isComplete
 
   return (
-    <aside className="dossier-card" aria-label="Structured Venture Blueprint">
-      <div className="dossier-card__header">
-        <div className="flex items-center justify-between">
-          <div className="dossier-card__badge">
-            <span className="dossier-card__dot" />
-            LIVE VENTURE BLUEPRINT
+    <aside className="venture-matrix" aria-label="Live Venture Calibration Matrix">
+      {/* Matrix Header Strip */}
+      <div className="venture-matrix__header">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="venture-matrix__status-dot" aria-hidden="true" />
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-tertiary text-micro font-bold text-accent-signal uppercase tracking-wider">
+                  Live Swarm Calibration
+                </span>
+                <span className="text-content-muted text-micro">•</span>
+                <span className="font-tertiary text-micro font-semibold text-content-secondary">
+                  {capturedCount} of 6 Parameters Armed
+                </span>
+              </div>
+              <p className="font-body text-micro text-content-secondary mt-0.5">
+                Form fields lock behind the scenes as you chat or voice dictate.
+              </p>
+            </div>
           </div>
-          <span className="font-tertiary text-micro font-bold text-accent-signal uppercase tracking-wider">
-            {capturedCount} of 6 Locked
-          </span>
-        </div>
 
-        <h2 className="dossier-card__title">Structured Intake Dossier</h2>
-        <p className="dossier-card__subtitle">
-          Form fields fill behind the scenes as you chat. Zero friction, zero manual forms.
-        </p>
+          <div className="flex items-center gap-3 self-end sm:self-auto">
+            {/* Progress Meter */}
+            <div className="flex items-center gap-2">
+              <div className="venture-matrix__progress-track" aria-hidden="true">
+                <div
+                  className="venture-matrix__progress-fill"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <span className="font-tertiary text-micro font-bold text-content-primary">
+                {progress}%
+              </span>
+            </div>
 
-        {/* Dynamic Progress Bar */}
-        <div className="dossier-progress">
-          <div className="dossier-progress__bar" style={{ width: `${progress}%` }} />
-        </div>
-        <div className="flex justify-between items-center text-[11px] font-tertiary text-content-secondary mt-1">
-          <span>Swarm Readiness</span>
-          <span className="font-bold text-content-primary">{progress}% Calibrated</span>
+            {/* Run Swarm CTA button if ready */}
+            {isReady && onRunSwarm && (
+              <button
+                type="button"
+                onClick={onRunSwarm}
+                className="venture-matrix__cta-btn"
+              >
+                <span>⚡ Run Swarm</span>
+                <span>→</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Field List */}
-      <div className="dossier-list">
+      {/* 6 Responsive Parameter Matrix Cards */}
+      <div className="venture-matrix__grid">
         {PARAMETER_CONFIG.map((param) => {
           let value = fields[param.key]
           if (param.key === 'region') value = formatRegionName(value)
@@ -121,55 +147,73 @@ export default function VentureDossier({ extraction = {}, completionPct = 0, onR
           return (
             <div
               key={param.key}
-              className={`dossier-item ${isFilled ? 'dossier-item--filled' : 'dossier-item--pending'}`}
+              className={`venture-matrix__cell ${
+                isFilled ? 'venture-matrix__cell--locked' : 'venture-matrix__cell--pending'
+              }`}
             >
-              <div className="dossier-item__top">
-                <span className="dossier-item__icon">{param.icon}</span>
-                <span className="dossier-item__label">{param.label}</span>
-                <span className={`dossier-status-badge ${isFilled ? 'dossier-status-badge--locked' : 'dossier-status-badge--waiting'}`}>
-                  {isFilled ? '✓ Locked' : 'Listening...'}
-                </span>
-              </div>
-
-              <div className="dossier-item__content">
-                {isFilled ? (
-                  <p className="dossier-item__value">{String(value)}</p>
-                ) : (
-                  <p className="dossier-item__placeholder">{param.placeholder}</p>
+              <div className="venture-matrix__cell-top">
+                <div className="flex items-center gap-1.5 overflow-hidden">
+                  <span className="text-sm">{param.icon}</span>
+                  <span className="font-display text-micro font-bold text-content-primary truncate">
+                    {param.label}
+                  </span>
+                </div>
+                {isFilled && (
+                  <span className="venture-matrix__badge-locked">
+                    ✓
+                  </span>
                 )}
               </div>
 
-              {isFilled && param.key === 'region' && (
-                <div className="dossier-item__footnote">
-                  🏛️ Triggers live NewsAPI, Wikipedia Geopolitics, and Forex REST harvesters for {String(value)}
-                </div>
-              )}
+              <div className="venture-matrix__cell-body">
+                {isFilled ? (
+                  <p className="venture-matrix__value" title={String(value)}>
+                    {String(value)}
+                  </p>
+                ) : (
+                  <p className="venture-matrix__placeholder">
+                    {param.placeholder}
+                  </p>
+                )}
+              </div>
             </div>
           )
         })}
       </div>
 
-      {/* Call to action footer */}
-      <div className="dossier-footer">
-        <p className="dossier-footer__text">
-          {capturedCount >= 3 ? (
-            <span>🚀 <strong>Swarm Threshold Reached.</strong> All 6 agents are calibrated with your business context.</span>
-          ) : (
-            <span>💬 Answer the dynamic follow-up questions in chat to enrich your final BRD.</span>
-          )}
-        </p>
-
-        {capturedCount >= 3 && onRunSwarm && (
+      {/* Harvester Intel Dropdown Toggle */}
+      {fields.region && (
+        <div className="venture-matrix__harvester-bar">
           <button
             type="button"
-            onClick={onRunSwarm}
-            className={`dossier-footer__btn ${isComplete ? 'dossier-footer__btn--pulse' : ''}`}
+            onClick={() => setShowHarvesterInfo(!showHarvesterInfo)}
+            className="text-micro font-tertiary text-content-secondary hover:text-content-primary transition-colors flex items-center gap-1.5"
           >
-            <span>Run 6-Agent Swarm</span>
-            <span>→</span>
+            <span>🏛️</span>
+            <span>Regional Harvesters Active for <strong>{formatRegionName(fields.region)}</strong></span>
+            <span>{showHarvesterInfo ? '▴' : '▾'}</span>
           </button>
-        )}
-      </div>
+
+          {showHarvesterInfo && (
+            <div className="venture-matrix__harvester-details">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2 pt-2 border-t border-border-subtle text-micro font-tertiary">
+                <div>
+                  <span className="font-bold text-content-primary block">NewsAPI:</span>
+                  <span className="text-content-secondary">Harvesting local sector headlines & sentiment</span>
+                </div>
+                <div>
+                  <span className="font-bold text-content-primary block">Wikipedia:</span>
+                  <span className="text-content-secondary">Analyzing regional demographics & cultural landscape</span>
+                </div>
+                <div>
+                  <span className="font-bold text-content-primary block">Markets:</span>
+                  <span className="text-content-secondary">Tracking local FX volatility & AlphaVantage indexes</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </aside>
   )
 }

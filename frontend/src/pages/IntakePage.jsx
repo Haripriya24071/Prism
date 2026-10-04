@@ -170,33 +170,101 @@ export default function IntakePage() {
         setMessages((prev) => [...prev, assistantMsg])
       }
     } catch {
-      // Backend not running / offline: provide intelligent coordinator response
+      // Graceful resilient client-side calibration if offline or temporary network issue
       setIsBackendOnline(false)
       setTurnNumber((prev) => prev + 1)
-      setReadyToEvaluate(true)
 
-      // Fallback progressive parameter filling
       const fallbackExt = { ...extraction }
+      const lower = messageText.toLowerCase()
+
+      // 1. Raw idea
       if (!fallbackExt.raw_idea) {
         fallbackExt.raw_idea = messageText
-        setSuggestedChips(['🇮🇳 India', '🇺🇸 United States', '🇬🇧 United Kingdom', '🇦🇪 UAE'])
-      } else if (!fallbackExt.region) {
-        fallbackExt.region = messageText.includes('India') ? 'IN' : 'US'
-        setSuggestedChips(['💡 Fresh Idea', '🛠️ Prototype', '🚀 Active MVP'])
-      } else if (!fallbackExt.stage) {
-        fallbackExt.stage = 'idea'
-        setSuggestedChips(['🌱 Bootstrapped (<$15k)', '💼 Seed ($50k-$250k)', '🏢 Series A+'])
       }
-      setExtraction(fallbackExt)
-      setCompletionPct((prev) => Math.min(100, (prev || 0) + 33))
 
-      const demoReplyId = `asst-demo-${msgCounter.current++}`
-      const demoReply = {
-        id: demoReplyId,
-        role: 'assistant',
-        content: `Captured into dossier: "${messageText}".\n\nWhat is your target geographic market or jurisdiction for launch?`,
+      // 2. Region detection
+      if (!fallbackExt.region) {
+        if (lower.includes('india') || lower.includes('inr') || lower.includes('upi')) fallbackExt.region = 'IN'
+        else if (lower.includes('uk') || lower.includes('united kingdom') || lower.includes('london')) fallbackExt.region = 'GB'
+        else if (lower.includes('uae') || lower.includes('dubai')) fallbackExt.region = 'AE'
+        else if (lower.includes('us') || lower.includes('america') || lower.includes('states')) fallbackExt.region = 'US'
+        else if (fallbackExt.raw_idea && fallbackExt.raw_idea !== messageText) fallbackExt.region = 'US'
       }
-      setMessages((prev) => [...prev, demoReply])
+
+      // 3. Industry detection
+      if (!fallbackExt.industry) {
+        if (lower.includes('health') || lower.includes('med') || lower.includes('doctor')) fallbackExt.industry = 'Healthcare'
+        else if (lower.includes('fintech') || lower.includes('pay') || lower.includes('bank')) fallbackExt.industry = 'FinTech'
+        else if (lower.includes('saas') || lower.includes('software') || lower.includes('b2b')) fallbackExt.industry = 'B2B SaaS'
+        else if (lower.includes('logistics') || lower.includes('delivery') || lower.includes('fleet')) fallbackExt.industry = 'Logistics'
+        else if (fallbackExt.region) fallbackExt.industry = 'Technology & AI'
+      }
+
+      // 4. Stage detection
+      if (!fallbackExt.stage) {
+        if (lower.includes('mvp')) fallbackExt.stage = 'mvp'
+        else if (lower.includes('prototype') || lower.includes('demo')) fallbackExt.stage = 'prototype'
+        else if (lower.includes('growth') || lower.includes('scaling')) fallbackExt.stage = 'growth'
+        else if (fallbackExt.industry) fallbackExt.stage = 'idea'
+      }
+
+      // 5. Budget detection
+      if (!fallbackExt.budget_range) {
+        if (lower.includes('bootstrapp')) fallbackExt.budget_range = 'Bootstrapped (<$20k)'
+        else if (lower.includes('seed') || lower.includes('angel')) fallbackExt.budget_range = 'Seed Stage ($50k-$150k)'
+        else if (lower.includes('series') || lower.includes('funded')) fallbackExt.budget_range = 'Funded ($250k+)'
+        else if (fallbackExt.stage) fallbackExt.budget_range = 'Pre-Seed ($25k-$50k)'
+      }
+
+      // 6. Success milestone
+      if (!fallbackExt.success_definition) {
+        if (fallbackExt.budget_range) {
+          fallbackExt.success_definition = '10 committed pilot customers and positive unit economics in 12 months'
+        }
+      }
+
+      setExtraction(fallbackExt)
+
+      const lockedCount = ['raw_idea', 'region', 'industry', 'stage', 'budget_range', 'success_definition'].filter(
+        (k) => Boolean(fallbackExt[k])
+      ).length
+
+      const pct = Math.min(100, Math.round((lockedCount / 6) * 100))
+      setCompletionPct(pct)
+
+      if (lockedCount >= 3) setReadyToEvaluate(true)
+      if (lockedCount >= 6) setIsComplete(true)
+
+      let nextReply = ''
+      let nextChips = []
+      if (!fallbackExt.region) {
+        nextReply = 'Great business concept! Where are you planning to launch this first (e.g. India, US, UK, UAE)? Specifying your target region activates live local regulations, currency rates, and market feeds.'
+        nextChips = ['🇮🇳 India', '🇺🇸 United States', '🇬🇧 United Kingdom', '🇦🇪 UAE']
+      } else if (!fallbackExt.industry) {
+        nextReply = 'Understood! What industry vertical or customer segment will this primarily target?'
+        nextChips = ['🏥 Healthcare', '💳 FinTech', '🤖 B2B SaaS', '📦 Logistics']
+      } else if (!fallbackExt.stage) {
+        nextReply = 'Got it! Is this a brand-new idea starting fresh, or do you have a working prototype or team in place?'
+        nextChips = ['💡 Fresh Idea', '🛠️ Prototype', '🚀 Active MVP', '📈 Scaling']
+      } else if (!fallbackExt.budget_range) {
+        nextReply = 'What approximate starting budget or revenue model are you projecting to operate with over the first 12 months?'
+        nextChips = ['🌱 Bootstrapped (<$25k)', '💼 Seed ($50k-$150k)', '🏢 Funded ($250k+)']
+      } else if (!fallbackExt.success_definition) {
+        nextReply = 'What primary milestone defines success for this venture in year one?'
+        nextChips = ['💰 $50k ARR Revenue', '👥 1,000 Active Users', '🤝 10 Pilot Customers']
+      } else {
+        nextReply = 'All 6 venture parameters are locked in! Our 6 expert agents are standing by to stress-test your business model.'
+        nextChips = []
+      }
+
+      setSuggestedChips(nextChips)
+
+      const fallbackReply = {
+        id: `asst-fb-${msgCounter.current++}`,
+        role: 'assistant',
+        content: nextReply,
+      }
+      setMessages((prev) => [...prev, fallbackReply])
     } finally {
       setIsSending(false)
     }
@@ -550,9 +618,16 @@ export default function IntakePage() {
                 </div>
               )}
 
-              {/* 2-Column Responsive Workspace: ChatBox + Venture Blueprint */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div className="lg:col-span-7 flex flex-col gap-4">
+              {/* Integrated Workspace: Live Swarm Calibration Matrix + Full-Comfort ChatBox */}
+              <div className="flex flex-col gap-5">
+                <VentureDossier
+                  extraction={extraction}
+                  completionPct={completionPct}
+                  onRunSwarm={readyToEvaluate ? handleStartGeneration : undefined}
+                  isComplete={isComplete || Object.values(extraction || {}).filter(Boolean).length >= 6}
+                />
+
+                <div className="w-full">
                   <ChatBox
                     messages={messages}
                     onSend={handleSend}
@@ -560,15 +635,6 @@ export default function IntakePage() {
                     disabled={isSending}
                     uploadError={uploadError}
                     suggestedChips={suggestedChips}
-                  />
-                </div>
-
-                <div className="lg:col-span-5 sticky top-24">
-                  <VentureDossier
-                    extraction={extraction}
-                    completionPct={completionPct}
-                    onRunSwarm={readyToEvaluate ? handleStartGeneration : undefined}
-                    isComplete={isComplete || Object.values(extraction || {}).filter(Boolean).length >= 6}
                   />
                 </div>
               </div>

@@ -22,7 +22,7 @@ else:
 
 logger = structlog.get_logger()
 
-_MAX_TURNS = 10
+_MAX_TURNS = 30
 _MAX_MSG_LEN = 2000
 
 _INTAKE_SYSTEM_PROMPT = """You are PRISM's venture intake specialist and AI co-founder. Your job is to extract business parameters through a warm, concise conversation.
@@ -302,8 +302,7 @@ async def run_conversation_turn(
     benchmarks when the user expresses uncertainty or says 'I don't know'.
     """
     if len(history) >= _MAX_TURNS:
-        logger.warning("conversation_max_turns_reached", session_id=session_id)
-        raise IntakeError("Maximum conversation length reached. Please submit your idea for processing.")
+        logger.info("conversation_max_turns_graceful_completion", session_id=session_id)
 
     clean_message = _sanitise_message(message)
     if not clean_message:

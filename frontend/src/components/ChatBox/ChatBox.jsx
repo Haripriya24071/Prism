@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { VoiceButton } from './VoiceButton.jsx'
 import { useVoiceInput } from '../../hooks/useVoiceInput.js'
+import { sanitizeVoiceInput, formatCapitalizationAndPunctuation } from '../../utils/voiceSanitizer.js'
 import './ChatBox.css'
 
 export { VoiceButton }
@@ -48,14 +49,37 @@ export default function ChatBox({
 }) {
   const [draft, setDraft] = useState('')
   const fileInputRef = useRef(null)
+  const textareaRef = useRef(null)
   const logEndRef = useRef(null)
   const textareaId = 'chatbox-input'
   const canSend = draft.trim() !== '' && !disabled
 
+  // Dynamically auto-expand textarea height up to 240px as user types or dictates
+  const adjustHeight = useCallback(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    const newHeight = Math.min(el.scrollHeight, 240)
+    el.style.height = `${Math.max(48, newHeight)}px`
+  }, [])
+
+  useEffect(() => {
+    adjustHeight()
+  }, [draft, adjustHeight])
+
   const appendTranscript = useCallback((text) => {
     setDraft((current) => {
+      const sanitized = sanitizeVoiceInput(text)
+      if (!sanitized) return current
       const trimmed = current.trim()
-      return trimmed === '' ? text : `${trimmed} ${text}`
+      const merged = trimmed === '' ? sanitized : `${trimmed} ${sanitized}`
+      return formatCapitalizationAndPunctuation(merged)
+    })
+  }, [])
+
+  const handlePolishDraft = useCallback(() => {
+    setDraft((current) => {
+      return sanitizeVoiceInput(current)
     })
   }, [])
 
@@ -87,6 +111,9 @@ export default function ChatBox({
     }
     onSend(draft.trim())
     setDraft('')
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '48px'
+    }
   }
 
   function handleKeyDown(event) {
@@ -133,7 +160,7 @@ export default function ChatBox({
       {/* Suggested Quick Reply Chips */}
       {suggestedChips && suggestedChips.length > 0 && !disabled && (
         <div className="chatbox__chips-row">
-          <span className="chatbox__chips-label">Quick reply suggestions:</span>
+          <span className="chatbox__chips-label">Quick suggestions:</span>
           <div className="chatbox__chips-list">
             {suggestedChips.map((chip, idx) => (
               <button
@@ -149,18 +176,42 @@ export default function ChatBox({
         </div>
       )}
 
-      {/* Active Voice Chat Continuous Banner */}
-      {isRecording && (
-        <div className="chatbox__voice-active-banner">
-          <div className="flex items-center gap-2">
-            <span className="chatbox__voice-live-dot" />
-            <span className="font-tertiary text-micro font-bold text-accent-signal uppercase tracking-wider">
-              Voice Chat Active — Listening Continuously
-            </span>
-          </div>
-          <span className="font-body text-micro text-content-secondary hidden sm:inline">
-            Speak freely (no timeout) • Click mic or Send to finish
-          </span>
+      {/* Claude-style Minimal Voice Indicator & Auto-Polish Bar */}
+      {(isRecording || draft.trim().length > 25) && (
+        <div className="chatbox__meta-strip">
+          {isRecording ? (
+            <div className="chatbox__voice-inline-badge">
+              <div className="chatbox__waveform" aria-hidden="true">
+                <span className="wave-bar wave-bar--1" />
+                <span className="wave-bar wave-bar--2" />
+                <span className="wave-bar wave-bar--3" />
+                <span className="wave-bar wave-bar--4" />
+                <span className="wave-bar wave-bar--5" />
+              </div>
+              <span className="font-tertiary text-micro font-bold text-accent-signal">
+                Listening continuously...
+              </span>
+              <button
+                type="button"
+                onClick={stopRecording}
+                className="chatbox__voice-stop-pill"
+              >
+                Turn off mic
+              </button>
+            </div>
+          ) : <div />}
+
+          {draft.trim().length > 15 && (
+            <button
+              type="button"
+              onClick={handlePolishDraft}
+              className="chatbox__polish-btn"
+              title="Filter filler sounds, format punctuation and capitalize acronyms"
+            >
+              <span>✨</span>
+              <span>Auto-Polish Voice Pitch</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -170,9 +221,10 @@ export default function ChatBox({
             Describe your business idea or answer follow-up
           </label>
           <textarea
+            ref={textareaRef}
             id={textareaId}
             className="chatbox__textarea"
-            rows={2}
+            rows={1}
             value={draft}
             disabled={disabled}
             onChange={(event) => setDraft(event.target.value)}
