@@ -2,9 +2,14 @@
 
 import asyncio
 from typing import Literal
-from backend.gcp.storage import write_pdf
-from backend.models.brd import MergedBRD
-from backend.output.pdf_export import generate_pdf
+try:
+    from backend.gcp.storage import write_pdf
+    from backend.models.brd import MergedBRD
+    from backend.output.pdf_export import generate_pdf
+except ImportError:
+    from gcp.storage import write_pdf
+    from models.brd import MergedBRD
+    from output.pdf_export import generate_pdf
 
 
 async def export_all_stakeholder_pdfs(merged_brd: MergedBRD, session_id: str) -> dict[str, str]:

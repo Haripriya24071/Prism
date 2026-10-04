@@ -165,11 +165,13 @@ async def _safe_write_gcs(session_id: str, filename: str, data: dict) -> None:
 
         await storage_mod.write_json(session_id=session_id, filename=filename, data=data)
     except Exception as e:
+        detail = getattr(e, "detail", str(e))
         logger.warning(
             "gcs_write_failed",
             session_id=session_id,
             filename=filename,
             error_type=type(e).__name__,
+            detail=detail,
         )
 
 

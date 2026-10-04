@@ -4,9 +4,14 @@ import asyncio
 import json
 import logging
 from typing import Optional
-from backend.config import get_flash_model, settings
-from backend.models.brd import AssumptionFlag, MergedBRD
-from backend.models.context import ContextPackage
+try:
+    from backend.config import get_flash_model, settings
+    from backend.models.brd import AssumptionFlag, MergedBRD
+    from backend.models.context import ContextPackage
+except ImportError:
+    from config import get_flash_model, settings
+    from models.brd import AssumptionFlag, MergedBRD
+    from models.context import ContextPackage
 
 logger = logging.getLogger(__name__)
 

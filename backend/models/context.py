@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 
@@ -33,4 +33,4 @@ class ContextPackage(BaseModel):
     forex_data: dict = Field(default_factory=dict)
     source_urls: list[str] = Field(default_factory=list)
     failed_sources: list[str] = Field(default_factory=list, description="Sources that errored — partial failure allowed")
-    harvested_at: datetime = Field(default_factory=datetime.utcnow)
+    harvested_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
