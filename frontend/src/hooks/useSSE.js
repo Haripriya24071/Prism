@@ -103,13 +103,15 @@ export function useSSE(sessionId) {
 
     // Final BRD Ready event
     source.addEventListener('brd_ready', (event) => {
+      finished = true
       try {
         const payload = JSON.parse(event.data)
-        setBrdData(payload)
+        if (payload && Array.isArray(payload.sections) && payload.sections.length > 0) {
+          setBrdData(payload)
+        }
       } catch {
         // parse error ignored
       }
-      finished = true
       setStageMessage('BRD and Investor Readiness Score locked! Launching Results...')
       setProgressPct(100)
       setStatus(SESSION_STATUS.COMPLETE)
@@ -119,10 +121,14 @@ export function useSSE(sessionId) {
     source.addEventListener('error', (event) => {
       if (finished) return
       try {
-        const payload = JSON.parse(event.data)
-        if (payload?.message) {
-          failSession(payload.message)
-          return
+        if (event.data) {
+          const payload = JSON.parse(event.data)
+          if (payload?.message) {
+            finished = true
+            source.close()
+            failSession(payload.message)
+            return
+          }
         }
       } catch {
         // ignore
@@ -134,6 +140,45 @@ export function useSSE(sessionId) {
       finished = true
       source.close()
     })
+
+    // Fallback message handler for SSE streams without explicit event names
+    source.onmessage = (event) => {
+      try {
+        const payload = JSON.parse(event.data)
+        const eventType = payload?.event
+        const data = payload?.data || payload
+
+        if (eventType === 'done') {
+          finished = true
+          source.close()
+          return
+        }
+        if (eventType === 'brd_ready') {
+          finished = true
+          if (data && Array.isArray(data.sections) && data.sections.length > 0) {
+            setBrdData(data)
+          }
+          setStageMessage('BRD and Investor Readiness Score locked! Launching Results...')
+          setProgressPct(100)
+          setStatus(SESSION_STATUS.COMPLETE)
+          return
+        }
+        if (eventType === 'error') {
+          finished = true
+          source.close()
+          failSession(data?.message || 'Pipeline generation failed.')
+          return
+        }
+        if (eventType === 'agent_status' && data?.agent && data?.status) {
+          setAgentStatus(data.agent, data.status)
+        }
+        if (typeof data?.progress_pct === 'number') {
+          setProgressPct((prev) => Math.max(prev, data.progress_pct))
+        }
+      } catch {
+        // ignore
+      }
+    }
 
     source.onerror = () => {
       source.close()

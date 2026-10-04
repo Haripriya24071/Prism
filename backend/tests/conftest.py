@@ -1,7 +1,7 @@
 import os
 import sys
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Generator
 import pytest
 
@@ -41,7 +41,7 @@ def sample_intake(sample_extraction: IntakeExtraction) -> IntakePackage:
             {"role": "model", "content": "What region will you launch in?"},
             {"role": "user",  "content": "India"},
         ],
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
 
 # ── Context fixtures ──────────────────────────────────────────────────
@@ -86,7 +86,7 @@ def sample_agent_output_vc() -> AgentOutput:
             "Go-To-Market Strategy": "Target CA firms first. Partner with tally [SOURCE: founder].",
         },
         raw_text="raw vc response",
-        completed_at=datetime.utcnow(),
+        completed_at=datetime.now(timezone.utc),
         duration_ms=8200,
         failed=False,
     )
@@ -104,7 +104,7 @@ def sample_agent_output_adversarial() -> AgentOutput:
             "Go-To-Market Strategy": "No differentiated GTM [SOURCE: founder].",
         },
         raw_text="raw adversarial response",
-        completed_at=datetime.utcnow(),
+        completed_at=datetime.now(timezone.utc),
         duration_ms=7800,
         failed=False,
     )
@@ -125,7 +125,7 @@ def all_agent_outputs(sample_agent_output_vc: AgentOutput, sample_agent_output_a
                 "Go-To-Market Strategy": f"{persona.value} GTM [SOURCE: founder].",
             },
             raw_text=f"raw {persona.value} response",
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             duration_ms=7500,
             failed=False,
         ))
