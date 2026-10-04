@@ -70,13 +70,20 @@ async def event_generator(session_id: str) -> AsyncGenerator[str, None]:
                 )
             except asyncio.TimeoutError:
                 logger.warning("sse_stream_timeout", session_id=session_id)
-                yield f"data: {json.dumps({'event': 'timeout', 'session_id': session_id})}\n\n"
+                yield f"event: timeout\ndata: {json.dumps({'event': 'timeout', 'session_id': session_id})}\n\n"
                 break
 
             if item is _STREAM_DONE:
-                yield f"data: {json.dumps({'event': 'done', 'session_id': session_id})}\n\n"
+                yield f"event: done\ndata: {json.dumps({'event': 'done', 'session_id': session_id})}\n\n"
                 break
 
-            yield f"data: {json.dumps(item)}\n\n"
+            event_name = item.get("event", "message")
+            raw_data = item.get("data", {})
+            if isinstance(raw_data, dict):
+                data_dict = {**raw_data, "event": event_name}
+            else:
+                data_dict = {"event": event_name, "data": raw_data}
+
+            yield f"event: {event_name}\ndata: {json.dumps(data_dict)}\n\n"
     finally:
         cleanup_queue(session_id)
