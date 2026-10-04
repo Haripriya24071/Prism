@@ -4,6 +4,9 @@ import asyncio
 import io
 import re
 from typing import Any, Literal
+from reportlab.graphics.charts.barcharts import HorizontalBarChart
+from reportlab.graphics.charts.spider import SpiderChart
+from reportlab.graphics.shapes import Circle, Drawing, Group, Line, Polygon, Rect, String
 from reportlab.lib.colors import HexColor
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
@@ -11,6 +14,7 @@ from reportlab.pdfgen import canvas
 from reportlab.platypus import (
     HRFlowable,
     KeepTogether,
+    PageBreak,
     Paragraph,
     SimpleDocTemplate,
     Spacer,
@@ -21,6 +25,7 @@ try:
     from backend.models.brd import MergedBRD
 except ImportError:
     from models.brd import MergedBRD
+
 
 
 class NumberedCanvas(canvas.Canvas):
@@ -164,6 +169,181 @@ def _extract_requirements_from_sections(sections: list) -> list[dict[str, str]]:
             break
 
     return reqs
+
+
+def _create_readiness_meter_infographic(score: int, confidence_band: str, primary_color: HexColor) -> Drawing:
+    """Visual horizontal readiness meter infographic comparing the venture against fundability zones."""
+    d = Drawing(540, 48)
+    d.add(Rect(0, 0, 540, 48, rx=4, ry=4, fillColor=HexColor("#F8FAFC"), strokeColor=HexColor("#CBD5E1"), strokeWidth=0.5))
+
+    bar_y = 15
+    bar_h = 10
+    bar_w = 480
+    bar_x = 30
+    z1_w = bar_w * 0.49
+    z2_w = bar_w * 0.20
+    z3_w = bar_w * 0.31
+
+    # Color zones
+    d.add(Rect(bar_x, bar_y, z1_w, bar_h, rx=2, ry=2, fillColor=HexColor("#FEE2E2"), strokeColor=None))
+    d.add(Rect(bar_x + z1_w, bar_y, z2_w, bar_h, fillColor=HexColor("#FEF3C7"), strokeColor=None))
+    d.add(Rect(bar_x + z1_w + z2_w, bar_y, z3_w, bar_h, rx=2, ry=2, fillColor=HexColor("#DCFCE7"), strokeColor=None))
+
+    # Pointer marker
+    clamped_score = max(0, min(100, score))
+    marker_x = bar_x + (bar_w * (clamped_score / 100))
+    d.add(Polygon([marker_x - 5, bar_y + bar_h + 7, marker_x + 5, bar_y + bar_h + 7, marker_x, bar_y + bar_h + 1], fillColor=HexColor("#0F172A"), strokeColor=None))
+    d.add(Line(marker_x, bar_y - 2, marker_x, bar_y + bar_h + 1, strokeColor=HexColor("#0F172A"), strokeWidth=1.5))
+
+    # Labels
+    d.add(String(bar_x, bar_y + bar_h + 9, "INVESTOR READINESS & CONVICTION METER", fontName="Helvetica-Bold", fontSize=7, fillColor=HexColor("#475569")))
+    d.add(String(marker_x, bar_y + bar_h + 10, f"{clamped_score}/100 ({confidence_band})", textAnchor="middle", fontName="Helvetica-Bold", fontSize=7.5, fillColor=HexColor("#0F172A")))
+    d.add(String(bar_x + 2, bar_y - 8, "PIVOT MANDATE (0-49)", fontName="Helvetica-Bold", fontSize=6, fillColor=HexColor("#DC2626")))
+    d.add(String(bar_x + z1_w + 4, bar_y - 8, "VALIDATION SPRINT (50-69)", fontName="Helvetica-Bold", fontSize=6, fillColor=HexColor("#D97706")))
+    d.add(String(bar_x + z1_w + z2_w + 4, bar_y - 8, "INSTITUTIONAL GRADE (70-100)", fontName="Helvetica-Bold", fontSize=6, fillColor=HexColor("#16A34A")))
+    return d
+
+
+def _create_feasibility_radar_drawing(scores_dict: dict[str, int], primary_color: HexColor) -> Drawing:
+    """Multi-axis spider / radar chart comparing the venture against the 70pt fundability threshold."""
+    d = Drawing(265, 175)
+    d.add(Rect(0, 0, 265, 175, rx=4, ry=4, fillColor=HexColor("#F8FAFC"), strokeColor=HexColor("#CBD5E1"), strokeWidth=0.5))
+    d.add(String(12, 160, "MULTI-AXIS READINESS RADAR", fontName="Helvetica-Bold", fontSize=8, fillColor=HexColor("#1E293B")))
+    d.add(String(12, 148, "Venture Footprint vs. 70pt Fundability Benchmark", fontName="Helvetica", fontSize=6.5, fillColor=HexColor("#64748B")))
+
+    sc = SpiderChart()
+    sc.x = 42
+    sc.y = 12
+    sc.width = 115
+    sc.height = 115
+    sc.data = [[
+        scores_dict.get("vc", 70),
+        scores_dict.get("cto", 70),
+        scores_dict.get("regulator", 70),
+        scores_dict.get("ux", 70),
+        scores_dict.get("lean", 70),
+        scores_dict.get("adversarial", 70),
+    ], [70, 70, 70, 70, 70, 70]]
+    sc.labels = ["Market", "Tech", "Regulator", "UX", "Velocity", "Defense"]
+    sc.spokeLabels.fontSize = 6.5
+    sc.spokeLabels.fontName = "Helvetica-Bold"
+    sc.strands[0].strokeColor = primary_color
+    sc.strands[0].fillColor = HexColor("#DBEAFE")
+    sc.strands[0].strokeWidth = 1.5
+    sc.strands[1].strokeColor = HexColor("#94A3B8")
+    sc.strands[1].strokeDashArray = [2, 2]
+    sc.strands[1].fillColor = None
+    for i in range(len(sc.labels)):
+        sc.spokes[i].strokeColor = HexColor("#CBD5E1")
+        sc.spokes[i].strokeWidth = 0.5
+    d.add(sc)
+
+    # Legend
+    d.add(Rect(185, 154, 10, 5, fillColor=sc.strands[0].fillColor, strokeColor=primary_color, strokeWidth=1))
+    d.add(String(200, 154, "Venture", fontName="Helvetica", fontSize=6, fillColor=HexColor("#334155")))
+    d.add(Line(185, 145, 195, 145, strokeColor=HexColor("#94A3B8"), strokeWidth=1, strokeDashArray=[2, 2]))
+    d.add(String(200, 143, "70pt Baseline", fontName="Helvetica", fontSize=6, fillColor=HexColor("#64748B")))
+    return d
+
+
+def _create_swarm_alignment_barchart(scores_dict: dict[str, int], primary_color: HexColor) -> Drawing:
+    """Horizontal bar chart rendering individual agent conviction and stance ratings."""
+    d = Drawing(265, 175)
+    d.add(Rect(0, 0, 265, 175, rx=4, ry=4, fillColor=HexColor("#F8FAFC"), strokeColor=HexColor("#CBD5E1"), strokeWidth=0.5))
+    d.add(String(12, 160, "SWARM AGENT ALIGNMENT & STANCE", fontName="Helvetica-Bold", fontSize=8, fillColor=HexColor("#1E293B")))
+    d.add(String(12, 148, "Autonomous Persona Confidence Ratings (0-100%)", fontName="Helvetica", fontSize=6.5, fillColor=HexColor("#64748B")))
+
+    bc = HorizontalBarChart()
+    bc.x = 68
+    bc.y = 18
+    bc.height = 115
+    bc.width = 165
+    cat_names = ["Red Team", "Regulator", "UX", "CTO", "Lean", "VC"]
+    cat_scores = [
+        scores_dict.get("adversarial", 70),
+        scores_dict.get("regulator", 70),
+        scores_dict.get("ux", 70),
+        scores_dict.get("cto", 70),
+        scores_dict.get("lean", 70),
+        scores_dict.get("vc", 70),
+    ]
+    bc.data = [cat_scores]
+    bc.categoryAxis.categoryNames = cat_names
+    bc.categoryAxis.labels.fontSize = 7
+    bc.categoryAxis.labels.fontName = "Helvetica-Bold"
+    bc.categoryAxis.labels.fillColor = HexColor("#334155")
+    bc.categoryAxis.labels.boxAnchor = "e"
+    bc.categoryAxis.labels.dx = -5
+    bc.valueAxis.valueMin = 0
+    bc.valueAxis.valueMax = 100
+    bc.valueAxis.valueStep = 25
+    bc.valueAxis.labels.fontSize = 6.5
+    bc.valueAxis.labels.fillColor = HexColor("#64748B")
+    bc.barLabelFormat = "%d%%"
+    bc.barLabels.fontSize = 6.5
+    bc.barLabels.fontName = "Helvetica-Bold"
+
+    for i, s in enumerate(cat_scores):
+        col = HexColor("#059669") if s >= 70 else (HexColor("#D97706") if s >= 50 else HexColor("#DC2626"))
+        bc.bars[(0, i)].fillColor = col
+        bc.bars[(0, i)].strokeColor = None
+    d.add(bc)
+    return d
+
+
+def _create_risk_distribution_infographic(high_count: int, med_count: int, low_count: int) -> Drawing:
+    """Visual 3-tile KPI metric row and segmented severity ratio distribution bar."""
+    d = Drawing(540, 54)
+    total = max(1, high_count + med_count + low_count)
+    w_card = 172
+    gap = 12
+    cards = [
+        ("CRITICAL BLOCKERS", str(high_count), "P0 Statutory / Security Red Flags", HexColor("#DC2626"), HexColor("#FEF2F2"), HexColor("#FECACA")),
+        ("OPERATIONAL HYPOTHESES", str(med_count), "Sprint Validation Requisites", HexColor("#D97706"), HexColor("#FFFBEB"), HexColor("#FDE68A")),
+        ("DEFENDED CAPABILITIES", str(low_count), "Verified Domain Safeguards", HexColor("#16A34A"), HexColor("#F0FDF4"), HexColor("#BBF7D0")),
+    ]
+    for idx, (title, num, desc, text_col, bg_col, b_col) in enumerate(cards):
+        x = idx * (w_card + gap)
+        d.add(Rect(x, 14, w_card, 40, rx=4, ry=4, fillColor=bg_col, strokeColor=b_col, strokeWidth=0.75))
+        d.add(String(x + 10, 40, title, fontName="Helvetica-Bold", fontSize=6.5, fillColor=text_col))
+        d.add(String(x + 10, 23, num, fontName="Helvetica-Bold", fontSize=13, fillColor=text_col))
+        d.add(String(x + 36, 25, desc, fontName="Helvetica", fontSize=6.5, fillColor=HexColor("#475569")))
+
+    bar_y = 0
+    bar_h = 7
+    h_w = 540 * (high_count / total)
+    m_w = 540 * (med_count / total)
+    l_w = 540 - h_w - m_w
+    if h_w > 0:
+        d.add(Rect(0, bar_y, h_w, bar_h, rx=2, ry=2, fillColor=HexColor("#EF4444"), strokeColor=None))
+    if m_w > 0:
+        d.add(Rect(h_w, bar_y, m_w, bar_h, fillColor=HexColor("#F59E0B"), strokeColor=None))
+    if l_w > 0:
+        d.add(Rect(h_w + m_w, bar_y, l_w, bar_h, rx=2, ry=2, fillColor=HexColor("#10B981"), strokeColor=None))
+    return d
+
+
+def _create_roadmap_infographic(project_name: str, tech_sub: str, reg_sub: str, primary_color: HexColor) -> Drawing:
+    """3-phase visual horizontal implementation roadmap with milestone markers."""
+    d = Drawing(540, 66)
+    phases = [
+        ("PHASE 1 (0-30 DAYS)", "Statutory Bounds & Sandbox", reg_sub[:38] if reg_sub else "Dual-regulatory sandbox filing", HexColor("#1E3A8A"), HexColor("#DBEAFE")),
+        ("PHASE 2 (30-90 DAYS)", "Targeted MVP & Integration", tech_sub[:38] if tech_sub else "Deploy first enterprise workflow pilots", HexColor("#0F766E"), HexColor("#CCFBF1")),
+        ("PHASE 3 (90-180 DAYS)", "Scale & Liquidity Expansion", "Automated compliance mapping at scale", HexColor("#374151"), HexColor("#F3F4F6")),
+    ]
+    w = 172
+    gap = 12
+    for idx, (p_title, p_sub, p_detail, b_color, bg_color) in enumerate(phases):
+        x = idx * (w + gap)
+        d.add(Rect(x, 0, w, 64, rx=5, ry=5, fillColor=bg_color, strokeColor=b_color, strokeWidth=1))
+        d.add(Rect(x, 46, w, 18, rx=4, ry=4, fillColor=b_color, strokeColor=None))
+        d.add(String(x + w / 2, 51, p_title, textAnchor="middle", fontName="Helvetica-Bold", fontSize=7, fillColor=HexColor("#FFFFFF")))
+        d.add(String(x + 8, 32, p_sub, fontName="Helvetica-Bold", fontSize=7.5, fillColor=HexColor("#0F172A")))
+        d.add(String(x + 8, 17, p_detail, fontName="Helvetica", fontSize=6.5, fillColor=HexColor("#475569")))
+        if idx < 2:
+            arr_x = x + w + 2
+            d.add(Polygon([arr_x, 32, arr_x + 8, 32, arr_x + 4, 36], fillColor=HexColor("#94A3B8"), strokeColor=None))
+    return d
 
 
 def _sync_generate_pdf(
@@ -351,6 +531,10 @@ def _sync_generate_pdf(
     story.append(Paragraph(f"{view_doc_title} — Multi-Agent Feasibility Synthesis", subtitle_style))
     story.append(HRFlowable(width="100%", thickness=2, color=primary_color, spaceBefore=2, spaceAfter=8))
 
+    # Readiness Meter Infographic
+    story.append(_create_readiness_meter_infographic(score, confidence_band, primary_color))
+    story.append(Spacer(1, 8))
+
     # ── 2. Executive Metadata Matrix ──────────────────────────────────────────
     # Collect real citation sources across sections
     citations = []
@@ -458,7 +642,30 @@ def _sync_generate_pdf(
     story.append(Spacer(1, 10))
 
     # ── 4. 5-Axis Institutional Scorecard Table ───────────────────────────────
-    story.append(Paragraph("Institutional Rubric Evaluation & Persona Scores", h1_style))
+    story.append(PageBreak())
+    story.append(Paragraph("Institutional Rubric Evaluation & Persona Stances", h1_style))
+
+    # Analytical Visual Infographics Grid: Multi-Axis Radar + Swarm Alignment Bar Chart
+    scores_dict = {
+        "vc": int(vc_info.get("score") or score),
+        "cto": int(cto_info.get("score") or score),
+        "regulator": int(reg_info.get("score") or score),
+        "ux": int(ux_info.get("score") or score),
+        "lean": int(lean_info.get("score") or score),
+        "adversarial": int(adv_info.get("score") or score),
+    }
+    radar_chart = _create_feasibility_radar_drawing(scores_dict, primary_color)
+    swarm_barchart = _create_swarm_alignment_barchart(scores_dict, primary_color)
+    chart_grid = Table([[radar_chart, swarm_barchart]], colWidths=[270, 270])
+    chart_grid.setStyle(TableStyle([
+        ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 0),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
+    ]))
+    story.append(chart_grid)
+    story.append(Spacer(1, 8))
+
     scorecard_data = [
         [
             Paragraph("Rubric Dimension", table_header_style),
@@ -547,6 +754,7 @@ def _sync_generate_pdf(
     story.append(Spacer(1, 10))
 
     # ── 6. Full Authoritative BRD Specification Sections ─────────────────────
+    story.append(PageBreak())
     story.append(Paragraph("Authoritative Business Requirements Specification", h1_style))
     story.append(Paragraph(
         "Synthesized by PRISM Autonomous Consensus Engine with empirical citations and adversarial balance.",
@@ -665,6 +873,14 @@ def _sync_generate_pdf(
         if derived_assumptions:
             story.append(Spacer(1, 6))
             story.append(Paragraph("Risk Register & Operational Hypotheses", h1_style))
+
+            # Risk Distribution Infographic
+            h_count = sum(1 for a in derived_assumptions if a.get("risk", "") == "HIGH")
+            m_count = sum(1 for a in derived_assumptions if a.get("risk", "") == "MEDIUM")
+            l_count = max(1, 6 - (h_count + m_count))
+            story.append(_create_risk_distribution_infographic(h_count, m_count, l_count))
+            story.append(Spacer(1, 8))
+
             asm_table_data = [
                 [
                     Paragraph("Risk", table_header_style),
@@ -697,6 +913,14 @@ def _sync_generate_pdf(
     else:
         story.append(Spacer(1, 6))
         story.append(Paragraph("Risk Register & Operational Hypotheses", h1_style))
+
+        # Risk Distribution Infographic
+        h_count = sum(1 for a in assumptions if (getattr(a, "confidence", "") or "").upper() == "HIGH")
+        m_count = sum(1 for a in assumptions if (getattr(a, "confidence", "") or "").upper() in ["MEDIUM", "MED"])
+        l_count = max(1, len(assumptions) + 2 - (h_count + m_count))
+        story.append(_create_risk_distribution_infographic(h_count, m_count, l_count))
+        story.append(Spacer(1, 8))
+
         asm_table_data = [
             [
                 Paragraph("Risk", table_header_style),
@@ -744,6 +968,19 @@ def _sync_generate_pdf(
             ]
             story.append(KeepTogether(pivot_flow))
         story.append(Spacer(1, 6))
+
+    # ── 9b. Strategic Implementation Roadmap (Phases 1-3) ───────────────────
+    story.append(Spacer(1, 6))
+    story.append(Paragraph("Strategic Implementation Roadmap & Milestone Cadence", h1_style))
+    story.append(Paragraph(
+        "Autonomous multi-stage execution framework reconciling statutory compliance, pilot MVP deployment, and enterprise scale.",
+        body_style,
+    ))
+    story.append(Spacer(1, 3))
+    tech_highlight = cto_info.get("analysis", "")[:60]
+    reg_highlight = reg_info.get("analysis", "")[:60]
+    story.append(_create_roadmap_infographic(project_name, tech_highlight, reg_highlight, primary_color))
+    story.append(Spacer(1, 10))
 
     # ── 10. Document Sign-Off & Provenance Box ────────────────────────────────
     story.append(Spacer(1, 8))
