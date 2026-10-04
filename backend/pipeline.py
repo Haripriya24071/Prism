@@ -221,7 +221,8 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
             heatmap=heatmap.model_dump(mode="json"),
             pivots=[p.model_dump(mode="json") for p in (pivots or [])],
             investor_score=investor_score.model_dump(mode="json"),
-            context=context_package.model_dump(mode="json") if context_package else None,
+            context=context.model_dump(mode="json") if context else None,
+            context_package=context.model_dump(mode="json") if context else None,
         )
         set_session_status(session_id, "complete")
 
@@ -236,6 +237,7 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
             )
         )
 
+        brd_dict = merged_brd.model_dump(mode="json")
         await publish(
             session_id,
             "brd_ready",
@@ -243,7 +245,11 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
                 "status": "complete",
                 "investor_score": investor_score.score,
                 "confidence_band": investor_score.confidence_band,
-                "sections": len(merged_brd.sections),
+                "sections_count": len(merged_brd.sections),
+                "sections": brd_dict.get("sections", []),
+                "brd": brd_dict,
+                "heatmap": heatmap.model_dump(mode="json"),
+                "pivots": [p.model_dump(mode="json") for p in (pivots or [])],
             },
             progress_pct=100,
         )
@@ -257,8 +263,14 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
         )
 
     except Exception as e:
-        logger.error("pipeline_unhandled_error", session_id=session_id, error_type=type(e).__name__)
+        logger.error(
+            "pipeline_unhandled_error",
+            session_id=session_id,
+            error_type=type(e).__name__,
+            error=str(e),
+            exc_info=True,
+        )
         set_session_status(session_id, "error")
-        update_session(session_id, error="Pipeline failed unexpectedly")
-        await publish(session_id, "error", {"status": "error", "message": "Pipeline failed"}, progress_pct=0)
+        update_session(session_id, error=f"Pipeline failed: {e}")
+        await publish(session_id, "error", {"status": "error", "message": f"Pipeline failed: {e}"}, progress_pct=0)
         await publish_done(session_id)
