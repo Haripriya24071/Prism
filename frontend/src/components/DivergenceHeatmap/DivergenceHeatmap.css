@@ -99,3 +99,23 @@
     transition: none;
   }
 }
+
+.heatmap__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heatmap__row--active {
+  background-color: var(--color-surface-raised);
+  border-color: var(--color-border);
+}
+
+.heatmap__battleground {
+  margin: 0 var(--space-2) var(--space-2);
+  padding: var(--space-3);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 2px 2px 0px var(--color-border-subtle);
+}

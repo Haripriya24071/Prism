@@ -4,7 +4,7 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 from typing import TYPE_CHECKING
-from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -112,6 +112,7 @@ def _not_implemented():
 
 
 @app.get("/health")
+@app.get("/api/health")
 async def health():
     return {"status": "ok", "version": "0.1.0"}
 
@@ -306,12 +307,15 @@ async def get_brd(session_id: str) -> dict:
         "status": "complete",
         "brd": session.get("brd"),
         "investor_readiness_score": session.get("score"),
-        "context": session.get("context_package"),
+        "heatmap": session.get("heatmap"),
+        "pivots": session.get("pivots", []),
+        "investor_score": session.get("investor_score"),
+        "context": session.get("context") or session.get("context_package"),
     }
 
 
 @app.get("/brd/{session_id}/pdf")
-async def get_pdf(session_id: str, view: str = "investor") -> dict:
+async def get_pdf(session_id: str, view: str = "investor", format: str = "binary"):
     session = store_get_session(session_id)
     if session is None:
         raise SessionNotFoundError(session_id)
@@ -322,9 +326,57 @@ async def get_pdf(session_id: str, view: str = "investor") -> dict:
     pdf_urls = session.get("pdf_urls", {})
     url = pdf_urls.get(view)
 
-    return {
-        "session_id": session_id,
-        "view": view,
-        "url": url,
-        "available": url is not None,
-    }
+    # If JSON explicitly requested and a public HTTP(S) URL is available
+    if format == "json" and url and (url.startswith("http://") or url.startswith("https://")):
+        return {
+            "session_id": session_id,
+            "view": view,
+            "url": url,
+            "available": True,
+        }
+
+    brd_data = session.get("brd")
+    if not brd_data:
+        return {
+            "session_id": session_id,
+            "view": view,
+            "url": None,
+            "available": False,
+            "message": "BRD has not been generated for this session yet",
+        }
+
+    try:
+        from backend.models.brd import MergedBRD
+        from backend.output.pdf_export import generate_pdf
+    except ImportError:
+        from models.brd import MergedBRD
+        from output.pdf_export import generate_pdf
+
+    try:
+        merged_brd = MergedBRD(**brd_data) if isinstance(brd_data, dict) else brd_data
+    except Exception as exc:
+        logger.warning(f"failed_to_parse_merged_brd_for_pdf: {exc}")
+        from backend.models.brd import BRDSection, LineageTag
+        from backend.models.agents import AgentPersona
+        sections = []
+        for s in brd_data.get("sections", []):
+            sections.append(BRDSection(
+                title=s.get("title", "Section"),
+                content=s.get("content", ""),
+                lineage=LineageTag(
+                    source_agent=AgentPersona.VC,
+                    confidence=0.85,
+                    data_citation="[SOURCE: system]"
+                )
+            ))
+        merged_brd = MergedBRD(session_id=session_id, sections=sections)
+
+    pdf_bytes = await generate_pdf(merged_brd, view)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="prism-brd-{view}.pdf"',
+            "Content-Type": "application/pdf",
+        },
+    )

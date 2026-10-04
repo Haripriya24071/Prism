@@ -123,3 +123,25 @@ class TestBRDEndpoints:
     def test_pdf_missing_session_returns_404(self, test_client: TestClient) -> None:
         r = test_client.get("/brd/nonexistent-bad-id/pdf?view=investor")
         assert r.status_code == 404
+
+    def test_pdf_streams_when_brd_complete(self, test_client: TestClient) -> None:
+        from backend.session_store import update_session
+        sid = test_client.post("/intake/session").json()["session_id"]
+        mock_brd = {
+            "session_id": sid,
+            "sections": [
+                {
+                    "title": "Executive Summary",
+                    "content": "A high-growth enterprise platform.",
+                    "lineage": {"source_agent": "vc", "confidence": 0.9, "data_citation": "Source"},
+                }
+            ],
+            "investor_readiness_score": 85,
+        }
+        update_session(sid, brd=mock_brd, status="complete", score=85)
+        for view in ["investor", "technical", "regulatory"]:
+            r = test_client.get(f"/brd/{sid}/pdf?view={view}")
+            assert r.status_code == 200
+            assert r.headers["content-type"] == "application/pdf"
+            assert f'attachment; filename="prism-brd-{view}.pdf"' in r.headers["content-disposition"]
+            assert r.content.startswith(b"%PDF")

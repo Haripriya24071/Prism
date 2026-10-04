@@ -44,7 +44,15 @@ function toAssumption(item) {
 }
 
 export default function ResultsPage() {
-  const { sessionId, brdData, setBrdData, heatmapData, investorScore } = useSession()
+  const {
+    sessionId,
+    brdData,
+    setBrdData,
+    heatmapData,
+    setHeatmapData,
+    investorScore,
+    setInvestorScore,
+  } = useSession()
   const [loadError, setLoadError] = useState(null)
   const [attempt, setAttempt] = useState(0)
   const [downloadingView, setDownloadingView] = useState(null)
@@ -61,7 +69,6 @@ export default function ResultsPage() {
         const data = await fetchBRD(sessionId)
         if (!cancelled) {
           setLoadError(null)
-          // Zahid's GET /brd/{id} returns { "status": "complete", "brd": { sections, assumptions, failure_modes }, "investor_readiness_score": ... }
           // Unpack res.brd if wrapped while preserving score and metadata
           const unpacked = data?.brd
             ? {
@@ -73,6 +80,20 @@ export default function ResultsPage() {
               }
             : data
           setBrdData(unpacked)
+
+          if (data?.heatmap && typeof setHeatmapData === 'function') {
+            setHeatmapData(data.heatmap)
+          }
+          if ((data?.investor_score || data?.investor_readiness_score !== undefined) && typeof setInvestorScore === 'function') {
+            setInvestorScore(
+              data.investor_score ?? {
+                score: data.investor_readiness_score ?? 0,
+                confidence_band: (data.investor_readiness_score ?? 0) >= 70 ? 'fundable' : (data.investor_readiness_score ?? 0) >= 50 ? 'promising' : 'needs_work',
+                gaps: [],
+                pivots: data.pivots ?? [],
+              }
+            )
+          }
         }
       } catch (err) {
         if (!cancelled) {
@@ -85,7 +106,7 @@ export default function ResultsPage() {
     return () => {
       cancelled = true
     }
-  }, [sessionId, brdData, setBrdData, attempt])
+  }, [sessionId, brdData, setBrdData, setHeatmapData, setInvestorScore, attempt])
 
   const retry = useCallback(() => {
     setLoadError(null)

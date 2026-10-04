@@ -77,5 +77,9 @@ export async function fetchPDF(sessionId, view = 'investor') {
   if (!res.ok) {
     throw new Error(`Fetch PDF failed: ${res.status} ${res.statusText}`)
   }
+  const contentType = res.headers.get('content-type') || ''
+  if (contentType.includes('application/pdf') || contentType.includes('octet-stream')) {
+    return await res.blob()
+  }
   return await res.json()
 }

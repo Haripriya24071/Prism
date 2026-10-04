@@ -13,24 +13,36 @@ import prismLogo from '../assets/landing/prism_logo.jpg'
 
 const SAMPLE_IDEAS = [
   {
-    title: 'FinTech Compliance',
-    prompt: 'Autonomous AI regulatory compliance officer for cross-border B2B payments under EU and US law.',
+    title: 'B2B AI Code Review',
+    tag: 'Scenario 1: High Consensus (85 Score)',
+    tagColor: 'text-success bg-success/10 border-success/30',
+    prompt:
+      'I want to build an automated AI code review and security vulnerability auditing platform for enterprise GitHub pull requests. We target US & EU tech enterprises, currently pre-seed with $150k budget, targeting $500k ARR in year 1.',
+    icon: '🚀',
+  },
+  {
+    title: 'P2P Social Lending',
+    tag: 'Scenario 2: Pivot Suggester Trigger',
+    tagColor: 'text-warning bg-warning/10 border-warning/30',
+    prompt:
+      'I am launching a peer-to-peer consumer micro-lending platform on social media apps in Southeast Asia, targeting unbanked gig workers with $50k bootstrap capital and targeting 50,000 active borrowers in year one.',
+    icon: '⚡',
+  },
+  {
+    title: 'Rural Telehealth AI',
+    tag: 'Scenario 3: Regulated HealthTech',
+    tagColor: 'text-primary bg-primary/10 border-primary/30',
+    prompt:
+      'We are creating an AI remote patient diagnostic and clinical triage platform for rural health clinics across India, operating with $80k grant funding, requiring strict compliance with DISHA and DPDP health data laws.',
+    icon: '🏥',
+  },
+  {
+    title: 'Global PayTech AI',
+    tag: 'Scenario 4: Multi-Border FinCEN',
+    tagColor: 'text-accent-signal bg-accent-signal/10 border-accent-signal/30',
+    prompt:
+      'Autonomous AI regulatory compliance officer for cross-border B2B payments under EU MiCA and US FinCEN regulations, targeting international supply chains with $120k seed runway.',
     icon: '⚖️',
-  },
-  {
-    title: 'Fleet Telematics IoT',
-    prompt: 'Predictive maintenance sensor network and micro-SaaS for heavy construction fleet operators.',
-    icon: '🚜',
-  },
-  {
-    title: 'Farm-to-Kitchen',
-    prompt: 'Hyperlocal fresh produce marketplace matching organic regenerative farmers directly with urban dark kitchens.',
-    icon: '🥦',
-  },
-  {
-    title: 'Field Voice Assistant',
-    prompt: 'Noise-cancelling voice assistant earpiece for industrial field technicians with automated blueprint lookups.',
-    icon: '🎙️',
   },
 ]
 
@@ -362,6 +374,16 @@ export default function IntakePage() {
               >
                 How It Works
               </button>
+              <a
+                href="/pitch_deck.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-display text-sm font-bold text-accent-signal hover:opacity-85 transition-opacity flex items-center gap-1 cursor-pointer"
+                title="Open interactive 6-slide Hackathon Pitch Deck"
+              >
+                <span>Pitch Deck</span>
+                <span className="text-xs">↗</span>
+              </a>
             </nav>
 
             {/* Right Side: Clean Status & Single Neat Action */}
@@ -544,8 +566,8 @@ export default function IntakePage() {
               {/* Quick Sample Prompts */}
               {turnNumber === 0 ? (
                 <div className="mb-6">
-                  <span className="font-tertiary text-micro font-bold uppercase tracking-wider text-content-secondary block mb-2.5">
-                    Quick Starters (Click to load):
+                  <span className="font-tertiary text-micro font-bold uppercase tracking-wider text-accent-signal block mb-2.5">
+                    ⚡ One-Click Demo Scenarios (Click to Load):
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                     {SAMPLE_IDEAS.map((idea, index) => (
@@ -553,11 +575,18 @@ export default function IntakePage() {
                         key={index}
                         type="button"
                         onClick={() => handleSend(idea.prompt)}
-                        className="p-3 text-left rounded-lg border border-border-subtle bg-surface-raised hover:bg-void hover:border-border transition-all group flex flex-col justify-between shadow-sm cursor-pointer"
+                        className="p-3 text-left rounded-lg border border-border-subtle bg-surface-raised hover:bg-void hover:border-accent-signal hover:shadow-md transition-all group flex flex-col justify-between shadow-xs cursor-pointer"
                       >
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-base">{idea.icon}</span>
-                          <span className="font-display font-bold text-micro text-content-primary group-hover:text-accent-signal transition-colors">
+                        <div>
+                          <div className="flex items-center justify-between gap-1 mb-1.5">
+                            <span className="text-base group-hover:scale-110 transition-transform">{idea.icon}</span>
+                            {idea.tag && (
+                              <span className={`font-display text-[9px] font-bold px-1.5 py-0.5 rounded border ${idea.tagColor}`}>
+                                {idea.tag.split(':')[0]}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-display font-bold text-micro text-content-primary group-hover:text-accent-signal transition-colors block mb-1">
                             {idea.title}
                           </span>
                         </div>

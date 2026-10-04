@@ -195,7 +195,14 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
         pivots = await suggest_pivots(merged_brd, investor_score)
 
         # ── Step 11: PDF export (background — non-blocking) ───────────
-        asyncio.create_task(export_all_stakeholder_pdfs(merged_brd, session_id))
+        async def _safe_export_pdfs():
+            try:
+                urls = await export_all_stakeholder_pdfs(merged_brd, session_id)
+                update_session(session_id, pdf_urls=urls)
+            except Exception as exc:
+                logger.warning("pdf_export_background_failed", session_id=session_id, error=str(exc))
+
+        asyncio.create_task(_safe_export_pdfs())
 
         # ── Step 12: Assemble final output ────────────────────────────
         final_output = FinalOutput(
@@ -211,6 +218,10 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
             brd=merged_brd.model_dump(mode="json"),
             score=investor_score.score,
             status="complete",
+            heatmap=heatmap.model_dump(mode="json"),
+            pivots=[p.model_dump(mode="json") for p in (pivots or [])],
+            investor_score=investor_score.model_dump(mode="json"),
+            context=context_package.model_dump(mode="json") if context_package else None,
         )
         set_session_status(session_id, "complete")
 
