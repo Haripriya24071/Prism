@@ -9,8 +9,12 @@ from pathlib import Path
 from typing import Any, List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import structlog
-import google.generativeai as genai
-from google.generativeai.types import GenerationConfig as GenAIGenerationConfig
+try:
+    import google.generativeai as genai
+    from google.generativeai.types import GenerationConfig as GenAIGenerationConfig
+except ImportError:
+    genai = None  # type: ignore[assignment]
+    GenAIGenerationConfig = None  # type: ignore[assignment]
 
 logger = structlog.get_logger()
 
@@ -174,7 +178,10 @@ class Part:
         return text
 
 
-class GenerationConfig(GenAIGenerationConfig):
+_BaseGenConfig: Any = GenAIGenerationConfig if GenAIGenerationConfig is not None else object
+
+
+class GenerationConfig(_BaseGenConfig):
     """Compatible GenerationConfig wrapper."""
     pass
 

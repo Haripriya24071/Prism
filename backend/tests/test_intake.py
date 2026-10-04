@@ -1,9 +1,11 @@
-"""backend/tests/test_intake.py — Unit tests for intake document extraction and vision validation."""
+"""backend/tests/test_intake.py — Unit tests for intake document extraction, vision, conversation, and extractor logic."""
 
 import asyncio
 import pytest
 from errors import IntakeError, InvalidFileError
+from intake.conversation import _build_history, _sanitise_message
 from intake.document import _truncate_to_sentence, extract_document_text
+from intake.extractor import _validate_region, _validate_stage
 from intake.vision import analyse_image
 
 
@@ -63,3 +65,71 @@ class TestAnalyseImageValidation:
         with pytest.raises(InvalidFileError) as exc:
             asyncio.get_event_loop().run_until_complete(analyse_image(b"not an image at all"))
         assert "JPEG" in exc.value.message or "PNG" in exc.value.message
+
+
+class TestSanitiseMessage:
+    def test_strips_whitespace(self) -> None:
+        assert _sanitise_message("  hello  ") == "hello"
+
+    def test_truncates_at_2000(self) -> None:
+        assert len(_sanitise_message("x" * 3000)) == 2000
+
+    def test_empty_string_preserved(self) -> None:
+        assert _sanitise_message("") == ""
+
+    def test_normal_message_unchanged(self) -> None:
+        msg = "I want to build a fintech app in India"
+        assert _sanitise_message(msg) == msg
+
+
+class TestBuildHistory:
+    def test_empty_history(self) -> None:
+        result = _build_history([])
+        assert result == []
+
+    def test_single_turn(self) -> None:
+        result = _build_history([{"role": "user", "content": "hello"}])
+        assert len(result) == 1
+
+    def test_multi_turn(self) -> None:
+        history = [
+            {"role": "user", "content": "Hello"},
+            {"role": "model", "content": "Hi there"},
+            {"role": "user", "content": "Tell me more"},
+        ]
+        result = _build_history(history)
+        assert len(result) == 3
+
+
+class TestValidateRegion:
+    def test_valid_iso2_uppercase(self) -> None:
+        assert _validate_region("IN") == "IN"
+        assert _validate_region("US") == "US"
+        assert _validate_region("GB") == "GB"
+
+    def test_lowercase_corrected(self) -> None:
+        assert _validate_region("in") == "IN"
+
+    def test_invalid_returns_none(self) -> None:
+        assert _validate_region("INDIA") is None
+        assert _validate_region("123") is None
+        assert _validate_region("") is None
+
+    def test_none_input(self) -> None:
+        assert _validate_region(None) is None
+
+
+class TestValidateStage:
+    def test_valid_stages(self) -> None:
+        for stage in ["idea", "prototype", "mvp", "growth"]:
+            assert _validate_stage(stage) == stage
+
+    def test_uppercase_corrected(self) -> None:
+        assert _validate_stage("MVP") == "mvp"
+
+    def test_invalid_returns_none(self) -> None:
+        assert _validate_stage("unicorn") is None
+        assert _validate_stage("startup") is None
+
+    def test_none_input(self) -> None:
+        assert _validate_stage(None) is None
