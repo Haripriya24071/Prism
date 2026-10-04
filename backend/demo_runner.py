@@ -65,13 +65,33 @@ async def run_scenario(scenario_name: str) -> None:
     print(f"  Budget:   {scenario.extraction.budget_range}")
     print(f"{'─'*55}")
 
-    # Init Vertex AI
-    try:
-        init_vertex_ai()
-        print("  ✓ Vertex AI initialised")
-    except Exception as e:
-        print(f"  ✗ Vertex AI init failed: {type(e).__name__}")
-        print("    Running in dev mode — pipeline will stop at first Gemini call")
+    # Step 1: Context harvest
+    print("\n[1/6] Context harvest...")
+    start = time.time()
+    from models.intake import IntakePackage
+    from datetime import datetime
+    from context.harvester import harvest_context
+
+    intake = IntakePackage(
+        session_id=session_id,
+        extraction=scenario.extraction,
+        created_at=datetime.utcnow(),
+    )
+
+    context = await harvest_context(intake)
+    elapsed = int((time.time() - start) * 1000)
+    print(f"      ✓ {elapsed}ms | news:{len(context.news_items)} market:{context.market_data is not None} regs:{len(context.regulatory_flags)} flags:{len(context.failed_sources)} failed")
+
+    # Step 2: Build agent prompts (no Vertex AI yet)
+    print("\n[2/6] Building agent prompts...")
+    from agents.prompts import build_agent_prompt
+    from models.agents import AgentPersona
+
+    prompt_sizes = {}
+    for persona in AgentPersona:
+        prompt = build_agent_prompt(persona, intake, context)
+        prompt_sizes[persona.value] = len(prompt)
+    print(f"      ✓ 6 prompts built | sizes: {prompt_sizes}")
 
     _print_demo_talking_points(scenario)
 
