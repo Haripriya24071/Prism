@@ -1,7 +1,7 @@
 """backend/gcp/bigquery.py — BigQuery fire-and-forget asynchronous logging helpers."""
 
 import asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from typing import Any, Optional
 import uuid
@@ -54,8 +54,8 @@ async def log_run_to_bigquery(
     """Log BRD session run record into BigQuery brd_runs table (fire-and-forget)."""
     row = {
         "session_id": str(session_id).lower(),
-        "created_at": datetime.utcnow().isoformat(),
-        "completed_at": datetime.utcnow().isoformat() if status == "completed" else None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "completed_at": datetime.now(timezone.utc).isoformat() if status == "completed" else None,
         "user_anonymous_id": "anonymous_user",
         "intake_summary": intake_summary,
         "region": region,
@@ -84,7 +84,7 @@ async def log_context_harvest(
 ) -> None:
     """Log harvester events into BigQuery context_harvest_logs table (fire-and-forget)."""
     rows = []
-    now = datetime.utcnow().isoformat()
+    now = datetime.now(timezone.utc).isoformat()
     for src in sources:
         rows.append(
             {
