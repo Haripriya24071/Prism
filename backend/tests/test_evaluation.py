@@ -1,6 +1,6 @@
 """backend/tests/test_evaluation.py — Unit tests for evaluation, rubric, clamp, and merger logic."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import pytest
 
@@ -75,7 +75,7 @@ class TestComputeComposite:
 
 class TestBuildBRDsBlock:
     def test_failed_agent_labelled(self) -> None:
-        outputs = [AgentOutput(agent=AgentPersona.ADVERSARIAL, failed=True, completed_at=datetime.utcnow())]
+        outputs = [AgentOutput(agent=AgentPersona.ADVERSARIAL, failed=True, completed_at=datetime.now(timezone.utc))]
         block = _build_brds_block(outputs)
         assert "AGENT FAILED" in block
 
@@ -106,7 +106,7 @@ class TestFindBestAgentPerSection:
 
     def test_failed_agents_excluded(self, sample_score_matrix: ScoreMatrix) -> None:
         failed_outputs = [
-            AgentOutput(agent=p, failed=True, completed_at=datetime.utcnow())
+            AgentOutput(agent=p, failed=True, completed_at=datetime.now(timezone.utc))
             for p in AgentPersona
         ]
         best = _find_best_agent_per_section(failed_outputs, sample_score_matrix)
