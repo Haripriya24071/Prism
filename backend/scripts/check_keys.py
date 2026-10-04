@@ -142,19 +142,20 @@ def check_bigquery() -> bool:
         return False
 
 
-def check_vertex_ai() -> bool:
-    name: str = "Vertex AI"
+def check_gemini() -> bool:
+    name: str = "Gemini AI"
     try:
-        vertexai.init(project=settings.GCP_PROJECT_ID, location=settings.GCP_REGION)
-        model: GenerativeModel = GenerativeModel(settings.gemini_flash_model)
+        from backend.config import get_flash_model
+        model = get_flash_model()
         start: float = time.perf_counter()
-        model.generate_content("Reply with the single word: pong")
+        resp = model.generate_content("Reply with the single word: pong")
         latency_ms: int = int((time.perf_counter() - start) * 1000)
         print(f"[OK] {name} - Status 200 (Latency: {latency_ms}ms)")
         return True
     except Exception as exc:
         print(f"[FAIL] {name} - {type(exc).__name__}")
         return False
+
 
 
 def main() -> None:
@@ -164,7 +165,7 @@ def main() -> None:
         check_crunchbase,
         check_cloud_storage,
         check_bigquery,
-        check_vertex_ai,
+        check_gemini,
     ]
     passed: int = 0
     total: int = len(checks)

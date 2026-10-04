@@ -95,6 +95,72 @@ _GOVT_REGULATORY_DATA: dict[str, dict[str, dict[str, Any]]] = {
             "compliance_authority": "Federal Trade Commission (FTC)",
         },
     },
+    "ng": {
+        "default": {
+            "regulatory_flags": [
+                "NDPR — Nigeria Data Protection Regulation applies",
+                "CBN licensing required for fintech and payments",
+                "CAC registration required for all businesses",
+            ],
+            "schemes": ["Nigeria Startup Act tax reliefs and grants"],
+            "compliance_authority": "Central Bank of Nigeria (CBN) & NITDA",
+        }
+    },
+    "de": {
+        "default": {
+            "regulatory_flags": [
+                "GDPR strictly enforced — highest fines in EU",
+                "BaFin licensing required for all financial products",
+                "BSI cybersecurity standards for critical infrastructure",
+            ],
+            "schemes": ["EXIST Business Start-up Grant by Federal Ministry for Economic Affairs"],
+            "compliance_authority": "BaFin & Federal Commissioner for Data Protection",
+        }
+    },
+    "au": {
+        "default": {
+            "regulatory_flags": [
+                "Privacy Act 1988 + Australian Privacy Principles",
+                "ASIC licensing for financial services",
+                "TGA approval required for health-related products",
+            ],
+            "schemes": ["R&D Tax Incentive and Accelerating Commercialisation grants"],
+            "compliance_authority": "ASIC & OAIC",
+        }
+    },
+    "ae": {
+        "default": {
+            "regulatory_flags": [
+                "DIFC or ADGM free zone registration for fintech",
+                "UAE PDPL — Personal Data Protection Law 2022",
+                "No corporate tax for most qualifying free zone entities",
+            ],
+            "schemes": ["Hub71 Abu Dhabi / Dubai Future Accelerators incentives"],
+            "compliance_authority": "DFSA / FSRA / UAE Central Bank",
+        }
+    },
+    "sg": {
+        "default": {
+            "regulatory_flags": [
+                "PDPA — Personal Data Protection Act compliance",
+                "MAS Payment Services Act licensing for digital payments",
+                "ACRA mandatory statutory filings",
+            ],
+            "schemes": ["Startup SG Founder and Tech.Pass initiative"],
+            "compliance_authority": "Monetary Authority of Singapore (MAS) & PDPC",
+        }
+    },
+    "gb": {
+        "default": {
+            "regulatory_flags": [
+                "UK GDPR and Data Protection Act 2018 compliance",
+                "FCA authorization for financial activities",
+                "Companies House statutory reporting",
+            ],
+            "schemes": ["SEIS/EIS tax relief schemes for investors"],
+            "compliance_authority": "Financial Conduct Authority (FCA) & ICO",
+        }
+    },
 }
 
 _REGION_ALIASES: dict[str, str] = {
@@ -103,6 +169,21 @@ _REGION_ALIASES: dict[str, str] = {
     "us": "us",
     "united states": "us",
     "usa": "us",
+    "ng": "ng",
+    "nigeria": "ng",
+    "de": "de",
+    "germany": "de",
+    "deutschland": "de",
+    "au": "au",
+    "australia": "au",
+    "ae": "ae",
+    "uae": "ae",
+    "united arab emirates": "ae",
+    "sg": "sg",
+    "singapore": "sg",
+    "gb": "gb",
+    "uk": "gb",
+    "united kingdom": "gb",
 }
 
 

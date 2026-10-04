@@ -6,10 +6,12 @@ uvicorn[standard]>=0.29.0,<1.0.0
 pydantic>=2.7.0,<3.0.0
 pydantic-settings>=2.2.0,<3.0.0
 
-# Google Cloud / Vertex AI — ALL Gemini calls go through these, no direct Gemini SDK
+# Google Cloud / Vertex AI / Gemini SDK
 google-cloud-aiplatform>=1.48.0,<3.0.0
 google-cloud-storage>=2.16.0,<4.0.0
 google-cloud-bigquery>=3.20.0,<4.0.0
+google-generativeai>=0.7.0
+
 
 # Async HTTP client
 httpx>=0.27.0,<1.0.0

@@ -3,6 +3,7 @@
 import json
 from unittest.mock import MagicMock, patch
 import pytest
+from backend.config import settings
 from backend.errors import StorageError
 from backend.gcp import storage
 
@@ -42,7 +43,7 @@ async def test_write_json_success(mock_bucket):
         content_type="application/json",
     )
     blob_mock.exists.assert_called_once()
-    assert result == f"gs://prism-sessions/{expected_path}"
+    assert result == f"gs://{settings.GCS_BUCKET_NAME}/{expected_path}"
 
 
 @pytest.mark.asyncio
@@ -60,7 +61,7 @@ async def test_write_json_with_extension_and_uppercase_uuid(mock_bucket):
 
     expected_path = f"{VALID_SESSION_ID}/investor_readiness.json"
     mock_bucket.blob.assert_called_once_with(expected_path)
-    assert result == f"gs://prism-sessions/{expected_path}"
+    assert result == f"gs://{settings.GCS_BUCKET_NAME}/{expected_path}"
 
 
 @pytest.mark.asyncio
@@ -140,7 +141,7 @@ async def test_write_pdf_success(mock_bucket):
         content_type="application/pdf",
     )
     blob_mock.exists.assert_called_once()
-    assert result == f"gs://prism-sessions/{expected_path}"
+    assert result == f"gs://{settings.GCS_BUCKET_NAME}/{expected_path}"
 
 
 @pytest.mark.asyncio
@@ -151,7 +152,7 @@ async def test_write_pdf_views(mock_bucket):
         mock_bucket.blob.return_value = blob_mock
 
         result = await storage.write_pdf(VALID_SESSION_ID, "", b"bytes", view=view)
-        assert result == f"gs://prism-sessions/{VALID_SESSION_ID}/output_{view}.pdf"
+        assert result == f"gs://{settings.GCS_BUCKET_NAME}/{VALID_SESSION_ID}/output_{view}.pdf"
 
 
 @pytest.mark.asyncio

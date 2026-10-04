@@ -41,11 +41,19 @@ async def test_harvest_context_all_succeed(monkeypatch):
     async def mock_grounding(region, industry):
         return "India relies heavily on UPI and mobile banking."
 
+    async def mock_gdelt(region, industry):
+        return {"political_events": [{"title": "RBI policy update", "url": "https://rbi.org.in"}]}
+
+    async def mock_alphavantage(region, key):
+        return {"market_mood": "bullish", "market_sentiment_score": 0.22}
+
     monkeypatch.setattr(harvester, "fetch_news", mock_news)
     monkeypatch.setattr(harvester, "fetch_worldbank", mock_worldbank)
     monkeypatch.setattr(harvester, "fetch_crunchbase", mock_crunchbase)
     monkeypatch.setattr(harvester, "fetch_govtdata", mock_govt)
     monkeypatch.setattr(harvester, "fetch_gemini_grounding", mock_grounding)
+    monkeypatch.setattr(harvester, "fetch_political_context", mock_gdelt)
+    monkeypatch.setattr(harvester, "fetch_market_sentiment", mock_alphavantage)
 
     intake = _create_sample_intake()
     pkg = await harvester.harvest_context(intake)
@@ -60,7 +68,9 @@ async def test_harvest_context_all_succeed(monkeypatch):
     assert pkg.crunchbase_data.get("competitors")[0]["name"] == "Razorpay"
     assert "RBI Digital Lending Guidelines" in pkg.regulatory_flags
     assert "UPI" in str(pkg.cultural_context)
-    assert pkg.source_urls == ["https://economictimes.com/fintech"]
+    assert "https://economictimes.com/fintech" in pkg.source_urls
+    assert "https://rbi.org.in" in pkg.source_urls
+    assert pkg.market_sentiment.get("market_mood") == "bullish"
     assert pkg.failed_sources == []
 
 
@@ -81,11 +91,19 @@ async def test_harvest_context_partial_failure_resilience(monkeypatch):
     async def mock_grounding(region, industry):
         return "Cultural summary."
 
+    async def mock_gdelt(region, industry):
+        raise TimeoutError("GDELT timeout")
+
+    async def mock_alphavantage(region, key):
+        return {}
+
     monkeypatch.setattr(harvester, "fetch_news", mock_news)
     monkeypatch.setattr(harvester, "fetch_worldbank", mock_worldbank)
     monkeypatch.setattr(harvester, "fetch_crunchbase", mock_crunchbase)
     monkeypatch.setattr(harvester, "fetch_govtdata", mock_govt)
     monkeypatch.setattr(harvester, "fetch_gemini_grounding", mock_grounding)
+    monkeypatch.setattr(harvester, "fetch_political_context", mock_gdelt)
+    monkeypatch.setattr(harvester, "fetch_market_sentiment", mock_alphavantage)
 
     intake = _create_sample_intake()
     pkg = await harvester.harvest_context(intake)
@@ -93,6 +111,7 @@ async def test_harvest_context_partial_failure_resilience(monkeypatch):
     assert isinstance(pkg, ContextPackage)
     assert "newsapi" in pkg.failed_sources
     assert "crunchbase" in pkg.failed_sources
+    assert "gdelt" in pkg.failed_sources
     assert pkg.news_items == []
     assert pkg.market_data is not None
     assert pkg.market_data.gdp_per_capita_usd == 2500.0

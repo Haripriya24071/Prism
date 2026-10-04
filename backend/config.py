@@ -1,39 +1,46 @@
 """backend/config.py — Centralised application configuration and environment settings."""
 
-from typing import List, Optional
+import itertools
+import os
+from typing import Any, List, Optional
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import vertexai
-from vertexai.generative_models import GenerativeModel
+from google import genai
+
+# Load backend/.env and .env if present
+load_dotenv(dotenv_path="backend/.env")
+load_dotenv(dotenv_path=".env")
 
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables and .env file."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=("backend/.env", ".env"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
-    # GCP Project & Authentication (Vertex AI ADC)
-    GCP_PROJECT_ID: str = "your-gcp-project-id"
+    # GCP Project & Authentication
+    GCP_PROJECT_ID: str = "prism-hackathon-510523"
     GCP_REGION: str = "us-central1"
     GOOGLE_APPLICATION_CREDENTIALS: Optional[str] = None
 
     # Cloud Persistence
-    GCS_BUCKET_NAME: str = "prism-sessions"
+    GCS_BUCKET_NAME: str = "prism-outputs"
     BIGQUERY_DATASET: str = "prism_data"
 
-    # Gemini Models via Vertex AI SDK
-    GEMINI_FLASH_MODEL: str = "gemini-2.0-flash"
-    GEMINI_PRO_MODEL: str = "gemini-1.5-pro"
+    # Gemini Models
+    GEMINI_FLASH_MODEL: str = "gemini-flash-lite-latest"
+    GEMINI_PRO_MODEL: str = "gemini-flash-lite-latest"
 
     # External Context Harvester Keys
     NEWSAPI_KEY: str = ""
     CRUNCHBASE_KEY: str = ""
+    ALPHAVANTAGE_KEY: str = ""
 
     # App & Server Settings
-    CORS_ORIGINS: str = "http://localhost:5173"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
     SESSION_TTL_SECONDS: int = 7200
     MAX_UPLOAD_BYTES: int = 10485760
     LOG_LEVEL: str = "INFO"
@@ -65,6 +72,11 @@ class Settings(BaseSettings):
         return self.GEMINI_PRO_MODEL
 
     @property
+    def alphavantage_key(self) -> str:
+        """Alias for ALPHAVANTAGE_KEY."""
+        return self.ALPHAVANTAGE_KEY
+
+    @property
     def log_level(self) -> str:
         """Alias for LOG_LEVEL."""
         return self.LOG_LEVEL
@@ -78,20 +90,74 @@ class Settings(BaseSettings):
 settings = Settings()
 
 
+def _get_key_pool() -> list[str]:
+    keys: list[str] = []
+    # Check GEMINI_API_KEY_1..20
+    for i in range(1, 21):
+        k = os.getenv(f"GEMINI_API_KEY_{i}") or os.getenv(f"GEMINI_KEY_{i}")
+        if k and k.strip():
+            keys.append(k.strip())
+    # Single fallback key
+    single = os.getenv("GEMINI_API_KEY") or os.getenv("GEMINI_KEY")
+    if single and single.strip() and single.strip() not in keys:
+        keys.append(single.strip())
+    return keys
+
+
+_KEY_POOL = _get_key_pool()
+_key_cycle = itertools.cycle(_KEY_POOL) if _KEY_POOL else None
+
+
+def _get_next_key() -> str:
+    global _key_cycle, _KEY_POOL
+    if not _KEY_POOL:
+        _KEY_POOL = _get_key_pool()
+        if _KEY_POOL:
+            _key_cycle = itertools.cycle(_KEY_POOL)
+    if not _key_cycle:
+        return ""
+    return next(_key_cycle)
+
+
+class _ModelWrapper:
+    """Wrapper that handles multi-key rotation and model fallback seamlessly."""
+
+    def __init__(self, default_model: str):
+        self.default_model = default_model
+
+    def generate_content(self, prompt: str, generation_config: Any = None) -> Any:
+        keys = _get_key_pool() or [""]
+        models_to_try = [self.default_model, "gemini-flash-lite-latest", "gemini-1.5-flash"]
+        last_exc: Optional[Exception] = None
+
+        # Try across key pool
+        for key in keys:
+            try:
+                client = genai.Client(api_key=key) if key else genai.Client()
+                for m in models_to_try:
+                    try:
+                        return client.models.generate_content(model=m, contents=prompt)
+                    except Exception as me:
+                        last_exc = me
+                        continue
+            except Exception as e:
+                last_exc = e
+                continue
+
+        if last_exc:
+            raise last_exc
+
+
 def init_vertex_ai() -> None:
-    """Initialize Vertex AI SDK once at application startup using ADC."""
-    try:
-        vertexai.init(project=settings.GCP_PROJECT_ID, location=settings.GCP_REGION)
-    except Exception as e:
-        # Log warning if GCP project initialization fails in development/test without credentials
-        pass
+    """No-op kept for backward compatibility."""
+    pass
 
 
-def get_flash_model() -> GenerativeModel:
-    """Returns Gemini 2.0 Flash model via Vertex AI. Call after init_vertex_ai()."""
-    return GenerativeModel(settings.gemini_flash_model)
+def get_flash_model() -> _ModelWrapper:
+    """Returns Gemini Flash model with multi-key pool rotation."""
+    return _ModelWrapper(settings.gemini_flash_model)
 
 
-def get_pro_model() -> GenerativeModel:
-    """Returns Gemini 1.5 Pro model via Vertex AI. Call after init_vertex_ai()."""
-    return GenerativeModel(settings.gemini_pro_model)
+def get_pro_model() -> _ModelWrapper:
+    """Returns Gemini Pro model with multi-key pool rotation."""
+    return _ModelWrapper(settings.gemini_pro_model)
