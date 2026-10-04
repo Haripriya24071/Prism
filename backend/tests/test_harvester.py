@@ -71,6 +71,9 @@ async def test_harvest_context_all_succeed(monkeypatch):
     assert "https://economictimes.com/fintech" in pkg.source_urls
     assert "https://rbi.org.in" in pkg.source_urls
     assert pkg.market_sentiment.get("market_mood") == "bullish"
+    assert "political_system" in pkg.geopolitical_data
+    assert pkg.religious_context is not None
+    assert pkg.forex_data.get("local_currency") == "INR"
     assert pkg.failed_sources == []
 
 

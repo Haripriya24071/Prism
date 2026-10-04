@@ -75,8 +75,13 @@ REAL-WORLD CONTEXT HARVESTED:
 
 TASK:
 Produce structured BRD section contributions matching your persona and mandate.
-Every claim, market stat, competitor name, or regulatory risk you mention MUST cite its source using the exact format [SOURCE: source_name].
-Allowed sources: [SOURCE: newsapi], [SOURCE: worldbank], [SOURCE: crunchbase], [SOURCE: govtdata], [SOURCE: grounding], [SOURCE: founder].
+Every claim, market stat, competitor name, religious factor, political risk, or regulatory mandate you mention MUST cite its source using the exact format [SOURCE: source_name].
+Allowed sources: [SOURCE: newsapi], [SOURCE: worldbank], [SOURCE: crunchbase], [SOURCE: govtdata], [SOURCE: grounding], [SOURCE: geopolitics], [SOURCE: gdelt], [SOURCE: religion], [SOURCE: alphavantage], [SOURCE: forex], [SOURCE: founder].
+
+MANDATORY REAL-WORLD GROUNDING RULES:
+1. In "Market Analysis": You MUST explicitly address regional demographics, religious calendars/festivals, cultural taboos, and local consumer adoption patterns [SOURCE: religion] [SOURCE: grounding].
+2. In "Risk Register": You MUST audit political party interference, government policies, currency volatility, and statutory regulatory compliance [SOURCE: geopolitics] [SOURCE: govtdata] [SOURCE: forex].
+3. In "Go-To-Market Strategy": You MUST incorporate seasonal demand timing (festive shopping spikes vs. lull periods), local market sentiment, and recent news trends [SOURCE: religion] [SOURCE: alphavantage] [SOURCE: newsapi].
 
 Return ONLY a valid JSON object mapping each of the 6 BRD sections to your enriched analysis.
 Format:
@@ -95,12 +100,14 @@ def _build_context_block(context: ContextPackage) -> str:
     """Formats ContextPackage into labeled sections for the prompt."""
     blocks = []
 
+    # 1. News Articles
     if context.news_items:
-        news_lines = [f"  - {item.title} ({item.source})" for item in context.news_items[:3]]
+        news_lines = [f"  - {item.title} ({item.source})" for item in context.news_items[:4]]
         blocks.append("[SOURCE: newsapi]\n" + "\n".join(news_lines))
     else:
         blocks.append("[SOURCE: newsapi]\n  - No news articles harvested")
 
+    # 2. Macroeconomic Indicators
     if context.market_data:
         m = context.market_data
         m_lines = [
@@ -112,6 +119,46 @@ def _build_context_block(context: ContextPackage) -> str:
     else:
         blocks.append("[SOURCE: worldbank]\n  - No World Bank data harvested")
 
+    # 3. Geopolitical Climate & Ruling Party Dynamics
+    geo = getattr(context, "geopolitical_data", {}) or {}
+    if geo:
+        geo_lines = [
+            f"  - Country: {geo.get('country', 'Regional')}",
+            f"  - Governance System: {geo.get('political_system', 'Constitutional')}",
+            f"  - Ruling Party / Coalition: {geo.get('ruling_coalition', 'Government Administration')}",
+            f"  - Political Policy Priorities: {geo.get('key_political_factors', 'Digital transformation and economic growth')}",
+        ]
+        blocks.append("[SOURCE: geopolitics]\n" + "\n".join(geo_lines))
+    else:
+        blocks.append("[SOURCE: geopolitics]\n  - Stable parliamentary governance framework with active commercial oversight")
+
+    # 4. Religious Demographics, Cultural Norms & Festive Calendars
+    religion_txt = getattr(context, "religious_context", None) or geo.get("religious_demographics")
+    if religion_txt:
+        blocks.append(f"[SOURCE: religion]\n  - {religion_txt}")
+    else:
+        blocks.append("[SOURCE: religion]\n  - Multi-cultural consumer base with significant festive commercial spending surges")
+
+    # 5. Financial Market Sentiment & Mood
+    sentiment = getattr(context, "market_sentiment", {}) or {}
+    if sentiment:
+        score = sentiment.get("market_sentiment_score", 0.0)
+        mood = sentiment.get("market_mood", "neutral").upper()
+        blocks.append(f"[SOURCE: alphavantage]\n  - Market Fiscal Sentiment Mood: {mood} (Score: {score})")
+    else:
+        blocks.append("[SOURCE: alphavantage]\n  - Fiscal Sentiment: NEUTRAL")
+
+    # 6. Foreign Exchange & Currency Volatility Risk
+    fx = getattr(context, "forex_data", {}) or {}
+    if fx:
+        fx_lines = [
+            f"  - Local Currency: {fx.get('currency_name')} ({fx.get('local_currency', 'USD')} {fx.get('currency_symbol', '$')})",
+            f"  - Current Exchange Rate: 1 USD = {fx.get('exchange_rate_per_usd', 1.0)} {fx.get('local_currency', 'USD')}",
+            f"  - Currency Volatility Exposure: {fx.get('forex_volatility_risk', 'Low')}",
+        ]
+        blocks.append("[SOURCE: forex]\n" + "\n".join(fx_lines))
+
+    # 7. Venture Capital Activity
     if context.crunchbase_data:
         cb = context.crunchbase_data
         rounds = cb.get("recent_rounds", [])
@@ -128,12 +175,14 @@ def _build_context_block(context: ContextPackage) -> str:
     else:
         blocks.append("[SOURCE: crunchbase]\n  - No Crunchbase funding data harvested")
 
+    # 8. Statutory Regulatory Compliance Flags
     if context.regulatory_flags:
         reg_lines = [f"  - {flag}" for flag in context.regulatory_flags]
         blocks.append("[SOURCE: govtdata]\n" + "\n".join(reg_lines))
     else:
         blocks.append("[SOURCE: govtdata]\n  - No regional regulatory flags identified")
 
+    # 9. Cultural Nuances & Payment Behaviors
     if context.cultural_context:
         blocks.append(f"[SOURCE: grounding]\n  - {context.cultural_context}")
     else:

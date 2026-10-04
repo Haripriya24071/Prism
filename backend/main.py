@@ -306,6 +306,7 @@ async def get_brd(session_id: str) -> dict:
         "status": "complete",
         "brd": session.get("brd"),
         "investor_readiness_score": session.get("score"),
+        "context": session.get("context_package"),
     }
 
 

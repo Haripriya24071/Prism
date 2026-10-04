@@ -235,3 +235,310 @@
     transition: none;
   }
 }
+
+/* Source Chips inside BRD Section text */
+.source-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px;
+  margin: 0 4px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-raised);
+  font-family: var(--font-tertiary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  box-shadow: 1px 1px 0px var(--color-border);
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.source-chip__icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.source-chip--geo {
+  border-color: #4338CA;
+  background-color: #EEF2FF;
+  color: #312E81;
+}
+
+.source-chip--religion {
+  border-color: #B45309;
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.source-chip--sentiment {
+  border-color: #047857;
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+.source-chip--forex {
+  border-color: #0284C7;
+  background-color: #E0F2FE;
+  color: #075985;
+}
+
+.source-chip--news {
+  border-color: #BE123C;
+  background-color: #FFE4E6;
+  color: #9F1239;
+}
+
+.source-chip--worldbank {
+  border-color: #1D4ED8;
+  background-color: #DBEAFE;
+  color: #1E40AF;
+}
+
+.source-chip--govt {
+  border-color: #6D28D9;
+  background-color: #EDE9FE;
+  color: #5B21B6;
+}
+
+.source-chip--crunchbase {
+  border-color: #0F766E;
+  background-color: #CCFBF1;
+  color: #115E59;
+}
+
+.source-chip--prism {
+  border-color: var(--color-border);
+  background-color: #F4EFEA;
+  color: var(--color-text-secondary);
+}
+
+/* Real-World Context Radar */
+.context-radar {
+  background-color: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  box-shadow: 3px 3px 0px var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  margin-bottom: var(--space-2);
+}
+
+.context-radar__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  cursor: pointer;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px dashed var(--color-border-subtle);
+}
+
+.context-radar__badge {
+  display: inline-block;
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background-color: #D8F3DC;
+  color: #2D6A4F;
+  border: 1px solid #2D6A4F;
+  margin-bottom: var(--space-1);
+}
+
+.context-radar__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.context-radar__subtitle {
+  margin: 4px 0 0 0;
+  font-size: var(--text-small);
+  color: var(--color-text-secondary);
+}
+
+.context-radar__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.context-radar__status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #22C55E;
+  box-shadow: 0 0 6px #22C55E;
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.9); }
+}
+
+.context-radar__toggle-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface-raised);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 1px 1px 0px var(--color-border);
+}
+
+.context-radar__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-border);
+  font-size: var(--text-small);
+  background-color: var(--color-surface-raised);
+}
+
+.context-pill--geo {
+  border-color: #818CF8;
+}
+
+.context-pill--sentiment {
+  border-color: #34D399;
+}
+
+.context-pill--forex {
+  border-color: #38BDF8;
+}
+
+.context-pill--religion {
+  border-color: #FBBF24;
+}
+
+.context-radar__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+
+@media (max-width: 768px) {
+  .context-radar__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.radar-card {
+  border: 1px solid var(--color-border);
+  box-shadow: 2px 2px 0px var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  background-color: var(--color-surface-raised);
+  display: flex;
+  flex-direction: column;
+}
+
+.radar-card__tag {
+  font-family: var(--font-tertiary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-1);
+}
+
+.radar-card__heading {
+  margin: 0 0 var(--space-2) 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  font-weight: 700;
+}
+
+.radar-card__body {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-small);
+  line-height: 1.5;
+  color: var(--color-text-primary);
+  flex: 1;
+}
+
+.radar-card__notes {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--text-small);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.radar-card__footer {
+  margin-top: auto;
+  font-family: var(--font-tertiary);
+  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  border-top: 1px dotted var(--color-border-subtle);
+  padding-top: var(--space-2);
+}
+
+.radar-card--fullwidth {
+  grid-column: 1 / -1;
+}
+
+.mood-text {
+  font-weight: 800;
+}
+
+.mood-text--bullish {
+  color: #15803D;
+}
+
+.mood-text--neutral {
+  color: #0284C7;
+}
+
+.mood-text--bearish {
+  color: #BE123C;
+}
+
+.radar-card__news-list {
+  list-style: none;
+  margin: 0 0 var(--space-2) 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.radar-card__news-item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-small);
+}
+
+.radar-card__news-link {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+  text-decoration-color: var(--color-border-subtle);
+  font-weight: 500;
+}
+
+.radar-card__news-link:hover {
+  color: var(--color-accent-signal);
+}
+
+.radar-card__news-source {
+  font-family: var(--font-tertiary);
+  font-size: var(--text-micro);
+  color: var(--color-text-secondary);
+}

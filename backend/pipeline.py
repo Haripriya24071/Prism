@@ -99,12 +99,15 @@ async def run_pipeline(session_id: str, intake: IntakePackage) -> None:
         set_session_status(session_id, "harvesting")
         await publish(session_id, "context_start", {"status": "running"}, progress_pct=10)
         context = await harvest_context(intake)
+        update_session(session_id, context_package=context.model_dump(mode="json"))
         await publish(
             session_id,
             "context_ready",
             {
                 "status": "complete",
                 "sources_ok": len(context.news_items) + (1 if context.market_data else 0),
+                "geopolitics": bool(context.geopolitical_data),
+                "sentiment": context.market_sentiment.get("market_mood", "neutral") if context.market_sentiment else "neutral",
             },
             progress_pct=20,
         )

@@ -8,7 +8,9 @@ try:
     from backend.config import settings
     from backend.context.alphavantage import fetch_market_sentiment
     from backend.context.crunchbase import fetch_crunchbase
+    from backend.context.forex import fetch_forex_data
     from backend.context.gdelt import fetch_political_context
+    from backend.context.geopolitics import fetch_geopolitics_and_religion
     from backend.context.govtdata import fetch_govtdata
     from backend.context.grounding import fetch_gemini_grounding
     from backend.context.newsapi import fetch_news
@@ -19,7 +21,9 @@ except ImportError:
     from config import settings
     from context.alphavantage import fetch_market_sentiment
     from context.crunchbase import fetch_crunchbase
+    from context.forex import fetch_forex_data
     from context.gdelt import fetch_political_context
+    from context.geopolitics import fetch_geopolitics_and_religion
     from context.govtdata import fetch_govtdata
     from context.grounding import fetch_gemini_grounding
     from context.newsapi import fetch_news
@@ -50,6 +54,8 @@ async def harvest_context(intake: Any) -> ContextPackage:
         fetch_gemini_grounding(region, industry),
         fetch_political_context(region, industry),
         fetch_market_sentiment(region, settings.alphavantage_key),
+        fetch_geopolitics_and_religion(region),
+        fetch_forex_data(region),
     ]
 
     results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -62,6 +68,8 @@ async def harvest_context(intake: Any) -> ContextPackage:
         grounding_res,
         gdelt_res,
         alphavantage_res,
+        geopolitics_res,
+        forex_res,
     ) = results
 
     failed_sources: list[str] = []
@@ -122,6 +130,22 @@ async def harvest_context(intake: Any) -> ContextPackage:
     else:
         market_sentiment = alphavantage_res
 
+    # 8. Geopolitics & Religious Dynamics
+    if isinstance(geopolitics_res, Exception) or not isinstance(geopolitics_res, dict):
+        failed_sources.append("geopolitics")
+        geopolitical_data: dict[str, Any] = {}
+        religious_context: str | None = None
+    else:
+        geopolitical_data = geopolitics_res
+        religious_context = geopolitical_data.get("religious_demographics")
+
+    # 9. Foreign Exchange & Currency Volatility
+    if isinstance(forex_res, Exception) or not isinstance(forex_res, dict):
+        failed_sources.append("forex")
+        forex_data: dict[str, Any] = {}
+    else:
+        forex_data = forex_res
+
     return ContextPackage(
         session_id=session_id,
         region=region,
@@ -132,7 +156,10 @@ async def harvest_context(intake: Any) -> ContextPackage:
         regulatory_flags=regulatory_flags,
         cultural_context=cultural_context,
         political_context=political_context,
+        religious_context=religious_context,
+        geopolitical_data=geopolitical_data,
         market_sentiment=market_sentiment,
+        forex_data=forex_data,
         source_urls=source_urls,
         failed_sources=failed_sources,
         harvested_at=datetime.utcnow(),

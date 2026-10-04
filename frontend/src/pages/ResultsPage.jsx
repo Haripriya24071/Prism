@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { fetchBRD, fetchPDF } from '../api.js'
 import { getPageVariants } from '../animations/variants.js'
 import BRDViewer from '../components/BRDViewer/BRDViewer.jsx'
+import RealWorldContextRadar from '../components/BRDViewer/RealWorldContextRadar.jsx'
 import DivergenceHeatmap from '../components/DivergenceHeatmap/DivergenceHeatmap.jsx'
 import ScoreCard from '../components/ScoreCard/ScoreCard.jsx'
 import { useSession } from '../hooks/useSession.js'
@@ -68,6 +69,7 @@ export default function ResultsPage() {
                 investor_readiness_score: data.investor_readiness_score ?? data.brd.investor_readiness_score,
                 pivots: data.pivots ?? data.brd.pivots,
                 heatmap: data.heatmap ?? data.brd.heatmap,
+                context: data.context ?? data.brd.context,
               }
             : data
           setBrdData(unpacked)
@@ -234,6 +236,9 @@ export default function ResultsPage() {
       {brdData && (
         <div className="mt-8 grid items-start gap-8 lg:grid-cols-3">
           <div className="grid gap-8 lg:col-span-2">
+            {(rawBrd?.context || brdData?.context) && (
+              <RealWorldContextRadar context={rawBrd?.context || brdData?.context} />
+            )}
             {bars.length > 0 && (
               <section className="rounded-lg border border-border bg-surface p-6">
                 <h2 className="mb-4 font-display text-h2 font-semibold">Where the agents disagreed</h2>

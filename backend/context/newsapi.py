@@ -103,12 +103,25 @@ async def fetch_news(region: str, industry: str) -> list[NewsItem]:
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.get(url, headers=headers, params=params)
-            if not response.is_success:
-                return []
-            data = response.json()
-            articles = data.get("articles", [])
-            if not isinstance(articles, list):
-                return []
+            articles = []
+            if response.is_success:
+                data = response.json()
+                articles = data.get("articles", []) if isinstance(data.get("articles"), list) else []
+
+            # If top-headlines returned 0, try /v2/everything with country + industry
+            if not articles:
+                country_name = clean_region.upper()
+                query_str = f"{country_name} {clean_industry}" if clean_industry else country_name
+                ev_url = "https://newsapi.org/v2/everything"
+                ev_params = {
+                    "q": query_str,
+                    "sortBy": "relevancy",
+                    "pageSize": 5,
+                }
+                ev_resp = await client.get(ev_url, headers=headers, params=ev_params)
+                if ev_resp.is_success:
+                    ev_data = ev_resp.json()
+                    articles = ev_data.get("articles", []) if isinstance(ev_data.get("articles"), list) else []
 
             news_items: list[NewsItem] = []
             for art in articles:
@@ -119,7 +132,7 @@ async def fetch_news(region: str, industry: str) -> list[NewsItem]:
                     continue
                 source_obj = art.get("source")
                 source_name = (
-                    source_obj.get("name") if isinstance(source_obj, dict) and source_obj.get("name") else "Unknown"
+                    source_obj.get("name") if isinstance(source_obj, dict) and source_obj.get("name") else "NewsAPI"
                 )
                 item = NewsItem(
                     title=str(title),

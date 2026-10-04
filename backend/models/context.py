@@ -27,7 +27,10 @@ class ContextPackage(BaseModel):
     regulatory_flags: list[str] = Field(default_factory=list)
     cultural_context: str | None = None
     political_context: dict = Field(default_factory=dict)
+    religious_context: str | None = None
+    geopolitical_data: dict = Field(default_factory=dict)
     market_sentiment: dict = Field(default_factory=dict)
+    forex_data: dict = Field(default_factory=dict)
     source_urls: list[str] = Field(default_factory=list)
     failed_sources: list[str] = Field(default_factory=list, description="Sources that errored — partial failure allowed")
     harvested_at: datetime = Field(default_factory=datetime.utcnow)
