@@ -80,6 +80,7 @@ function toAssumption(item) {
 export default function ResultsPage() {
   const {
     sessionId,
+    setSessionId,
     brdData,
     setBrdData,
     heatmapData,
@@ -145,10 +146,15 @@ export default function ResultsPage() {
           }).then((r) => r.json()).catch(() => null)
           if (presetRes?.data && !cancelled) {
             setLoadError(null)
+            if (presetRes.session_id) {
+              setSessionId(presetRes.session_id)
+            }
             const payload = presetRes.data
             const unpackedBrd = payload.brd || payload
             setBrdData({
               ...unpackedBrd,
+              session_id: presetRes.session_id,
+              project_name: payload.project_name || 'PRISM Automated SAST Code Review',
               investor_readiness_score: payload.score ?? payload.investor_score ?? 84,
               confidence_band: payload.confidence_band || 'fundable',
               heatmap: payload.heatmap,
@@ -177,6 +183,8 @@ export default function ResultsPage() {
           const unpacked = data?.brd
             ? {
                 ...data.brd,
+                session_id: activeSessionId,
+                project_name: data.project_name || data.brd?.project_name,
                 investor_readiness_score: data.investor_readiness_score ?? data.brd.investor_readiness_score,
                 pivots: data.pivots ?? data.brd.pivots,
                 heatmap: data.heatmap ?? data.brd.heatmap,
@@ -213,11 +221,10 @@ export default function ResultsPage() {
       }
     }
     load()
-
     return () => {
       cancelled = true
     }
-  }, [sessionId, brdData, setBrdData, setHeatmapData, setInvestorScore, attempt])
+  }, [sessionId, brdData, setBrdData, setHeatmapData, setInvestorScore, attempt, setSessionId])
 
   const retry = useCallback(() => {
     setLoadError(null)
@@ -227,7 +234,14 @@ export default function ResultsPage() {
   // Helper to construct relevant, project-specific PDF filenames
   const getRelevantPdfFilename = useCallback(
     (view, serverFilename) => {
-      if (serverFilename && !serverFilename.includes('undefined')) {
+      // If server provided a well-defined filename that ends in .pdf and is not a generic fallback or UUID
+      if (
+        serverFilename &&
+        serverFilename.toLowerCase().endsWith('.pdf') &&
+        !serverFilename.startsWith('prism-brd') &&
+        !serverFilename.startsWith('prism-master') &&
+        !/^[0-9a-fA-F-]{20,}/.test(serverFilename)
+      ) {
         return serverFilename
       }
       const viewMap = {
@@ -243,11 +257,12 @@ export default function ResultsPage() {
         brdData?.project_name ||
         brdData?.brd?.project_name ||
         brdData?.title ||
-        'Startup_Idea'
+        'B2B_AI_Code_Review'
       const cleanProject = rawProjectName
+        .replace(/PRISM/gi, '')
         .replace(/[^a-zA-Z0-9]+/g, '_')
         .replace(/^_+|_+$/g, '')
-        .slice(0, 36) || 'Pitch'
+        .slice(0, 32) || 'Startup_Venture'
       return `PRISM_${cleanProject}_${viewTitle}.pdf`
     },
     [brdData],
@@ -255,10 +270,10 @@ export default function ResultsPage() {
 
   // Download PDF Handler with relevant human-readable naming
   const handleDownload = useCallback(
-    async (view) => {
+    async (view = 'final') => {
       setPdfLoading((prev) => ({ ...prev, [view]: true }))
       setDownloadError(null)
-      const targetSessionId = sessionId || brdData?.session_id || '8a46cd6b-8ea0-44e7-85bb-10b3a51da0a2'
+      const targetSessionId = sessionId || brdData?.session_id || 'f8045b43-31f3-4919-a13c-036e81de8f96'
 
       try {
         const data = await fetchPDF(targetSessionId, view)
@@ -268,32 +283,34 @@ export default function ResultsPage() {
           const url = URL.createObjectURL(data)
           const link = document.createElement('a')
           link.href = url
+          link.setAttribute('download', filename)
           link.download = filename
           document.body.appendChild(link)
           link.click()
-          link.remove()
-          setTimeout(() => URL.revokeObjectURL(url), 1000)
+          document.body.removeChild(link)
+          setTimeout(() => URL.revokeObjectURL(url), 2000)
         } else if (data?.available && data?.url) {
-          // If a direct URL is returned (e.g. GCS signed URL), fetch as Blob so we can enforce the relevant filename
           try {
             const blobRes = await fetch(data.url)
             const blob = await blobRes.blob()
             const url = URL.createObjectURL(blob)
             const link = document.createElement('a')
             link.href = url
+            link.setAttribute('download', filename)
             link.download = filename
             document.body.appendChild(link)
             link.click()
-            link.remove()
-            setTimeout(() => URL.revokeObjectURL(url), 1000)
+            document.body.removeChild(link)
+            setTimeout(() => URL.revokeObjectURL(url), 2000)
           } catch {
             const link = document.createElement('a')
             link.href = data.url
+            link.setAttribute('download', filename)
             link.download = filename
             link.target = '_blank'
             document.body.appendChild(link)
             link.click()
-            link.remove()
+            document.body.removeChild(link)
           }
         } else {
           setDownloadError(
