@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { VoiceButton } from './VoiceButton.jsx'
+import { useVoiceInput } from '../../hooks/useVoiceInput.js'
 import './ChatBox.css'
 
 export { VoiceButton }
@@ -51,13 +52,38 @@ export default function ChatBox({
   const textareaId = 'chatbox-input'
   const canSend = draft.trim() !== '' && !disabled
 
+  const appendTranscript = useCallback((text) => {
+    setDraft((current) => {
+      const trimmed = current.trim()
+      return trimmed === '' ? text : `${trimmed} ${text}`
+    })
+  }, [])
+
+  const {
+    supported: voiceSupported,
+    isRecording,
+    toggleRecording,
+    stopRecording,
+  } = useVoiceInput({
+    onTranscript: appendTranscript,
+  })
+
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ block: 'end' })
   }, [messages, disabled])
 
+  useEffect(() => {
+    if (disabled && isRecording) {
+      stopRecording()
+    }
+  }, [disabled, isRecording, stopRecording])
+
   function send() {
     if (!canSend) {
       return
+    }
+    if (isRecording) {
+      stopRecording()
     }
     onSend(draft.trim())
     setDraft('')
@@ -76,10 +102,6 @@ export default function ChatBox({
       onUpload(file)
     }
     event.target.value = ''
-  }
-
-  function appendTranscript(text) {
-    setDraft((current) => (current === '' ? text : `${current} ${text}`))
   }
 
   return (
@@ -127,6 +149,21 @@ export default function ChatBox({
         </div>
       )}
 
+      {/* Active Voice Chat Continuous Banner */}
+      {isRecording && (
+        <div className="chatbox__voice-active-banner">
+          <div className="flex items-center gap-2">
+            <span className="chatbox__voice-live-dot" />
+            <span className="font-tertiary text-micro font-bold text-accent-signal uppercase tracking-wider">
+              Voice Chat Active — Listening Continuously
+            </span>
+          </div>
+          <span className="font-body text-micro text-content-secondary hidden sm:inline">
+            Speak freely (no timeout) • Click mic or Send to finish
+          </span>
+        </div>
+      )}
+
       <div className="chatbox__input-container">
         <div className="chatbox__input-row">
           <label htmlFor={textareaId} className="sr-only">
@@ -142,12 +179,17 @@ export default function ChatBox({
             onKeyDown={handleKeyDown}
             placeholder={
               messages.length > 1
-                ? 'Answer the question above, or clarify details...'
+                ? 'Answer the question above, or speak freely...'
                 : 'Describe your business idea (1–2 sentences)...'
             }
           />
 
-          <VoiceButton onTranscript={appendTranscript} disabled={disabled} />
+          <VoiceButton
+            supported={voiceSupported}
+            isRecording={isRecording}
+            onToggle={toggleRecording}
+            disabled={disabled}
+          />
 
           <button
             type="button"
