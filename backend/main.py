@@ -1,5 +1,16 @@
 """backend/main.py — Runnable FastAPI application with lifespan Vertex AI init and 8 route stubs."""
 
+import os
+import sys
+from pathlib import Path
+
+# Ensure project root and backend directory are in sys.path
+_current_dir = Path(__file__).resolve().parent
+_parent_dir = _current_dir.parent
+for _p in (str(_parent_dir), str(_current_dir)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 import asyncio
 import logging
 from contextlib import asynccontextmanager
