@@ -161,6 +161,16 @@ _GOVT_REGULATORY_DATA: dict[str, dict[str, dict[str, Any]]] = {
             "compliance_authority": "Financial Conduct Authority (FCA) & ICO",
         }
     },
+    "zz": {
+        "default": {
+            "regulatory_flags": [
+                "Standard data privacy and consumer protection compliance",
+                "Local commercial registration and tax filing obligations",
+            ],
+            "schemes": ["Local SME innovation support and tax incentives"],
+            "compliance_authority": "Local Trade & Industry Authority",
+        }
+    },
 }
 
 _REGION_ALIASES: dict[str, str] = {
@@ -184,12 +194,20 @@ _REGION_ALIASES: dict[str, str] = {
     "gb": "gb",
     "uk": "gb",
     "united kingdom": "gb",
+    "zz": "zz",
 }
 
 
 async def fetch_govtdata(region: str, industry: str) -> dict[str, Any]:
-    if not isinstance(region, str) or not isinstance(industry, str):
-        return {"regulatory_flags": [], "schemes": [], "compliance_authority": None, "source": "govt_open_data"}
+    if not isinstance(region, str) or not isinstance(industry, str) or (not region.strip() and not industry.strip()):
+        return {
+            "data_source": "static_regulatory_map",
+            "source": "govt_open_data",
+            "regulatory_flags": [],
+            "schemes": [],
+            "compliance_authority": None,
+            "compliance_notes": "",
+        }
 
     clean_region = region.strip().lower()
     clean_industry = industry.strip().lower()
@@ -197,10 +215,12 @@ async def fetch_govtdata(region: str, industry: str) -> dict[str, Any]:
     canonical_region = _REGION_ALIASES.get(clean_region)
     if not canonical_region:
         return {
+            "data_source": "static_regulatory_map",
+            "source": "govt_open_data",
             "regulatory_flags": [],
             "schemes": [],
             "compliance_authority": None,
-            "source": "govt_open_data",
+            "compliance_notes": "",
         }
 
     region_data = _GOVT_REGULATORY_DATA.get(canonical_region, {})
@@ -214,9 +234,14 @@ async def fetch_govtdata(region: str, industry: str) -> dict[str, Any]:
     if not matched_industry_data:
         matched_industry_data = region_data.get("default", {"regulatory_flags": [], "schemes": []})
 
+    authority = matched_industry_data.get("compliance_authority") or "Relevant Statutory Authority"
+    compliance_notes = f"Operates under {authority} regulatory framework and local statutory compliance guidelines."
+
     return {
+        "data_source": "static_regulatory_map",
+        "source": "govt_open_data",
         "regulatory_flags": list(matched_industry_data.get("regulatory_flags", [])),
         "schemes": list(matched_industry_data.get("schemes", [])),
-        "compliance_authority": matched_industry_data.get("compliance_authority"),
-        "source": "govt_open_data",
+        "compliance_authority": authority,
+        "compliance_notes": compliance_notes,
     }

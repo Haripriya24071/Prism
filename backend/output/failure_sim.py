@@ -35,6 +35,39 @@ def _default_failure_modes() -> list[FailureMode]:
     ]
 
 
+def _parse_from_brd_json(brd_json: dict) -> Optional[list[FailureMode]]:
+    """Parse structured failure modes directly from agent's Risk Register JSON if present."""
+    if not isinstance(brd_json, dict):
+        return None
+    raw = brd_json.get("Risk Register") or brd_json.get("risk_register")
+    if not raw or not isinstance(raw, (str, list)):
+        return None
+    try:
+        data = json.loads(raw) if isinstance(raw, str) else raw
+        if isinstance(data, list) and data:
+            results: list[FailureMode] = []
+            for item in data:
+                if isinstance(item, dict) and "title" in item:
+                    try:
+                        prob = int(item.get("probability_pct", 50))
+                    except (ValueError, TypeError):
+                        prob = 50
+                    prob = max(0, min(100, prob))
+                    results.append(
+                        FailureMode(
+                            title=str(item["title"]),
+                            probability_pct=prob,
+                            description=str(item.get("description", "")),
+                            mitigation=str(item.get("mitigation", "")),
+                        )
+                    )
+            return results if results else None
+    except Exception:
+        return None
+    return None
+
+
+
 def _sync_extract_failure_modes_gemini(text: str) -> Optional[list[FailureMode]]:
     """Use Gemini Flash to parse adversarial critiques into structured FailureMode objects."""
     prompt = f"""You are an adversarial risk auditor. Analyze the following adversarial critique of a startup venture:

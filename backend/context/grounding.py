@@ -66,12 +66,16 @@ def _sync_generate_grounding(region: str, industry: str) -> str:
 
 async def fetch_gemini_grounding(region: str, industry: str) -> str:
     if not isinstance(region, str) or not isinstance(industry, str):
-        return _FALLBACK_CULTURAL_CONTEXT["default"]
+        return ""
 
     clean_region = region.strip()
     clean_industry = industry.strip()
-    if not clean_region or not clean_industry:
+
+    if not clean_region and not clean_industry:
         return _FALLBACK_CULTURAL_CONTEXT["default"]
+
+    if not clean_region or not clean_industry:
+        return ""
 
     try:
         return await asyncio.wait_for(

@@ -34,23 +34,37 @@ _DEFAULT_COMPETITORS: list[dict[str, str]] = [
 
 
 def _get_fallback_data(industry: str) -> dict[str, Any]:
-    clean_industry = industry.strip().lower()
+    clean_industry = industry.strip().lower() if isinstance(industry, str) else "general"
     matched_competitors = _STATIC_COMPETITORS.get(clean_industry)
+    is_known = matched_competitors is not None
     if not matched_competitors:
         for key, comps in _STATIC_COMPETITORS.items():
             if key in clean_industry or clean_industry in key:
                 matched_competitors = comps
+                is_known = True
                 break
     if not matched_competitors:
         matched_competitors = _DEFAULT_COMPETITORS
 
+    recent_rounds = (
+        [{"company": c["name"], "round": c["stage"], "amount": c["funding"], "year": c["founded"]} for c in matched_competitors]
+        if is_known
+        else []
+    )
+
     return {
         "source": "crunchbase_static_fallback",
+        "data_source": "static_fallback",
         "industry": industry,
         "competitors": matched_competitors,
+        "recent_rounds": recent_rounds,
         "market_stage_trend": "Growing",
         "cached": True,
     }
+
+
+_get_fallback = _get_fallback_data
+
 
 
 async def fetch_crunchbase(industry: str) -> dict[str, Any]:

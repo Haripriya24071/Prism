@@ -1,12 +1,22 @@
-"""backend/tests/conftest.py — Shared pytest fixtures for PRISM backend test suite."""
-
+import os
+import sys
+from pathlib import Path
 from datetime import datetime
 from typing import Generator
 import pytest
+
+# Ensure backend directory is in sys.path for direct imports
+_BACKEND_DIR = Path(__file__).parent.parent
+if str(_BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(_BACKEND_DIR))
+
 from models.agents import AgentOutput, AgentPersona, ScoreMatrix, SectionScore
 from models.brd import BRDSection, LineageTag, MergedBRD
 from models.context import ContextPackage, MarketData, NewsItem
 from models.intake import IntakeExtraction, IntakePackage
+
+
+
 
 # ── Intake fixtures ───────────────────────────────────────────────────
 
@@ -182,6 +192,9 @@ def test_client() -> Generator:
     os.environ["GCP_PROJECT_ID"] = "test-project"
     os.environ["ENV"] = "development"
     from fastapi.testclient import TestClient
-    from main import app
+    try:
+        from backend.main import app
+    except ImportError:
+        from main import app
     with TestClient(app) as client:
         yield client

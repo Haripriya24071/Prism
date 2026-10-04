@@ -10,7 +10,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
-import structlog
+import logging
+
+try:
+    import structlog
+    logger = structlog.get_logger()
+except ImportError:
+    logger = logging.getLogger("prism")  # type: ignore[assignment]
 
 try:
     import google.generativeai as genai
@@ -19,7 +25,6 @@ except ImportError:
     genai = None  # type: ignore[assignment]
     GenAIGenerationConfig = None  # type: ignore[assignment]
 
-logger = structlog.get_logger()
 
 _BACKEND_DIR = Path(__file__).parent
 _ROOT_DIR = _BACKEND_DIR.parent

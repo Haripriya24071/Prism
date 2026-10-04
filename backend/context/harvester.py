@@ -4,20 +4,32 @@ import asyncio
 from datetime import datetime
 from typing import Any
 
-from backend.config import settings
-from backend.context.alphavantage import fetch_market_sentiment
-from backend.context.crunchbase import fetch_crunchbase
-from backend.context.gdelt import fetch_political_context
-from backend.context.govtdata import fetch_govtdata
-from backend.context.grounding import fetch_gemini_grounding
-from backend.context.newsapi import fetch_news
-from backend.context.worldbank import fetch_worldbank
-from backend.models.context import ContextPackage, MarketData, NewsItem
-from backend.models.intake import IntakePackage
+try:
+    from backend.config import settings
+    from backend.context.alphavantage import fetch_market_sentiment
+    from backend.context.crunchbase import fetch_crunchbase
+    from backend.context.gdelt import fetch_political_context
+    from backend.context.govtdata import fetch_govtdata
+    from backend.context.grounding import fetch_gemini_grounding
+    from backend.context.newsapi import fetch_news
+    from backend.context.worldbank import fetch_worldbank
+    from backend.models.context import ContextPackage, MarketData, NewsItem
+    from backend.models.intake import IntakePackage
+except ImportError:
+    from config import settings
+    from context.alphavantage import fetch_market_sentiment
+    from context.crunchbase import fetch_crunchbase
+    from context.gdelt import fetch_political_context
+    from context.govtdata import fetch_govtdata
+    from context.grounding import fetch_gemini_grounding
+    from context.newsapi import fetch_news
+    from context.worldbank import fetch_worldbank
+    from models.context import ContextPackage, MarketData, NewsItem
+    from models.intake import IntakePackage
 
 
-async def harvest_context(intake: IntakePackage) -> ContextPackage:
-    if not isinstance(intake, IntakePackage):
+async def harvest_context(intake: Any) -> ContextPackage:
+    if intake is None or not hasattr(intake, "session_id") or not hasattr(intake, "extraction"):
         return ContextPackage(
             session_id="unknown_session",
             region=None,
@@ -25,9 +37,10 @@ async def harvest_context(intake: IntakePackage) -> ContextPackage:
             failed_sources=["intake_invalid"],
         )
 
-    session_id = intake.session_id
-    region = intake.extraction.region or "IN"
-    industry = intake.extraction.industry or "General"
+    session_id = str(intake.session_id)
+    extraction = getattr(intake, "extraction", None)
+    region = getattr(extraction, "region", None) or "IN"
+    industry = getattr(extraction, "industry", None) or "General"
 
     tasks = [
         fetch_news(region, industry),

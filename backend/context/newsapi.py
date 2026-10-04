@@ -1,10 +1,13 @@
-"""backend/context/newsapi.py — NewsAPI integration client with in-memory caching."""
-
+import hashlib
 import time
 from typing import Any
 import httpx
-from backend.config import settings
-from backend.models.context import NewsItem
+try:
+    from backend.config import settings
+    from backend.models.context import NewsItem
+except ImportError:
+    from config import settings
+    from models.context import NewsItem
 
 _COUNTRY_MAP: dict[str, str] = {
     "in": "in",
@@ -24,23 +27,49 @@ _COUNTRY_MAP: dict[str, str] = {
     "germany": "de",
 }
 
-_CACHE: dict[tuple[str, str], tuple[float, list[NewsItem]]] = {}
+_CACHE: dict[str, tuple[float, list[NewsItem]]] = {}
 _CACHE_TTL_SECONDS: float = 3600.0
 
 
-def _get_from_cache(cache_key: tuple[str, str]) -> list[NewsItem] | None:
-    cached_entry = _CACHE.get(cache_key)
+def _cache_key(region: str, industry: str) -> str:
+    r = region.strip().lower() if isinstance(region, str) else ""
+    ind = industry.strip().lower() if isinstance(industry, str) else ""
+    return hashlib.md5(f"{r}:{ind}".encode("utf-8")).hexdigest()
+
+
+def _get_from_cache(region_or_key: str, industry: str | None = None) -> list[NewsItem] | None:
+    if industry is not None:
+        key = _cache_key(region_or_key, industry)
+    elif isinstance(region_or_key, str) and len(region_or_key) == 32 and region_or_key.isalnum():
+        key = region_or_key
+    else:
+        key = str(region_or_key)
+    cached_entry = _CACHE.get(key)
     if cached_entry is None:
         return None
     timestamp, items = cached_entry
     if (time.time() - timestamp) < _CACHE_TTL_SECONDS:
         return items
-    _CACHE.pop(cache_key, None)
+    _CACHE.pop(key, None)
     return None
 
 
-def _set_cache(cache_key: tuple[str, str], items: list[NewsItem]) -> None:
-    _CACHE[cache_key] = (time.time(), items)
+_get_cached = _get_from_cache
+
+
+def _set_cache(region_or_key: str, industry_or_items: Any, items: list[NewsItem] | None = None) -> None:
+    if items is not None:
+        key = _cache_key(region_or_key, industry_or_items)
+        items_to_cache = items
+    elif isinstance(industry_or_items, list):
+        key = region_or_key
+        items_to_cache = industry_or_items
+    else:
+        key = str(region_or_key)
+        items_to_cache = []
+    _CACHE[key] = (time.time(), items_to_cache)
+
+
 
 
 async def fetch_news(region: str, industry: str) -> list[NewsItem]:
@@ -49,9 +78,9 @@ async def fetch_news(region: str, industry: str) -> list[NewsItem]:
 
     clean_region = region.strip().lower()
     clean_industry = industry.strip().lower()
-    cache_key = (clean_region, clean_industry)
+    key = _cache_key(clean_region, clean_industry)
 
-    cached = _get_from_cache(cache_key)
+    cached = _get_from_cache(key)
     if cached is not None:
         return cached
 
@@ -102,7 +131,7 @@ async def fetch_news(region: str, industry: str) -> list[NewsItem]:
                 news_items.append(item)
 
             if news_items:
-                _set_cache(cache_key, news_items)
+                _set_cache(key, news_items)
             return news_items
     except Exception:
         return []
