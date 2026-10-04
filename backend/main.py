@@ -218,12 +218,15 @@ async def generate(session_id: str, background_tasks: BackgroundTasks) -> dict:
     if session is None:
         raise SessionNotFoundError(session_id)
 
-    if session["status"] not in ("intake", "ready"):
+    if session["status"] not in ("intake", "ready", "error", "failed"):
         return {
             "session_id": session_id,
             "status": session["status"],
             "message": "Pipeline already running or complete",
         }
+
+    if session["status"] in ("error", "failed"):
+        store_update_session(session_id, error=None)
 
     # Rebuild IntakePackage from session store or extract from history
     intake_data = session.get("intake_package")
