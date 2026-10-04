@@ -76,6 +76,10 @@ def _find_best_agent_per_section(
 
     Returns dict: section_title -> (best_persona, content_text)
     """
+    successful_outputs = [o for o in agent_outputs if not o.failed]
+    if not successful_outputs:
+        return {}
+
     best: dict[str, tuple[AgentPersona, str]] = {}
 
     for section in _BRD_SECTIONS:
