@@ -40,7 +40,8 @@ export async function uploadFile(sessionId, file) {
   formData.append('session_id', sessionId)
   formData.append('file', file)
 
-  const res = await fetch(`${API}/intake/upload`, {
+  // Pass session_id in query and form data for maximum compatibility
+  const res = await fetch(`${API}/intake/upload?session_id=${encodeURIComponent(sessionId)}`, {
     method: 'POST',
     body: formData,
   })
@@ -51,7 +52,8 @@ export async function uploadFile(sessionId, file) {
 }
 
 export async function triggerGeneration(sessionId) {
-  const res = await fetch(`${API}/generate`, {
+  // Pass session_id in query string for FastAPI scalar parameter and body for compatibility
+  const res = await fetch(`${API}/generate?session_id=${encodeURIComponent(sessionId)}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_id: sessionId }),
@@ -75,5 +77,5 @@ export async function fetchPDF(sessionId, view = 'investor') {
   if (!res.ok) {
     throw new Error(`Fetch PDF failed: ${res.status} ${res.statusText}`)
   }
-  return await res.blob()
+  return await res.json()
 }

@@ -15,7 +15,7 @@ const AGENT_CONFIGS = [
 
 export default function GenerationPage() {
   const { sessionId, status, agentStatuses, error } = useSession()
-  const { contextReady, progressPct } = useSSE(sessionId)
+  const { contextReady, progressPct, stageMessage } = useSSE(sessionId)
 
   const agents = AGENT_CONFIGS.map((agent) => ({
     ...agent,
@@ -38,17 +38,21 @@ export default function GenerationPage() {
           Six personas are independently developing and stress-testing the BRD.
         </p>
 
-        {/* Live Context Harvester Status line */}
+        {/* Live Pipeline Status line */}
         <div className="mt-4 flex items-center gap-3 p-3 bg-surface rounded-md border border-border">
           <span
-            className={`w-3 h-3 rounded-full ${
-              contextReady ? 'bg-success' : 'bg-accent-signal animate-pulse'
+            className={`w-3 h-3 rounded-full flex-shrink-0 ${
+              progressPct >= 100
+                ? 'bg-success'
+                : contextReady
+                ? 'bg-accent-signal animate-pulse'
+                : 'bg-warning animate-pulse'
             }`}
           />
           <span className="font-tertiary text-small text-content-secondary">
-            {contextReady
+            {stageMessage || (contextReady
               ? 'Context harvester complete (NewsAPI, Crunchbase, World Bank)'
-              : 'Harvesting real-world context data...'}
+              : 'Harvesting real-world context data...')}
           </span>
         </div>
 

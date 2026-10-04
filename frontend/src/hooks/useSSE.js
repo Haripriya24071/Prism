@@ -5,6 +5,7 @@ export function useSSE(sessionId) {
   const { setStatus, setAgentStatus, setBrdData, failSession } = useSession()
   const [contextReady, setContextReady] = useState(false)
   const [progressPct, setProgressPct] = useState(0)
+  const [stageMessage, setStageMessage] = useState('Initializing generation pipeline...')
 
   useEffect(() => {
     if (!sessionId) {
@@ -16,6 +17,25 @@ export function useSSE(sessionId) {
     const source = new EventSource(url)
     let finished = false
 
+    // Context harvest events
+    source.addEventListener('context_start', () => {
+      setStageMessage('Harvesting real-world context data (NewsAPI, Crunchbase, World Bank)...')
+      setProgressPct((prev) => Math.max(prev, 10))
+    })
+
+    source.addEventListener('context_ready', () => {
+      setContextReady(true)
+      setStageMessage('Context harvested. Preparing 6 adversarial agent personas...')
+      setProgressPct((prev) => Math.max(prev, 20))
+    })
+
+    // Swarm execution events
+    source.addEventListener('swarm_start', () => {
+      setStatus(SESSION_STATUS.SWARM_RUNNING)
+      setStageMessage('6 Swarm Agents are analyzing market, unit economics, tech stack & regulatory risks...')
+      setProgressPct((prev) => Math.max(prev, 25))
+    })
+
     source.addEventListener('agent_status', (event) => {
       try {
         const payload = JSON.parse(event.data)
@@ -23,33 +43,65 @@ export function useSSE(sessionId) {
           setAgentStatus(payload.agent, payload.status)
         }
         if (typeof payload?.progress_pct === 'number') {
-          setProgressPct(payload.progress_pct)
+          setProgressPct((prev) => Math.max(prev, payload.progress_pct))
         }
       } catch {
         // parse error ignored
       }
     })
 
+    source.addEventListener('swarm_complete', () => {
+      setStageMessage('All 6 personas completed evaluation. Evaluating against 5-axis rubric...')
+      setProgressPct((prev) => Math.max(prev, 68))
+    })
+
+    // Evaluation & Merge events
+    source.addEventListener('evaluation_start', () => {
+      setStatus(SESSION_STATUS.EVALUATING)
+      setStageMessage('Gemini Pro scoring agent submissions on feasibility, defensibility & rigor...')
+      setProgressPct((prev) => Math.max(prev, 70))
+    })
+
+    source.addEventListener('evaluation_complete', (event) => {
+      try {
+        const payload = JSON.parse(event.data)
+        const winner = payload?.winning_agent ? ` (Winning base: ${payload.winning_agent.toUpperCase()})` : ''
+        setStageMessage(`Evaluation complete${winner}. Merging best sections into unified BRD...`)
+      } catch {
+        setStageMessage('Evaluation complete. Merging best sections into unified BRD...')
+      }
+      setProgressPct((prev) => Math.max(prev, 80))
+    })
+
+    source.addEventListener('merge_start', () => {
+      setStatus(SESSION_STATUS.MERGING)
+      setStageMessage('Transplanting highest-scoring sections with provenance lineage...')
+      setProgressPct((prev) => Math.max(prev, 82))
+    })
+
+    source.addEventListener('merge_complete', () => {
+      setStageMessage('BRD sections merged. Stress-testing assumptions & failure modes...')
+      setProgressPct((prev) => Math.max(prev, 88))
+    })
+
+    source.addEventListener('analysis_start', () => {
+      setStageMessage('Generating divergence heatmap & investor readiness score...')
+      setProgressPct((prev) => Math.max(prev, 89))
+    })
+
+    // Generic progress event
     source.addEventListener('progress', (event) => {
       try {
         const payload = JSON.parse(event.data)
         if (typeof payload?.progress_pct === 'number') {
-          setProgressPct(payload.progress_pct)
+          setProgressPct((prev) => Math.max(prev, payload.progress_pct))
         }
       } catch {
         // parse error ignored
       }
     })
 
-    source.addEventListener('context_ready', () => {
-      setContextReady(true)
-      setStatus(SESSION_STATUS.HARVESTING)
-    })
-
-    source.addEventListener('evaluation_complete', () => {
-      setStatus(SESSION_STATUS.EVALUATING)
-    })
-
+    // Final BRD Ready event
     source.addEventListener('brd_ready', (event) => {
       try {
         const payload = JSON.parse(event.data)
@@ -58,8 +110,29 @@ export function useSSE(sessionId) {
         // parse error ignored
       }
       finished = true
+      setStageMessage('BRD and Investor Readiness Score locked! Launching Results...')
       setProgressPct(100)
       setStatus(SESSION_STATUS.COMPLETE)
+    })
+
+    // Error event
+    source.addEventListener('error', (event) => {
+      if (finished) return
+      try {
+        const payload = JSON.parse(event.data)
+        if (payload?.message) {
+          failSession(payload.message)
+          return
+        }
+      } catch {
+        // ignore
+      }
+    })
+
+    // Done signal from server
+    source.addEventListener('done', () => {
+      finished = true
+      source.close()
     })
 
     source.onerror = () => {
@@ -74,5 +147,5 @@ export function useSSE(sessionId) {
     }
   }, [sessionId, setStatus, setAgentStatus, setBrdData, failSession])
 
-  return { contextReady, progressPct }
+  return { contextReady, progressPct, stageMessage }
 }

@@ -60,7 +60,17 @@ export default function ResultsPage() {
         const data = await fetchBRD(sessionId)
         if (!cancelled) {
           setLoadError(null)
-          setBrdData(data)
+          // Zahid's GET /brd/{id} returns { "status": "complete", "brd": { sections, assumptions, failure_modes }, "investor_readiness_score": ... }
+          // Unpack res.brd if wrapped while preserving score and metadata
+          const unpacked = data?.brd
+            ? {
+                ...data.brd,
+                investor_readiness_score: data.investor_readiness_score ?? data.brd.investor_readiness_score,
+                pivots: data.pivots ?? data.brd.pivots,
+                heatmap: data.heatmap ?? data.brd.heatmap,
+              }
+            : data
+          setBrdData(unpacked)
         }
       } catch (err) {
         if (!cancelled) {
@@ -85,15 +95,33 @@ export default function ResultsPage() {
       setDownloadingView(view)
       setDownloadError(null)
       try {
-        const blob = await fetchPDF(sessionId, view)
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url
-        link.download = `prism-brd-${view}.pdf`
-        document.body.appendChild(link)
-        link.click()
-        link.remove()
-        URL.revokeObjectURL(url)
+        const data = await fetchPDF(sessionId, view)
+        if (data instanceof Blob) {
+          const url = URL.createObjectURL(data)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = `prism-brd-${view}.pdf`
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+          URL.revokeObjectURL(url)
+        } else if (data?.available && data?.url) {
+          if (data.url.startsWith('http://') || data.url.startsWith('https://')) {
+            window.open(data.url, '_blank', 'noopener,noreferrer')
+          } else {
+            const link = document.createElement('a')
+            link.href = data.url
+            link.download = `prism-brd-${view}.pdf`
+            link.target = '_blank'
+            document.body.appendChild(link)
+            link.click()
+            link.remove()
+          }
+        } else {
+          setDownloadError(
+            `The ${view} PDF is currently generating. Please try again shortly.`
+          )
+        }
       } catch (err) {
         setDownloadError(err?.message || `Could not download the ${view} PDF.`)
       } finally {
@@ -103,28 +131,40 @@ export default function ResultsPage() {
     [sessionId],
   )
 
-  const sections = (brdData?.sections ?? []).map(toSection)
-  const assumptions = (brdData?.assumptions ?? []).map(toAssumption)
-  const bars = (heatmapData?.bars ?? []).map((bar) => ({
-    sectionTitle: bar.section_title,
-    riskScore: bar.risk_score,
-    stdDev: bar.std_dev,
-    riskLevel: toRiskLevel(bar.risk_score),
+  const rawBrd = brdData?.brd ?? brdData
+  const sections = (rawBrd?.sections ?? []).map(toSection)
+  const assumptions = (rawBrd?.assumptions ?? []).map(toAssumption)
+  const rawHeatmap = heatmapData ?? rawBrd?.heatmap ?? brdData?.heatmap
+  const bars = (rawHeatmap?.bars ?? []).map((bar) => ({
+    sectionTitle: bar.section_title ?? bar.sectionTitle,
+    riskScore: bar.risk_score ?? bar.riskScore,
+    stdDev: bar.std_dev ?? bar.stdDev,
+    riskLevel: toRiskLevel(bar.risk_score ?? bar.riskScore ?? 0),
   }))
-  const score = investorScore?.score ?? brdData?.investor_readiness_score ?? null
+  const score =
+    investorScore?.score ??
+    rawBrd?.investor_readiness_score ??
+    brdData?.investor_readiness_score ??
+    null
+
   const pivotSuggestions =
     investorScore?.pivot_suggestions ??
     investorScore?.pivotSuggestions ??
     investorScore?.pivots ??
+    rawBrd?.pivot_suggestions ??
+    rawBrd?.pivotSuggestions ??
+    rawBrd?.pivots ??
     brdData?.pivot_suggestions ??
     brdData?.pivotSuggestions ??
     brdData?.pivots ??
     []
+
   const pivotTriggered = Boolean(
     investorScore?.pivot_triggered ??
     investorScore?.pivotTriggered ??
+    rawBrd?.pivot_triggered ??
     brdData?.pivot_triggered ??
-    pivotSuggestions.length > 0
+    (score !== null && score < 60 && pivotSuggestions.length > 0)
   )
 
   return (
