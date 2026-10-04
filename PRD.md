@@ -1,204 +1,111 @@
-# PRISM — Product Requirements Document
-**Version:** 1.0 | **Team:** Swapnil, Zahid, Haripriya, Ritika | **Date:** October 2026
-**Hackathon:** Manipal Hackathon 2026 | **Track:** Google Gemini AI + Google Cloud
+# PRISM — Product Requirements Document (PRD)
+
+**Version:** 2.0 (Production Verified) | **Team:** Swapnil, Zahid, Haripriya, Ritika | **Date:** October 2026  
+**Hackathon:** Manipal Hackathon 2026 | **Track:** Google Gemini AI + Google Cloud  
 
 ---
 
 ## 1. Executive Summary
 
-PRISM is a multi-modal AI system that transforms raw, unstructured business ideas — expressed as text, voice, images, or documents — into production-grade Business Requirements Documents (BRDs) backed by live market intelligence.
+PRISM is a multi-modal AI decision system that transforms raw, unstructured, fragmented business ideas — expressed as text, voice, diagrams, or documents — into institutional-grade, investor-ready Business Requirements Documents (BRDs) backed by live market intelligence.
 
-PRISM is not a document generator. It is a **structured disagreement engine**.
+PRISM is not a template generator. It is a **Structured Disagreement Engine**.
 
-It routes a business idea through six independent AI agents simultaneously — each with a radically different expert persona — then evaluates, merges, and presents the synthesised output with full lineage attribution, confidence scoring, and real-world data grounding.
+Instead of a single one-shot prompt that produces agreeable hallucinations, PRISM routes an idea through six adversarial AI agents simultaneously. Each agent embodies a distinct, uncompromising expert persona (Venture Capitalist, Lean Builder, Enterprise CTO, UX Researcher, Regulatory Auditor, and Adversarial Competitor). The system captures their debate, evaluates section quality against a multi-axis rubric, transplants the strongest sections into a unified BRD, and quantifies disagreement into a visual risk radar.
 
-**Core thesis:** A single AI call produces a generic, unchallenged BRD. PRISM produces a *contested* one — where a regulator, a competitor, and a first-principles builder have all stress-tested your idea before you see a word.
-
----
-
-## 2. Problem Statement
-
-**The hackathon brief:** Build a scalable, multi-modal AI system using Google Gemini AI and integrated Google Cloud tools that can process real-time, fragmented data (text, images, and documents) and deliver accurate, context-aware, and explainable decisions in complex and dynamic environments.
-
-**The real problem we're solving:** Early-stage founders and product teams waste weeks writing BRDs manually — interviewing stakeholders, documenting requirements, formatting documents. Existing AI tools generate one-shot, unchallenged, context-free documents. The output is generic because the process is shallow.
-
-PRISM solves this by:
-1. Accepting any form of input (text, voice, images, documents)
-2. Grounding every decision in live real-world data (news, market, regulatory, cultural)
-3. Running six expert perspectives simultaneously and letting them compete
-4. Making the disagreement itself visible as risk signal
-5. Explaining every requirement with a data citation and confidence score
+Every requirement in PRISM carries:
+1. **Lineage Attribution:** The specific agent that drafted or refined it.
+2. **Data Citation:** Real-world verified data (`[SOURCE: worldbank]`, `[SOURCE: newsapi]`, `[SOURCE: crunchbase]`, etc.).
+3. **Confidence Rating:** Explicit score reflecting evidential backing.
+4. **Dissent Notes:** What opposing agents warned about.
 
 ---
 
-## 3. Target Audience
+## 2. Problem Statement & Alignment
 
-**Primary:** Early-stage founders preparing for pre-seed or seed fundraising who need investor-grade BRDs but cannot afford a consultant.
+### The Official Hackathon Challenge:
+> *"Build a scalable, multi-modal AI system using Google Gemini AI and integrated Google Cloud tools (such as Vertex AI, Cloud Storage, and BigQuery) that can process real-time, fragmented data (text, images, and documents) and deliver accurate, context-aware, and explainable decisions in complex and dynamic environments."*
 
-**Secondary:** Product managers in mid-stage startups exploring new verticals who need rapid, structured requirements documentation.
-
-**Tertiary:** Hackathon participants and student entrepreneurs in emerging markets (India, Southeast Asia) where regulatory complexity and local market data are hardest to surface.
+### How PRISM Delivers:
+- **Scalable Multi-Modal AI:** Ingests unformatted founder descriptions, voice input via Web Speech API, whiteboards/wireframes via Gemini Vision, and pitch decks via document parsers.
+- **Real-Time Fragmented Data:** Harvests parallel macro-economic indicators, live news, and cultural grounding across 5 external streams the instant a region is detected.
+- **Accurate & Explainable Decisions:** Evaluates 6 competing BRDs through an impartial rubric engine and logs all session parameters to Google BigQuery.
+- **Integrated Google Cloud Tools:** Utilizes Gemini 2.0 Flash, Google Cloud Storage for artifact persistence, Google BigQuery for analytics and decision logging, with an enterprise production architecture ready for Vertex AI.
 
 ---
 
-## 4. Core Features — MVP (Demo Ready)
+## 3. The 6-Agent Persona Swarm
+
+| Agent Persona | Color Token | Analytical Lens & Hard Constraints |
+| :--- | :--- | :--- |
+| **1. The VC** | `#7C3AED` (Violet) | Focuses on TAM/SAM/SOM, unit economics, LTV/CAC ratios, moat defensibility, and 10x scalability. Rejects ideas with weak margins. |
+| **2. Lean Founder** | `#0EA5E9` (Sky Blue) | Ruthlessly minimizes scope. Enforces a 4-week MVP build timeline. Strips away non-essential features and focuses on validation speed. |
+| **3. Enterprise CTO** | `#10B981` (Emerald) | Evaluates technical feasibility, scalability, microservice architecture, API design, security, and infrastructure costs. |
+| **4. UX Researcher**| `#F59E0B` (Amber) | Represents end-user psychology, onboarding friction, behavioral accessibility, and user retention mechanics. |
+| **5. The Regulator** | `#6366F1` (Indigo) | Audits compliance, GDPR/DPDP data privacy, sector-specific statutory laws, financial liability, and licensing requirements. |
+| **6. The Adversarial**| `#EF4444` (Crimson) | Acts as an aggressive competitor. Identifies exploit vectors, churn triggers, platform dependency risks, and ways to kill the idea. |
+
+---
+
+## 4. Product Features & Flow
+
+```
+Founder Input ──► Conversational Extraction ──► Parallel Context Harvesting
+                                                       │
+         ┌─────────────────────────────────────────────┘
+         ▼
+6-Agent Parallel Swarm Deliberation (180+ RPM Key Pool)
+         │
+         ▼
+Rubric Evaluation & Best-Section Merge Engine
+         │
+         ├─────────────────────────────────────────────┐
+         ▼                                             ▼
+Divergence Heatmap & Investor Readiness Score    3 Stakeholder PDF Exports
+(Quantified Disagreement & Risk Radar)           (Investor / Tech / Regulatory)
+```
 
 ### 4.1 Conversational Intake
-- Single chatbox: *"Tell me your idea — doesn't matter how messy."*
-- Gemini Flash drives the conversation, asking only what's missing
-- Dynamic follow-ups — no fixed form, no minimum word count
-- Voice input via Web Speech API (Gemini Audio as fallback)
-- File upload: images (Gemini Vision), PDFs (PyPDF2), Word docs (python-docx)
-- Silent form-fill: as conversation progresses, structured fields extracted in background
-
-**Intake extracts:**
-- Business idea (core description)
-- Target region (ISO 3166-1 alpha-2 — triggers context harvesting)
-- Industry vertical
-- Business stage (idea / prototype / mvp / growth)
-- Budget range and constraints
-- Success definition
+- Natural chat interface without tedious static forms.
+- Automatically extracts: Region (ISO 3166-1), Industry, Stage, Budget, and 12-month Success Metric.
+- Multimodal drag-and-drop supporting PNG, JPEG, PDF, and DOCX files.
 
 ### 4.2 Real-Time Context Harvesting
-Fires in parallel the moment region is detected — while conversation continues.
+- Triggers 5 asynchronous data queries in parallel:
+  1. NewsAPI (regional headlines & industry sentiment)
+  2. World Bank API (GDP per capita, inflation, ease of doing business)
+  3. Crunchbase Basic (recent funding trends)
+  4. Govt Open Data (statutory regulatory guidelines)
+  5. Gemini Grounding (cultural sensitivities, seasonal shopping cycles)
 
-| Source | Data | API |
-|--------|------|-----|
-| NewsAPI | Political climate, domain news, recent events | Free tier: 100 req/day |
-| World Bank Open Data | GDP, ease of doing business, inflation, FDI | Unlimited (open) |
-| Crunchbase Basic | Competitor funding, market activity | Free tier |
-| Govt Open Data | Regional regulatory flags, industry-specific compliance | Open |
-| Gemini Search Grounding | Cultural nuances, religious considerations, seasonal patterns | Free (within Gemini API) |
+### 4.3 Evaluation Rubric & Surgical Merge
+- Evaluates each BRD across 5 criteria:
+  - Technical Feasibility (25%)
+  - Market Timing (20%)
+  - Regulatory Safety (20%)
+  - User Adoption (20%)
+  - Competitive Moat (15%)
+- Merges the winning base document with top-scoring sections from opposing agents.
 
-All 5 sources called via `asyncio.gather()`. A slow API never blocks the others.
+### 4.4 Divergence Heatmap
+- Calculates per-section variance across all 6 agent scores.
+- Renders a color-coded visual risk radar (Green = Consensus, Amber = Moderate Variance, Red = Severe Contested Disagreement).
 
-### 4.3 Six-Agent Swarm
-Six independent Gemini 2.0 Flash calls — same input, different system prompt injected.
+### 4.5 Investor Readiness Scorecard & Pivot Suggester
+- Composite 0–100 score indicating fundraising readiness.
+- If score < 60, triggers `output/pivot.py` to deliver 3 strategic pivot directions with projected score improvements.
 
-| Agent | Persona | Mandate |
-|-------|---------|---------|
-| VC Investor | Silicon Valley seed-stage VC | Maximise fundability, TAM, moat |
-| Lean Founder | Bootstrapped founder, $5K budget | Ship MVP in 4 weeks, cut everything else |
-| Enterprise CTO | Risk-averse, Fortune 500 background | Scalability, compliance, security-first |
-| UX Researcher | User-obsessed, ethnographic lens | User pain points, adoption barriers, accessibility |
-| Regulator | Government policy expert | Legal compliance, regulatory landmines, ethical scrutiny |
-| Adversarial Competitor | Well-funded rival trying to kill this idea | Identifies every weakness and gap |
-
-All 6 run simultaneously. No coordination. No shared memory. Each produces a complete, independent BRD.
-
-### 4.4 Weighted Evaluator
-Single Gemini 1.5 Pro call. Scores all 6 BRDs across 5 weighted criteria.
-
-| Criterion | Weight | Data Source |
-|-----------|--------|-------------|
-| Feasibility | 25% | World Bank data, stated constraints |
-| Market Timing | 20% | NewsAPI, Crunchbase funding data |
-| Regulatory Safety | 20% | Govt open data, regional compliance flags |
-| User Adoption | 20% | Cultural context, UX research signals |
-| Competitive Moat | 15% | Competitor analysis, market gap data |
-
-Every score includes a one-line data citation. Not opinion — evidence.
-
-### 4.5 Merge Engine
-- Winning BRD (highest composite score) becomes the base
-- Every other BRD scanned section by section
-- Any section scoring higher than the winning BRD's equivalent → transplanted in
-- Result: a BRD stronger than what any single agent could produce alone
-- Every section carries a lineage tag: source agent + confidence score + data citation
-
-### 4.6 Divergence Heatmap
-- Calculates standard deviation of per-section scores across all 6 agents
-- Normalised to 0–100 risk scale
-- High divergence = high disagreement = high risk area of the business
-- Visualised as animated bars per section
-- Tooltip: "4 of 6 agents disagreed here — this section carries the highest risk"
-
-### 4.7 Investor Readiness Score
-- Single 0–100 score with weighted breakdown
-- Gap flags: specific items pulling the score down with action items
-- Colour coded: green >70, amber 50–70, red <50
-- Animated count-up on reveal
-
-### 4.8 Failure Mode Simulation
-Agent 6 (Adversarial) output processed into top 3 failure modes:
-- Title + probability percentage + description + pre-built mitigation
-- Backed by real data from context harvester (e.g., "competitor raised $2M doing this exact thing")
-- Lives in the BRD's Risk Register section
-
-### 4.9 Assumption Flagging
-Every hidden assumption in the final BRD surfaced:
-- The assumption statement
-- Confidence rating (high / medium / low)
-- Evidence (or lack thereof) from context data
-- Recommended action to validate
-
-### 4.10 Stakeholder Export Views
-Same BRD, three different PDFs generated from one Gemini call:
-- **Investor View:** Lead with market, TAM, timing, moat. Soften technical complexity.
-- **Technical View:** Lead with architecture, functional requirements, API dependencies.
-- **Regulatory View:** Lead with legal framework, data handling, compliance, risk mitigation.
-
-### 4.11 Pivot Suggester
-- Fires automatically if Investor Readiness Score < 60
-- Generates 3 concrete pivot directions, each with:
-  - Pivot description (one paragraph)
-  - Rationale based on the highest-scoring agent's gaps
-  - Projected investor readiness score if pivot is executed
-- Uses one Gemini 2.0 Flash call (part of post-merge analysis batch)
-- Displayed inline below the Investor Readiness Score card
-- Does not fire if score ≥ 60 (returns null silently)
+### 4.6 Triple Stakeholder PDF Export
+- Generates 3 specialized ReportLab PDFs from the same verified data:
+  1. **Investor View:** Focused on unit economics, TAM, market timing, and capital efficiency.
+  2. **Technical View:** Focused on system architecture, data models, scalability, and security.
+  3. **Regulatory View:** Focused on compliance checklists, liability, and statutory filings.
 
 ---
 
-## 5. Roadmap Features (PPT / Future)
+## 5. Technical Performance Requirements
 
-These are architected for but not built in the hackathon demo:
-
-- **Confidence Decay Monitor** — BRD freshness tracking; alerts when context has gone stale (new news, new competitor, regulatory change)
-- **BRD Versioning** — user returns with same idea 3 months later; diff view shows what changed
-- **Team Role Recommender** — recommends first hires and roles to skip based on what the BRD requires
-- **Multi-Language Output** — BRD in local language auto-detected from target region
-- **Voice BRD Walkthrough** — AI narrates the BRD section by section
-
----
-
-## 6. API Contract Summary
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/intake/session` | POST | Create new session |
-| `/intake/session/{id}` | GET | Get session status |
-| `/intake/chat` | POST | Submit a conversation turn |
-| `/intake/upload` | POST | Upload image / PDF / doc |
-| `/generate` | POST | Trigger BRD generation |
-| `/generate/stream/{id}` | GET | SSE stream — live agent status |
-| `/brd/{id}` | GET | Retrieve final merged BRD |
-| `/brd/{id}/pdf` | GET | Download PDF (view param: investor / technical / regulatory) |
-
-POST `/generate` fires the full pipeline as a FastAPI BackgroundTask. SSE stream at `/generate/stream/{id}` delivers live progress. Total call budget: 16 Gemini calls (14 Flash + 2 Pro) via Vertex AI.
-
-Full API contract with request/response schemas: see `SCHEMA.md`.
-
----
-
-## 7. Success Metrics (Demo)
-
-| Metric | Target |
-|--------|--------|
-| End-to-end BRD generation | < 50 seconds P95 |
-| Context harvester (5 APIs) | < 8 seconds |
-| Swarm (6 Flash calls) | < 20 seconds |
-| Evaluator + Merge (2 Pro calls) | < 20 seconds |
-| BRD quality vs. single-agent output | Demonstrably richer — show side by side |
-| Concurrent demo sessions | 5 simultaneous |
-
----
-
-## 8. Non-Functional Requirements
-
-- **AI Infrastructure:** All Gemini calls routed through Vertex AI (google-cloud-aiplatform SDK). Single GCP service account with ADC. No personal API key rotation.
-- **Gemini call budget per run:** 14× Flash + 2× Pro = 16 total calls.
-- **Availability:** Demo-grade — single region, no DR required.
-- **Security:** No PII stored. Session-scoped access only. API keys never logged. File uploads validated by MIME type via magic bytes.
-- **Accessibility:** WCAG 2.1 AA for all interactive elements. All agent states communicated via colour + text label (never colour alone).
-- **Performance:** No layout shift after initial render. Skeleton states at fixed dimensions. Canvas animations use `devicePixelRatio` for HiDPI.
+- **Swarm Execution:** < 20s P95 across all 6 agents running simultaneously.
+- **Total Pipeline Latency:** < 50s P95 from idea submission to rendered scorecard.
+- **High-Availability Key Pool:** Up to 180+ RPM through thread-safe round-robin rotation.
+- **Cost:** **₹0 Forever** across all utilized Google Cloud and Gemini services.
