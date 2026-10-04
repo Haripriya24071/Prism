@@ -43,14 +43,17 @@
 
 ## 2. AI & Model Execution Rules (AI)
 
-- **AI-001: Thread-Safe Key Pool Routing.**
-  Never invoke `genai.configure()` or instantiate raw Gemini clients inside service modules. All LLM calls must route through `get_flash_model()` or `get_pro_model()` in `backend/config.py` to ensure thread-safe round-robin key rotation and immediate failover on HTTP 429/401 errors.
+- **AI-001: Thread-Safe Key Pool Routing via KeyCircuitBreaker.**
+  Never invoke `genai.configure()` or instantiate raw Gemini clients inside service modules. All LLM calls must route through `get_flash_model()` or `get_pro_model()` in `backend/config.py` to ensure thread-safe key selection, per-thread client isolation, and automatic failover on HTTP 429/401 errors.
 
 - **AI-002: Prompt Citation Integrity.**
-  System prompts must explicitly enforce the `[SOURCE: source_name]` tag on every empirical claim, competitor reference, or regulatory guideline. Uncited factual claims are rejected during evaluation.
+  System prompts must explicitly enforce the `[SOURCE: source_name]` tag on every empirical claim, competitor reference, or regulatory guideline. Uncited factual claims are penalized during evaluation.
 
-- **AI-003: Partial Swarm Failure Policy.**
-  The swarm must proceed if at least 4 of 6 agents succeed. Failed agents are marked with `failed=True` and skipped during the merge transplantation step.
+- **AI-003: Autonomous Swarm Heuristic Recovery.**
+  If an upstream AI call fails after retries, `_generate_heuristic_brd(persona, intake, context)` must synthesize a domain-grounded fallback draft to guarantee a 100% completion rate (6/6 agents) with zero pipeline crashes.
+
+- **AI-004: Multi-Model Cascade Across Quota Pools.**
+  When `gemini-flash-latest` encounters daily quota limits (20 RPD on free keys), the circuit breaker must cascade to `gemini-flash-lite-latest`, `gemini-3.5-flash`, and `gemini-3.5-flash-lite` to leverage separate quota pools.
 
 ---
 
@@ -86,7 +89,7 @@
 ## 5. Frontend & UI Rules (UI)
 
 - **UI-001: Zero Hardcoded Colors.**
-  All markup must reference CSS custom properties defined in `src/index.css` (e.g. `var(--color-surface)`). Raw hex values in components are forbidden.
+  All markup must reference CSS custom properties defined in `tokens.css` / `src/index.css` (e.g. `var(--color-surface)`). Raw hex values in components are forbidden.
 
 - **UI-002: Motion Property Whitelist.**
   Animations must only animate `transform` and `opacity`. Never animate layout-triggering properties (`width`, `height`, `margin`, `top`).

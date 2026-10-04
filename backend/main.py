@@ -166,6 +166,7 @@ async def chat(request: ChatRequest) -> dict:
     return {
         "reply": result["reply"],
         "is_complete": result["is_complete"],
+        "extraction_complete": result["is_complete"],
         "turn": len(result["updated_history"]) // 2,
     }
 
@@ -223,10 +224,26 @@ async def generate(session_id: str, background_tasks: BackgroundTasks) -> dict:
             "message": "Pipeline already running or complete",
         }
 
-    # Rebuild IntakePackage from session store
+    # Rebuild IntakePackage from session store or extract from history
     intake_data = session.get("intake_package")
     if not intake_data:
-        raise IntakeError("No intake data found — complete intake conversation first")
+        conv = session.get("conversation_history", [])
+        user_msgs = [t.get("content", "") for t in conv if t.get("role") == "user"]
+        if user_msgs:
+            idea_text = " ".join(user_msgs)
+            try:
+                extraction = await extract_structured_fields(idea_text)
+                intake_data = extraction.model_dump()
+            except Exception:
+                intake_data = {"raw_idea": idea_text}
+            store_update_session(session_id, {"intake_package": intake_data, "status": "ready"})
+            session["intake_package"] = intake_data
+        elif session.get("file_context"):
+            intake_data = {"raw_idea": session["file_context"][:1000]}
+            store_update_session(session_id, {"intake_package": intake_data, "status": "ready"})
+            session["intake_package"] = intake_data
+        else:
+            raise IntakeError("No intake data found — please pitch your idea first")
 
     from datetime import datetime
     created_at_val = session["created_at"]

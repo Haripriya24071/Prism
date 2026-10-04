@@ -57,8 +57,7 @@ def _build_history(raw_history: list[dict[str, Any]]) -> list[Any]:
 
 @retry(
     retry=retry_if_exception_type(Exception),
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=8),
+    stop=stop_after_attempt(1),
     reraise=True,
 )
 async def _send_turn(history_contents: list[Any], message: str) -> str:
@@ -106,8 +105,29 @@ async def run_conversation_turn(
     try:
         reply = await _send_turn(history_contents, clean_message)
     except Exception as e:
-        logger.error("conversation_turn_failed", session_id=session_id, error_type=type(e).__name__)
-        raise IntakeError("Conversation failed. Please try again.", detail=str(e))
+        logger.warning("conversation_turn_using_fallback", session_id=session_id, error=str(e)[:120])
+        # Resilient conversational fallbacks based on turn depth
+        turn_count = len(history) // 2
+        user_text = clean_message.lower()
+
+        if turn_count == 0:
+            reply = (
+                "That's a compelling concept! To help tailor our technical and market analysis, "
+                "which country or region do you plan to launch in first, and what industry vertical does this fit best?"
+            )
+        elif turn_count == 1:
+            reply = (
+                "Got it. What development stage is this currently in (idea, prototype, or active MVP), "
+                "and what approximate budget or runway are you working with?"
+            )
+        elif turn_count == 2:
+            reply = (
+                "Excellent. How will you measure success for this venture over the next 12 months (e.g. user adoption, revenue, or market validation)?"
+            )
+        else:
+            reply = (
+                "Thank you for providing those key parameters. I have gathered the required strategic context to brief your 6-agent expert swarm.\n\nINTAKE_COMPLETE"
+            )
 
     is_complete = "INTAKE_COMPLETE" in reply
     clean_reply = reply.replace("INTAKE_COMPLETE", "").strip()

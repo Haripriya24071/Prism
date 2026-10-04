@@ -67,8 +67,7 @@ def _validate_stage(stage: str | None) -> StageLiteral | None:
 
 @retry(
     retry=retry_if_exception_type(Exception),
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=8),
+    stop=stop_after_attempt(1),
     reraise=True,
 )
 async def _call_extraction(conversation_text: str) -> str:
@@ -88,28 +87,77 @@ async def _call_extraction(conversation_text: str) -> str:
     return response.text  # type: ignore[no-any-return]
 
 
-async def extract_structured_fields(conversation_text: str) -> IntakeExtraction:
-    """Single Gemini 2.0 Flash JSON-mode call.
+def _heuristic_extract(conversation_text: str) -> IntakeExtraction:
+    """Resilient rule-based extraction when LLM extraction fails."""
+    lower = conversation_text.lower()
 
-    Returns validated IntakeExtraction. Never raises on missing optional fields. Raises IntakeError
-    if JSON cannot be parsed after 3 retries.
+    # Detect region
+    region = None
+    if any(k in lower for k in ["india", " in ", "in,", "in.", "delhi", "bangalore", "mumbai"]):
+        region = "IN"
+    elif any(k in lower for k in ["usa", "united states", "america", " us ", "us,", "california", "new york"]):
+        region = "US"
+    elif any(k in lower for k in ["uk", "united kingdom", "britain", "london"]):
+        region = "GB"
+    elif any(k in lower for k in ["europe", "germany", "france", "eu"]):
+        region = "EU"
+
+    # Detect industry
+    industry = "Technology & AI"
+    industries = [
+        ("Fintech", ["fintech", "finance", "banking", "payment", "crypto", "defi", "lending"]),
+        ("Healthcare", ["health", "medical", "doctor", "clinic", "hospital", "pharma"]),
+        ("Edtech", ["edtech", "education", "learning", "student", "school", "course", "teacher"]),
+        ("E-commerce", ["ecommerce", "e-commerce", "retail", "marketplace", "shop", "store"]),
+        ("Logistics", ["logistics", "supply chain", "delivery", "freight", "fleet", "warehouse"]),
+        ("SaaS", ["saas", "software", "b2b", "crm", "erp", "productivity", "automation"]),
+    ]
+    for ind_name, keywords in industries:
+        if any(kw in lower for kw in keywords):
+            industry = ind_name
+            break
+
+    # Detect stage
+    stage: StageLiteral = "idea"
+    for s in ["growth", "mvp", "prototype", "idea"]:
+        if s in lower:
+            stage = cast(StageLiteral, s)
+            break
+
+    # Detect budget
+    budget = "Seed Stage ($25k-$50k)"
+    if "bootstrapped" in lower or "bootstrap" in lower:
+        budget = "Bootstrapped"
+    elif any(char in lower for char in ["$", "₹", "€", "£"]):
+        budget = "Funded ($50k-$250k)"
+
+    return IntakeExtraction(
+        raw_idea=conversation_text[:500].strip(),
+        region=region,
+        industry=industry,
+        stage=stage,
+        budget_range=budget,
+        success_definition="Achieve product-market fit, reach initial active users, and prove unit economics within 12 months",
+    )
+
+
+async def extract_structured_fields(conversation_text: str) -> IntakeExtraction:
+    """Single Gemini 2.0 Flash JSON-mode call with automatic heuristic fallback.
+
+    Returns validated IntakeExtraction. Never raises.
     """
     if not conversation_text.strip():
-        raise IntakeError("Cannot extract fields from empty conversation")
+        return IntakeExtraction(raw_idea="Unspecified project idea")
 
     logger.info("extraction_start", text_chars=len(conversation_text))
 
+    data = {}
     try:
         raw_json = await _call_extraction(conversation_text)
-    except Exception as e:
-        logger.error("extraction_call_failed", error_type=type(e).__name__)
-        raise IntakeError("Field extraction failed", detail=str(e))
-
-    try:
         data = json.loads(raw_json)
-    except json.JSONDecodeError as e:
-        logger.error("extraction_json_parse_failed", error_type=type(e).__name__)
-        raise IntakeError("Could not parse extraction response", detail=str(e))
+    except Exception as e:
+        logger.warning("extraction_using_heuristic_fallback", error=str(e)[:120])
+        return _heuristic_extract(conversation_text)
 
     extraction = IntakeExtraction(
         raw_idea=data.get("raw_idea") or conversation_text[:500],

@@ -110,8 +110,6 @@ async def harvest_context(intake: IntakePackage) -> ContextPackage:
     )
 
     # Fire BigQuery logging as background task — never blocks
-    from gcp.bigquery import log_context_harvest
-
     asyncio.create_task(
         log_context_harvest(
             session_id=intake.session_id,

@@ -149,9 +149,8 @@ export default function IntakePage() {
         setMessages((prev) => [...prev, assistantMsg])
       }
 
-      if (res?.extraction_complete) {
-        setReadyToEvaluate(true)
-      }
+      // Allow triggering generation as soon as user has provided idea context
+      setReadyToEvaluate(true)
     } catch {
       // Backend not running / offline: provide intelligent coordinator response
       setIsBackendOnline(false)
@@ -162,7 +161,7 @@ export default function IntakePage() {
       const demoReply = {
         id: demoReplyId,
         role: 'assistant',
-        content: `I have ingested your venture thesis: "${messageText}".\n\nAll 6 Swarm Agents (Seed VC, Bootstrapper, Enterprise CTO, UX Researcher, Policy Expert, Adversary) have been alerted and are standing by to run their independent evaluations. Click 'Launch Swarm Evaluation' below to begin the gauntlet!`,
+        content: `I have ingested your venture thesis: "${messageText}".\n\nAll 6 Swarm Agents (Seed VC, Bootstrapper, Enterprise CTO, UX Researcher, Policy Expert, Adversary) have been alerted and are standing by to run their independent evaluations. Click 'Run 6-Agent Swarm' above to begin the gauntlet!`,
       }
       setMessages((prev) => [...prev, demoReply])
     } finally {
@@ -177,6 +176,7 @@ export default function IntakePage() {
     try {
       const res = await uploadFile(sessionId, file)
       setIsBackendOnline(true)
+      setReadyToEvaluate(true)
       const uploadNotice = {
         id: uploadId,
         role: 'assistant',
@@ -185,6 +185,7 @@ export default function IntakePage() {
       setMessages((prev) => [...prev, uploadNotice])
     } catch {
       // Fallback for upload in demo
+      setReadyToEvaluate(true)
       const uploadNotice = {
         id: uploadId,
         role: 'assistant',
@@ -195,11 +196,12 @@ export default function IntakePage() {
   }
 
   const handleStartGeneration = async () => {
-    setStatus(SESSION_STATUS.HARVESTING)
+    setUploadError(null)
     try {
       await triggerGeneration(sessionId)
-    } catch {
-      // If backend is offline, generation page will simulate or display progress
+      setStatus(SESSION_STATUS.HARVESTING)
+    } catch (err) {
+      setUploadError(err?.message || 'Failed to start generation. Please check backend connection.')
     }
   }
 
@@ -448,12 +450,12 @@ export default function IntakePage() {
               </div>
 
               {/* Error Notification if any */}
-              {status === SESSION_STATUS.FAILED && error && (
+              {(uploadError || (status === SESSION_STATUS.FAILED && error)) && (
                 <div
                   role="alert"
                   className="mb-6 p-4 rounded-md border border-error bg-surface flex items-center justify-between"
                 >
-                  <span className="text-error font-body text-small">{error}</span>
+                  <span className="text-error font-body text-small">{uploadError || error}</span>
                   <button
                     type="button"
                     onClick={() => {

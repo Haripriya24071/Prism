@@ -9,6 +9,12 @@ export function getScoreBand(score) {
   return 'low'
 }
 
+export function getScoreColor(score) {
+  if (score >= 0.8) return 'emerald'
+  if (score >= 0.6) return 'amber'
+  return 'rose'
+}
+
 export function formatDate(isoString) {
   if (!isoString) return ''
   return new Date(isoString).toLocaleString()

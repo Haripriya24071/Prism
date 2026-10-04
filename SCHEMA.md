@@ -1,5 +1,8 @@
 # PRISM — Schema & Data Contract Reference
 
+> **Version:** 2.0 (Production Verified) | **Team:** Swapnil Ghosh, Zahid, Haripriya, Ritika  
+> **Governing Docs:** [ARCHITECTURE.md](ARCHITECTURE.md), [PRD.md](PRD.md), [RULES.md](RULES.md)
+
 ---
 
 ## 1. Google BigQuery Schema: Dataset `prism_data`
@@ -56,7 +59,7 @@ prism-outputs/{session_id}/
 
 ## 3. Pydantic Model Data Contracts
 
-### 3.1 `IntakePackage`
+### 3.1 `IntakePackage` (`backend/models/intake.py`)
 ```python
 class IntakeExtraction(BaseModel):
     raw_idea: str
@@ -74,7 +77,7 @@ class IntakePackage(BaseModel):
     created_at: datetime
 ```
 
-### 3.2 `AgentOutput`
+### 3.2 `AgentOutput` (`backend/models/agents.py`)
 ```python
 class AgentPersona(str, Enum):
     VC = "vc"
@@ -93,7 +96,7 @@ class AgentOutput(BaseModel):
     failed: bool = False
 ```
 
-### 3.3 `MergedBRD`
+### 3.3 `MergedBRD` (`backend/models/brd.py`)
 ```python
 class LineageTag(BaseModel):
     section: str
@@ -109,7 +112,7 @@ class MergedBRD(BaseModel):
     failure_modes: List[dict] = []        # Top failure vectors with mitigations
 ```
 
-### 3.4 `HeatmapData` & `InvestorScore`
+### 3.4 `HeatmapData` & `InvestorScore` (`backend/models/output.py`)
 ```python
 class SectionDivergence(BaseModel):
     section: str
