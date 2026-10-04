@@ -1,4 +1,3 @@
-import React from 'react'
 import { motion } from 'framer-motion'
 import { getAgentCardVariants } from '../../animations/variants.js'
 import './AgentGrid.css'
