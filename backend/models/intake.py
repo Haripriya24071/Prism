@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Annotated, Literal
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -29,4 +29,4 @@ class IntakePackage(BaseModel):
     extraction: IntakeExtraction
     file_context: str | None = Field(default=None, description="Text from uploaded file")
     conversation_history: list[dict] = Field(default_factory=list)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
